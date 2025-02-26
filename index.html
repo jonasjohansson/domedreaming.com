@@ -3,10 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      http-equiv="refresh"
-      content="0; URL='https://docs.google.com/presentation/d/1uhASrkNhCRuve8zo5CU72j5HtF75XpTqsrCYRwU0T20/present'"
-    />
+    <title>DOME DREAMING</title>
+    <script src="https://documentservices.adobe.com/view-sdk/viewer.js"></script>
   </head>
-  <body></body>
+  <body>
+    <div id="adobe-dc-view"></div>
+    <script>
+      document.addEventListener("adobe_dc_view_sdk.ready", function() {
+        var adobeDCView = new AdobeDC.View({ clientId: "0590933d5bfa4da79bd3a9eca11d8915", divId: "adobe-dc-view" });
+        adobeDCView.previewFile({
+          content: { location: { url: "DOME DREAMING PRESENTATION.pdf" } },
+          metaData: { fileName: "DOME DREAMING PRESENTATION.pdf" }
+        }, { embedMode: "SIZED_CONTAINER" });
+      });
+    </script>
 </html>
