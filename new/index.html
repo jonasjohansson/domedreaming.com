@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dome Dreaming - 3D Viewer</title>
+    <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        #drop-zone {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        #drop-zone.drag-over {
+            background: rgba(0, 150, 255, 0.05);
+            pointer-events: all;
+        }
+
+
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 18px;
+            z-index: 200;
+        }
+
+        #loading.hidden {
+            display: none;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+</head>
+<body>
+    <div id="canvas-container">
+        <div id="drop-zone"></div>
+        <div id="loading">
+            <div class="spinner"></div>
+            <div>Loading 3D model...</div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // Scene setup
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a1a);
+
+        const camera = new THREE.PerspectiveCamera(
+            75,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
+        );
+        camera.position.set(0, 5, 10);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+        // Controls
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.minDistance = 5;
+        controls.maxDistance = 50;
+
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(10, 10, 5);
+        directionalLight.castShadow = true;
+        scene.add(directionalLight);
+
+        const pointLight = new THREE.PointLight(0xffffff, 0.5);
+        pointLight.position.set(-10, 5, -5);
+        scene.add(pointLight);
+
+        // Variables
+        let fbxModel = null;
+        let screenObject = null;
+        let currentVideoTexture = null;
+        let currentVideo = null;
+        let currentImageTexture = null;
+        let originalScreenMaterial = null;
+        let isDragging = false;
+
+        // Load FBX model
+        const loader = new FBXLoader();
+        const loadingDiv = document.getElementById('loading');
+
+        loader.load(
+            'files/Tekniska_Wisdome_V01.fbx',
+            (object) => {
+                fbxModel = object;
+                
+                // Scale and position the model
+                object.scale.setScalar(0.01); // Adjust scale as needed
+                object.position.set(0, 0, 0);
+                
+                // Traverse the model to find screen objects
+                // Common names for screens: screen, display, monitor, panel, etc.
+                object.traverse((child) => {
+                    if (child.isMesh) {
+                        const name = child.name.toLowerCase();
+                        // Look for objects that might be screens
+                        if (name.includes('screen') || 
+                            name.includes('display') || 
+                            name.includes('monitor') || 
+                            name.includes('panel') ||
+                            name.includes('projection') ||
+                            name.includes('canvas')) {
+                            screenObject = child;
+                            
+                            // Store original material
+                            if (screenObject.material) {
+                                originalScreenMaterial = screenObject.material.clone();
+                            }
+                        }
+                    }
+                });
+
+                // If no screen found, use the first mesh
+                if (!screenObject && object.children.length > 0) {
+                    object.traverse((child) => {
+                        if (child.isMesh && !screenObject) {
+                            screenObject = child;
+                            if (screenObject.material) {
+                                originalScreenMaterial = screenObject.material.clone();
+                            }
+                        }
+                    });
+                }
+
+                // Load default texture (node0.png)
+                if (screenObject) {
+                    const textureLoader = new THREE.TextureLoader();
+                    textureLoader.load(
+                        'node0.png',
+                        (texture) => {
+                            texture.flipY = true;
+                            texture.wrapS = THREE.RepeatWrapping;
+                            texture.wrapT = THREE.RepeatWrapping;
+                            texture.needsUpdate = true;
+
+                            const material = Array.isArray(screenObject.material) 
+                                ? screenObject.material[0] 
+                                : screenObject.material;
+
+                            if (material) {
+                                if (material.map) {
+                                    material.map.dispose();
+                                }
+                                if (material.emissiveMap) {
+                                    material.emissiveMap.dispose();
+                                }
+                                material.map = texture;
+                                material.emissiveMap = texture;
+                                material.emissive = new THREE.Color(0xffffff);
+                                material.emissiveIntensity = 1.0;
+                                material.needsUpdate = true;
+                            } else {
+                                screenObject.material = new THREE.MeshStandardMaterial({ 
+                                    map: texture,
+                                    emissiveMap: texture,
+                                    emissive: new THREE.Color(0xffffff),
+                                    emissiveIntensity: 1.0
+                                });
+                            }
+
+                            currentImageTexture = texture;
+                        },
+                        undefined,
+                        () => {}
+                    );
+                }
+
+                scene.add(object);
+                loadingDiv.classList.add('hidden');
+                
+                // Set starting camera position
+                camera.position.set(-0.0006929999999911734, 5.321655861124897, -1.9637819325370423);
+                camera.rotation.set(-7.251926239151469e-17, 0, 0);
+                // Target facing the other way (flip z to positive)
+                controls.target.set(-0.0006929999999911734, 5.321655861124896, 26.45874755711981);
+                controls.update();
+            },
+            undefined,
+            (error) => {
+                loadingDiv.innerHTML = '<div style="color: #ff4444;">Error loading 3D model.</div>';
+            }
+        );
+
+        // Drag and drop functionality
+        const dropZone = document.getElementById('drop-zone');
+        const canvasContainer = document.getElementById('canvas-container');
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlightScreen(isHighlight) {
+            if (!screenObject) return;
+            
+            const material = Array.isArray(screenObject.material) 
+                ? screenObject.material[0] 
+                : screenObject.material;
+            
+            if (material) {
+                if (isHighlight) {
+                    // Create a glowing effect
+                    material.emissive = new THREE.Color(0x0096ff);
+                    material.emissiveIntensity = 0.5;
+                } else {
+                    // Remove highlight
+                    material.emissive = new THREE.Color(0x000000);
+                    material.emissiveIntensity = 0;
+                }
+            }
+        }
+
+        // Attach drag and drop to document to catch all events
+        document.addEventListener('dragenter', (e) => {
+            preventDefaults(e);
+            if (!isDragging) {
+                isDragging = true;
+                dropZone.classList.add('drag-over');
+                highlightScreen(true);
+            }
+        }, false);
+
+        document.addEventListener('dragover', (e) => {
+            preventDefaults(e);
+            if (!isDragging) {
+                isDragging = true;
+                dropZone.classList.add('drag-over');
+                highlightScreen(true);
+            }
+        }, false);
+
+        document.addEventListener('dragleave', (e) => {
+            preventDefaults(e);
+            // Only remove highlight if we're leaving the window
+            if (e.clientX === 0 && e.clientY === 0) {
+                isDragging = false;
+                dropZone.classList.remove('drag-over');
+                highlightScreen(false);
+            }
+        }, false);
+
+        document.addEventListener('drop', (e) => {
+            preventDefaults(e);
+            isDragging = false;
+            dropZone.classList.remove('drag-over');
+            highlightScreen(false);
+            handleDrop(e);
+        }, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    loadImage(file);
+                } else if (file.type.startsWith('video/')) {
+                    loadVideo(file);
+                }
+            }
+        }
+
+        function loadImage(file) {
+            if (!screenObject) {
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const textureLoader = new THREE.TextureLoader();
+                textureLoader.load(
+                    e.target.result,
+                    (texture) => {
+                        // Clean up previous media
+                        if (currentVideoTexture) {
+                            currentVideoTexture.dispose();
+                            currentVideoTexture = null;
+                        }
+                        if (currentVideo) {
+                            currentVideo.pause();
+                            currentVideo.src = '';
+                            URL.revokeObjectURL(currentVideo.src);
+                            currentVideo = null;
+                        }
+                        if (currentImageTexture) {
+                            currentImageTexture.dispose();
+                        }
+
+                        texture.flipY = true;
+                        texture.wrapS = THREE.RepeatWrapping;
+                        texture.wrapT = THREE.RepeatWrapping;
+                        texture.needsUpdate = true;
+
+                        // Handle material array or single material
+                        const material = Array.isArray(screenObject.material) 
+                            ? screenObject.material[0] 
+                            : screenObject.material;
+
+                        if (material) {
+                            // Dispose old texture if it exists
+                            if (material.map) {
+                                material.map.dispose();
+                            }
+                            if (material.emissiveMap) {
+                                material.emissiveMap.dispose();
+                            }
+                            material.map = texture;
+                            material.emissiveMap = texture;
+                            material.emissive = new THREE.Color(0xffffff);
+                            material.emissiveIntensity = 1.0;
+                            material.needsUpdate = true;
+                            // Ensure the material is visible and properly configured
+                            material.transparent = false;
+                            material.opacity = 1.0;
+                        } else {
+                            const newMaterial = new THREE.MeshStandardMaterial({ 
+                                map: texture,
+                                emissiveMap: texture,
+                                emissive: new THREE.Color(0xffffff),
+                                emissiveIntensity: 1.0,
+                                transparent: false,
+                                opacity: 1.0
+                            });
+                            screenObject.material = newMaterial;
+                        }
+
+                        currentImageTexture = texture;
+                        
+                        // Visual feedback - brief flash
+                        const mat = Array.isArray(screenObject.material) 
+                            ? screenObject.material[0] 
+                            : screenObject.material;
+                        if (mat) {
+                            mat.emissive = new THREE.Color(0xffffff);
+                            mat.emissiveIntensity = 0.3;
+                            setTimeout(() => {
+                                mat.emissive = new THREE.Color(0x000000);
+                                mat.emissiveIntensity = 0;
+                            }, 200);
+                        }
+                    },
+                    undefined,
+                    () => {}
+                );
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function loadVideo(file) {
+            if (!screenObject) {
+                return;
+            }
+
+            const video = document.createElement('video');
+            video.src = URL.createObjectURL(file);
+            video.crossOrigin = 'anonymous';
+            video.loop = true;
+            video.muted = true;
+            video.playsInline = true;
+
+            video.addEventListener('loadedmetadata', () => {
+                video.play();
+
+                // Clean up previous media
+                if (currentVideoTexture) {
+                    currentVideoTexture.dispose();
+                }
+                if (currentVideo) {
+                    currentVideo.pause();
+                    currentVideo.src = '';
+                    URL.revokeObjectURL(currentVideo.src);
+                }
+                if (currentImageTexture) {
+                    currentImageTexture.dispose();
+                    currentImageTexture = null;
+                }
+
+                const videoTexture = new THREE.VideoTexture(video);
+                videoTexture.flipY = true;
+                videoTexture.wrapS = THREE.RepeatWrapping;
+                videoTexture.wrapT = THREE.RepeatWrapping;
+                videoTexture.minFilter = THREE.LinearFilter;
+                videoTexture.magFilter = THREE.LinearFilter;
+
+                // Handle material array or single material
+                const material = Array.isArray(screenObject.material) 
+                    ? screenObject.material[0] 
+                    : screenObject.material;
+
+                if (material) {
+                    // Dispose old texture if it exists
+                    if (material.map) {
+                        material.map.dispose();
+                    }
+                    if (material.emissiveMap) {
+                        material.emissiveMap.dispose();
+                    }
+                    material.map = videoTexture;
+                    material.emissiveMap = videoTexture;
+                    material.emissive = new THREE.Color(0xffffff);
+                    material.emissiveIntensity = 1.0;
+                    material.needsUpdate = true;
+                    // Ensure the material is visible and properly configured
+                    material.transparent = false;
+                    material.opacity = 1.0;
+                } else {
+                    screenObject.material = new THREE.MeshStandardMaterial({ 
+                        map: videoTexture,
+                        emissiveMap: videoTexture,
+                        emissive: new THREE.Color(0xffffff),
+                        emissiveIntensity: 1.0,
+                        transparent: false,
+                        opacity: 1.0
+                    });
+                }
+
+                currentVideoTexture = videoTexture;
+                currentVideo = video;
+                
+                // Visual feedback - brief flash
+                const mat = Array.isArray(screenObject.material) 
+                    ? screenObject.material[0] 
+                    : screenObject.material;
+                if (mat) {
+                    mat.emissive = new THREE.Color(0xffffff);
+                    mat.emissiveIntensity = 0.3;
+                    setTimeout(() => {
+                        mat.emissive = new THREE.Color(0x000000);
+                        mat.emissiveIntensity = 0;
+                    }, 200);
+                }
+            });
+
+            video.addEventListener('error', () => {});
+        }
+
+        // Log camera values
+        function logCameraValues() {
+            const pos = camera.position;
+            const rot = camera.rotation;
+            const target = controls.target;
+            console.log('Camera Position:', {
+                x: pos.x,
+                y: pos.y,
+                z: pos.z
+            });
+            console.log('Camera Rotation:', {
+                x: rot.x,
+                y: rot.y,
+                z: rot.z
+            });
+            console.log('Controls Target:', {
+                x: target.x,
+                y: target.y,
+                z: target.z
+            });
+            console.log('Full camera config:', {
+                position: { x: pos.x, y: pos.y, z: pos.z },
+                rotation: { x: rot.x, y: rot.y, z: rot.z },
+                target: { x: target.x, y: target.y, z: target.z }
+            });
+        }
+
+        // WASD camera movement
+        const keys = {};
+        const moveSpeed = 0.1;
+        
+        window.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+            if (e.key === 'c' || e.key === 'C') {
+                logCameraValues();
+            }
+        });
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // WASD movement relative to camera
+            if (keys['w'] || keys['s'] || keys['a'] || keys['d'] || keys['q'] || keys['e']) {
+                // Get camera forward and right vectors
+                const forward = new THREE.Vector3();
+                forward.setFromMatrixColumn(camera.matrixWorld, 2);
+                forward.multiplyScalar(-1);
+                forward.normalize();
+                
+                const right = new THREE.Vector3();
+                right.setFromMatrixColumn(camera.matrixWorld, 0);
+                right.normalize();
+                
+                const movement = new THREE.Vector3();
+                
+                // Forward/backward
+                if (keys['w']) movement.add(forward.clone().multiplyScalar(moveSpeed));
+                if (keys['s']) movement.add(forward.clone().multiplyScalar(-moveSpeed));
+                
+                // Left/right
+                if (keys['a']) movement.add(right.clone().multiplyScalar(-moveSpeed));
+                if (keys['d']) movement.add(right.clone().multiplyScalar(moveSpeed));
+                
+                // Up/down (world space)
+                if (keys['q']) movement.y += moveSpeed;
+                if (keys['e']) movement.y -= moveSpeed;
+                
+                camera.position.add(movement);
+                controls.target.add(movement);
+            }
+            
+            controls.update();
+            
+            // Update video texture if playing
+            if (currentVideoTexture && currentVideo && !currentVideo.paused) {
+                currentVideoTexture.needsUpdate = true;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
