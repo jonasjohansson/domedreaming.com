@@ -1,674 +1,360 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0" />
     <title>Dome Dreaming - 3D Viewer</title>
-    <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    <link
+      rel="icon"
+      type="image/png"
+      href="/favicon/favicon-96x96.png"
+      sizes="96x96" />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="/favicon/favicon.svg" />
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com" />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet" />
+    <link
+      rel="stylesheet"
+      href="assets/styles.css" />
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            overflow: hidden;
-            background: #000;
-        }
-
-        #canvas-container {
-            width: 100vw;
-            height: 100vh;
-            position: relative;
-        }
-
-        #drop-zone {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 10;
-            pointer-events: none;
-        }
-
-        #drop-zone.drag-over {
-            background: rgba(0, 150, 255, 0.05);
-            pointer-events: all;
-        }
-
-
-        #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: white;
-            font-size: 18px;
-            z-index: 200;
-        }
-
-        #loading.hidden {
-            display: none;
-        }
-
-        .spinner {
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-top: 3px solid white;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-    </style>
-</head>
-<body>
+    <!-- Load A-Frame and Extras from local files -->
+    <script src="./assets/libraries/aframe/aframe.min.js"></script>
+    <script src="./assets/libraries/aframe-extras.min.js"></script>
+  </head>
+  <body>
     <div id="canvas-container">
-        <div id="drop-zone"></div>
-        <div id="loading">
-            <div class="spinner"></div>
-            <div>Loading 3D model...</div>
-        </div>
+      <div id="drop-zone"></div>
+      <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading 3D model...</div>
+      </div>
     </div>
 
-    <script type="importmap">
-    {
-        "imports": {
-            "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-            "lil-gui": "https://cdn.jsdelivr.net/npm/lil-gui@0.19.2/+esm"
-        }
-    }
-    </script>
+    <a-scene
+      inspector="enabled: true; url: https://cdn.jsdelivr.net/gh/aframevr/aframe-inspector@master/dist/aframe-inspector.min.js"
+      loading-screen="enabled: false"
+      xr-mode-ui="enabled: false"
+      renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true">
+      <a-assets>
+        <a-asset-item
+          id="wisdome-gltf"
+          src="assets/models/wisdome.glb"></a-asset-item>
+        <a-asset-item
+          id="navmesh-gltf"
+          src="assets/models/navmesh.gltf"></a-asset-item>
+        <img
+          id="background-img"
+          src="assets/media/background.jpg" />
+      </a-assets>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
-        import { GUI } from 'lil-gui';
+      <!-- Lighting -->
+      <a-entity
+        light="type: ambient; intensity: 1.0; color: #ffffff"
+        position="0 0 0"></a-entity>
+      <a-entity
+        light="type: directional; intensity: 1.0; color: #ffffff; castShadow: true"
+        position="10 10 5"></a-entity>
+      <a-entity
+        light="type: point; intensity: 0.8; color: #ffffff"
+        position="-10 5 -5"></a-entity>
+      <a-entity
+        light="type: hemisphere; intensity: 0.6; groundColor: #444444; color: #ffffff"
+        position="0 0 0"></a-entity>
 
-        // Scene setup
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x1a1a1a);
+      <!-- Wisdome Model -->
+      <a-entity
+        id="wisdome"
+        gltf-model="#wisdome-gltf"
+        position="0 0 0"
+        rotation="0 0 0"
+        scale="1 1 1"
+        wisdome-model></a-entity>
 
-        const camera = new THREE.PerspectiveCamera(
-            75,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            1000
-        );
-        camera.position.set(0, 5, 10);
+      <!-- Navmesh (hidden, used for navigation) -->
+      <a-entity
+        id="navmesh"
+        gltf-model="#navmesh-gltf"
+        nav-mesh
+        visible="false"
+        position="0 0 0"
+        rotation="0 0 0"
+        scale="1 1 1"></a-entity>
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
-        document.getElementById('canvas-container').appendChild(renderer.domElement);
+      <!-- Player Rig (moves and rotates) -->
+      <a-entity
+        id="rig"
+        movement-controls="constrainToNavMesh: true; speed: 0.1; fly: false"
+        position="0 0 0">
+        <!-- Player Avatar (Red Cylinder) - child of rig, moves with it -->
+        <a-entity
+          id="player-avatar"
+          geometry="primitive: cylinder; radius: 0.1; height: 0.5"
+          material="color: #ff0000"
+          position="0 0.25 0"
+          visible="true"
+          rotation="0 0 0"></a-entity>
 
-        // Look camera controls
-        let isPointerLocked = false;
-        let euler = new THREE.Euler(0, 0, 0, 'YXZ');
-        let baseEuler = new THREE.Euler(0, 0, 0, 'YXZ');
-        let yawOffset = 0;
-        let pitchOffset = 0;
-        
-        // Rotation limits (in radians)
-        const maxYaw = Math.PI / 4; // 45 degrees left/right
-        const maxPitch = Math.PI / 3; // 60 degrees up/down
-        
-        const canvas = renderer.domElement;
-        
-        function onMouseMove(event) {
-            if (!isPointerLocked) return;
-            
-            const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-            const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
-            
-            // Update offsets
-            yawOffset += movementX * 0.002;
-            pitchOffset += movementY * 0.002;
-            
-            // Clamp offsets
-            yawOffset = Math.max(-maxYaw, Math.min(maxYaw, yawOffset));
-            pitchOffset = Math.max(-maxPitch, Math.min(maxPitch, pitchOffset));
-            
-            // Apply base rotation + offsets
-            euler.x = baseEuler.x + pitchOffset;
-            euler.y = baseEuler.y + yawOffset;
-            euler.z = baseEuler.z;
-            
-            camera.quaternion.setFromEuler(euler);
-        }
-        
-        function onPointerLockChange() {
-            isPointerLocked = document.pointerLockElement === canvas;
-        }
-        
-        canvas.addEventListener('click', () => {
-            canvas.requestPointerLock();
-        });
-        
-        document.addEventListener('pointerlockchange', onPointerLockChange);
-        document.addEventListener('mousemove', onMouseMove);
+        <!-- Camera (child of rig, follows movement and rotation) -->
+        <a-entity
+          id="cam"
+          camera="active: true"
+          look-controls="enabled: true"
+          position="0 1.7 0"
+          wasd-controls="enabled: false"></a-entity>
+      </a-entity>
+    </a-scene>
 
-        // Lighting
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-        scene.add(ambientLight);
+    <div id="info-panel">
+      <h1>DOME DREAMING</h1>
+      <p>
+        DOME DREAMING is an interdisciplinary festival divided between Wisdome Stockholm and Malmö, two newly built state-of-the-art domes.
+        Featuring fulldome visuals and ambisonic sound, it showcases narrative films, live performances, and interactive installations. The
+        festival explores the potential of the dome format through Nordic-Baltic collaboration, a curated screening programme, artist
+        residencies and student participation.
+      </p>
 
-        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-        directionalLight.position.set(10, 10, 5);
-        directionalLight.castShadow = true;
-        scene.add(directionalLight);
+      <div class="section">
+        <h2>THE WISDOME PROJECT</h2>
+        <p>
+          Wisdome connects science centers, universities, and research institutions to explore new ways of engaging audiences through
+          audiovisual production. Rooted in research from Linköping University and Visualiseringscenter C, it focuses on sparking curiosity
+          in science and technology, especially among youth.
+        </p>
+        <p>
+          In 2022–2023, as part of the Wisdome project, Tekniska Museet and Malmö Museer introduced cutting-edge dome theaters with
+          180-degree visuals and ambisonic sound. These domes host everything from complex simulations to experimental performances.
+        </p>
+        <p>
+          While Wisdome centers on scientific visualisation, its potential goes further. Dome theaters, explored by artists and filmmakers
+          worldwide, are now a platform for artistic expression in Sweden. This opens the door for cross-disciplinary collaboration and a
+          creative community waiting to be let in.
+        </p>
+        <p>
+          In 2024, Stockholm and Malmö launched open calls, inviting musicians, actors, programmers, motion designers, and filmmakers to
+          create new works in new ways.
+        </p>
+      </div>
 
-        const pointLight = new THREE.PointLight(0xffffff, 0.5);
-        pointLight.position.set(-10, 5, -5);
-        scene.add(pointLight);
+      <div class="section">
+        <h2>THE DOME DREAMING ETHOS</h2>
+        <p>
+          DOME DREAMING draws from Expanded Cinema, Visions of the Present, and Black Mountain College—three movements that redefined
+          artistic and technological boundaries. Expanded Cinema (1960s) moved film beyond the screen, adopting non-linear narratives and
+          experimental formats. Visions of the Present (1966, Stockholm) combined art, technology, and media to challenge audience
+          engagement. Black Mountain College integrated art, science, and performance, influencing works like Stan VanDerBeek's Movie-Drome
+          and Billy Klüver's Experiments in Art and Technology (E.A.T.), which connected artists with engineers.
+        </p>
+        <p>
+          DOME DREAMING adapts these radical ideas to the dome format. It transforms cinema from a passive experience into an immersive
+          180-degree space where storytelling, sound, and visuals converge. Hosted at Wisdome Stockholm and Wisdome Malmö, the festival
+          encourages collaboration, experimentation, and cross-disciplinary innovation.
+        </p>
+        <p>
+          Despite Sweden's five Wisdome domes, funding and recognition for experimental film and dome content remain scarce—especially
+          beyond science and education. DOME DREAMING is here to change that.
+        </p>
+      </div>
 
-        // Variables
-        let fbxModel = null;
-        let screenObject = null;
-        let currentVideoTexture = null;
-        let currentVideo = null;
-        let currentImageTexture = null;
-        let originalScreenMaterial = null;
-        let isDragging = false;
-        let fbxMeshes = [];
-        let gui = null;
+      <div class="section">
+        <h2>NORDIC AUDIOVISUAL ARTISTS</h2>
+        <p>
+          NAVA (Nordic Audiovisual Artists) was founded in 2016 by Jonas Johansson (SE), Rasmus Stride (DK), Owen Hindley (UK) and Atli
+          Bollason (IS) during a collective project at Harpa, Reykjavik. In 2017, NAVA gained recognition with projects like Light Organ and
+          Tiny/Massive at Sónar, pairing musicians and visual artists via open calls. By 2019, NAVA expanded beyond Iceland, hosting the
+          event Skaðablót and continuing work across the Nordic region.
+        </p>
+        <p>
+          NAVA, now mostly led by Jonas, partnered with Aavistus festival in Helsinki. In 2021, artist Annie Tådne co-founded Nonagon in
+          Sweden. The network grew with collaborations like Nordic Lights, and in 2023 Jonas, Annie, and Merle performed at Arctic Sounds in
+          Greenland, connecting with local talent. In 2024 Jonas and NAVA connected with Kokong in Åland and Baltic Analog Lab in Latvia.
+          The network thrives on experience exchange, strengthening the community's ability to create exceptional audiovisual work.
+        </p>
+      </div>
 
-        // Load FBX model
-        const loader = new FBXLoader();
-        const loadingDiv = document.getElementById('loading');
+      <div class="section">
+        <h2>BEYOND WISDOME</h2>
+        <p>
+          Domes have long served as a canvas for artistic exploration and collaboration. In the 1960s, Steve VanDerBeek created
+          Movie-Drome—a pioneering prototype for networked image communication ("CULTURE: Intercom"), made as a collaborative tool long
+          before the Internet. Buckminster Fuller, too, reimagined the potential of domes, using them as structures to unite artistic
+          disciplines and push the boundaries of architecture.
+        </p>
+        <p>
+          Since 1996, La SAT in Montreal has been a beacon for dome innovation, fostering a vibrant creative community that has grown in
+          part due to the success of Cirque du Soleil. Each week they invite musicians and visual artists, opening up the dome. Other
+          notable initiatives, such as Visions of the Now (2015–2017) by Anna Lundh, The New Infinity in Berlin (2018–2021), and the Lumen
+          Project (2019–2024) in Eric Ericssonhallen, have further expanded the scope of immersive experiences.
+        </p>
+        <p>
+          DOME DREAMING draws inspiration from these pioneering efforts, but with an eye toward forging new paths. By pushing the limits of
+          immersive media, we aim to explore the unique, transformative potential of the dome while creating our own distinct contributions
+          to this evolving field.
+        </p>
+      </div>
 
-        loader.load(
-            'files/Tekniska_Wisdome_V01.fbx',
-            (object) => {
-                fbxModel = object;
-                
-                // Scale and position the model
-                object.scale.setScalar(0.01); // Adjust scale as needed
-                object.position.set(0, 0, 0);
-                
-                // Traverse the model to find screen objects and collect all meshes
-                // Common names for screens: screen, display, monitor, panel, etc.
-                object.traverse((child) => {
-                    if (child.isMesh) {
-                        const name = child.name.toLowerCase();
-                        // Look for objects that might be screens
-                        if (name.includes('screen') || 
-                            name.includes('display') || 
-                            name.includes('monitor') || 
-                            name.includes('panel') ||
-                            name.includes('projection') ||
-                            name.includes('canvas')) {
-                            screenObject = child;
-                            
-                            // Store original material
-                            if (screenObject.material) {
-                                originalScreenMaterial = screenObject.material.clone();
-                            }
-                        } else {
-                            // Store other meshes for color control (exclude screen)
-                            fbxMeshes.push({
-                                mesh: child,
-                                name: child.name || 'Unnamed',
-                                originalColor: child.material ? 
-                                    (child.material.color ? child.material.color.clone() : new THREE.Color(0xffffff)) : 
-                                    new THREE.Color(0xffffff)
-                            });
-                        }
-                    }
-                });
+      <div class="section">
+        <h2>A HISTORY OF AUDIOVISUAL ART</h2>
+        <p>
+          The history of audiovisual art is driven by a desire to break down the barriers between seeing and hearing—to give sound a visual
+          form and let images carry sound. From early experiments in visual music to today's dome-based media, artists have tried to create
+          multisensory experiences that go beyond the limits of each sense.
+        </p>
+        <p>
+          This began strongly in the 1920s with artists like Viking Eggeling and Hans Richter. They created abstract films based on rhythm
+          and visual structure. Eggeling's Symphonie Diagonale (1924) moved like a musical score, with shapes unfolding over time. These
+          works were built on the idea that visual elements—lines, shapes, and contrasts—could be arranged like music to show patterns of
+          movement and emotion.
+        </p>
+        <p>
+          Artists Walter Ruttmann and Oskar Fischinger, took these ideas further. Fischinger's animations came before electronic
+          synthesisers, but still gave a strong sense of musical structure. In An Optical Poem (1938), he used cut-paper animation set to
+          music by Franz Liszt, creating floating shapes that felt both abstract and emotional. In the US, Mary Ellen Bute helped bring
+          these experiments to a wider audience. She used both hand-drawn techniques and early electronic tools to explore rhythm and image.
+          She was among the first to describe her work as "seeing sound," and helped shape the growing field of visual music.
+        </p>
+        <p>
+          The idea of turning music into colour—or colour into music—has fascinated artists for centuries. In the 18th century, inventors
+          built "colour organs" to project light in response to sound. In 1896, Swedish inventor Martin Wiberg created the Spektralpiano,
+          which used coloured glass and light to replace sound with colour. He imagined full performances of "colour symphonies" that aimed
+          to stir emotions through light alone. His invention came before the better-known colour pianos of Alexander Scriabin and others,
+          and paved the way for later instruments.
+        </p>
+        <p>
+          No one captured this mix of image and sound more clearly than John Whitney. With training in both music and design, he used
+          analogue computers, originally built for missile guidance—to create animations driven by maths and music. His film Catalog (1961)
+          showed how programming could become a kind of composition, where colour, movement, and pattern worked like musical elements.
+        </p>
+        <p>
+          In the UK, Daphne Oram developed the Oramics system in the 1950s. She drew shapes directly onto film to produce sound, turning
+          gesture into sound waves. Like Whitney, she believed in a combined language of sound and image.
+        </p>
+        <p>
+          By the 1960s and '70s, artists began exploring how these ideas could shape physical space. Nam June Paik, using custom-built video
+          tools, created live performances and multi-screen setups that broke the rules of passive media. His work was lively, strange, and
+          full of energy—bringing together sound, image, and body. At the same time, Stan VanDerBeek built the Movie-Drome, a dome-shaped
+          theatre for immersive film. Visitors lay beneath a flow of moving images from news, art, and science. It was not just about
+          watching, but about stepping into a new kind of space and experience.
+        </p>
+        <p>
+          These projects were part of a wider movement called expanded cinema—a term by Gene Youngblood for artworks that moved beyond film
+          into performance, installation, and mixed media. Paik was a key figure in this shift. Others, like Anthony McCall and the USCO
+          collective, used light and sound to shape space. At Bell Labs, Lillian Schwartz worked with scientists to make images using early
+          computers, bringing coding into art for the first time. Later, artists like Steina and Woody Vasulka used video signals, noise,
+          and feedback as creative tools, exploring new ways of working with electronic images and sound.
+        </p>
+        <p>
+          What links all these artists is their interest in the senses. They didn't just want to make films or music—they wanted to create
+          full, physical experiences. Their work explored how we see, hear, and move inside a space. Today, artists continue this path in
+          domes, multi-projector spaces, and algorithmic environments. They search for new ways to bring vision and sound together—not just
+          side by side, but as one shared experience. DOME DREAMING aims at being a modern focal point for this development and shared
+          dreaming within the extended nordic region. Onwards and upwards.
+        </p>
+      </div>
 
-                // If no screen found, use the first mesh
-                if (!screenObject && object.children.length > 0) {
-                    object.traverse((child) => {
-                        if (child.isMesh && !screenObject) {
-                            screenObject = child;
-                            if (screenObject.material) {
-                                originalScreenMaterial = screenObject.material.clone();
-                            }
-                        }
-                    });
-                }
+      <div class="section">
+        <h2>STATE OF THE DOME</h2>
+        <p>
+          Over the past two decades, the dome has transformed from a tool of celestial education to a platform for artistic exploration.
+          Originally built to simulate the night sky, fulldome spaces have become canvases for experimental visuals, immersive storytelling,
+          and multi-sensory performance. Yet, despite the medium's evolution and global momentum, the cultural potential of domes remains
+          vastly underexplored. Particularly outside of science programming and within the Nordic-Baltic region.
+        </p>
+        <p>
+          In 2023, Fulldome in the UK, a comprehensive sector report produced by Live Cinema UK and funded by Creative UK, outlined a
+          landscape of possibility tempered by structural challenges. The report affirmed what many fulldome artists and curators have long
+          known: that fulldome is a rich, unique medium, but one that remains fragmented and under-resourced. In particular, it highlighted
+          an urgent need for funding mechanisms, standardised production templates, cross-venue programming, curated archives, and
+          accessible production pipelines.
+        </p>
+        <p>
+          DOME DREAMING responds directly to these calls. As an ambitious two-week Nordic-Baltic festival unfolding across Wisdome Stockholm
+          and Wisdome Malmö, DOME DREAMING was designed as a timely intervention: an answer to the sector's gaps, and a model for what a
+          sustainable, artist-centred fulldome ecosystem might look like.
+        </p>
+        <p>
+          This report begins with the "State of the Dome" to reflect on the findings from the UK study and reframe them through our local
+          context. We use its key observations as a structure to illuminate what is missing—and how DOME DREAMING proposes to address it.
+        </p>
 
-                // Load default texture (node0.png)
-                if (screenObject) {
-                    const textureLoader = new THREE.TextureLoader();
-                    textureLoader.load(
-                        'node0.png',
-                        (texture) => {
-                            texture.flipY = true;
-                            texture.wrapS = THREE.RepeatWrapping;
-                            texture.wrapT = THREE.RepeatWrapping;
-                            texture.needsUpdate = true;
+        <h3 style="font-size: 14px; font-weight: 300; margin-top: 30px; margin-bottom: 10px">
+          1. Challenge: A lack of cultural fulldome content visibility and programming routes
+        </h3>
+        <p>
+          The UK report notes that while artistic fulldome content exists, much of it remains "invisible"—either scattered across small
+          festivals or unpublished due to a lack of confidence, context, or support. There is no shared platform or archive where work is
+          properly documented or discoverable.
+        </p>
+        <p>
+          <strong>Response:</strong> DOME DREAMING features an artist residency and curated programme, accompanied by the creation of a
+          digital replica of the dome for online viewing. This not only extends access but also builds a de facto archive of contemporary
+          fulldome works from across the Nordic and Baltic regions. Our inclusion of student works also ensures that emerging voices are
+          given the space to be seen.
+        </p>
 
-                            const material = Array.isArray(screenObject.material) 
-                                ? screenObject.material[0] 
-                                : screenObject.material;
+        <h3 style="font-size: 14px; font-weight: 300; margin-top: 30px; margin-bottom: 10px">
+          2. Challenge: Fragmented technical standards and difficult production workflows
+        </h3>
+        <p>
+          Every dome is different—size, projection system, audio setup, seating arrangement. These variations impose costly barriers on
+          artists, who must often reformat content for each venue, discouraging experimentation.
+        </p>
+        <p>
+          <strong>Response:</strong> DOME DREAMING provides an open-source "Creators Toolkit," developed during Wisdome hackathons, to
+          support streamlined dome production across tools like Blender, TouchDesigner, Cinema4D and AfterEffects. The toolkit includes
+          templates, projection guides, best practices, and workflow documentation aimed at future-proofing content and lowering entry
+          thresholds.
+        </p>
 
-                            if (material) {
-                                if (material.map) {
-                                    material.map.dispose();
-                                }
-                                if (material.emissiveMap) {
-                                    material.emissiveMap.dispose();
-                                }
-                                material.map = texture;
-                                material.emissiveMap = texture;
-                                material.emissive = new THREE.Color(0xffffff);
-                                material.emissiveIntensity = 1.0;
-                                material.needsUpdate = true;
-                            } else {
-                                screenObject.material = new THREE.MeshStandardMaterial({ 
-                                    map: texture,
-                                    emissiveMap: texture,
-                                    emissive: new THREE.Color(0xffffff),
-                                    emissiveIntensity: 1.0
-                                });
-                            }
+        <h3 style="font-size: 14px; font-weight: 300; margin-top: 30px; margin-bottom: 10px">
+          3. Challenge: The absence of curated experiences for short-form works
+        </h3>
+        <p>
+          While planetariums often rely on long-format science films, the majority of cultural dome work is created by individual artists,
+          often as short-form or experimental pieces. Without curation, these works struggle to find audiences or funding.
+        </p>
+        <p>
+          <strong>Response:</strong> Our curated programme brings together short works—animated, live-action, and experimental—into
+          thematically resonant screenings. This model mirrors the approach of film festivals and arthouse cinemas, making the dome an
+          accessible venue for complex and varied experiences.
+        </p>
 
-                            currentImageTexture = texture;
-                        },
-                        undefined,
-                        () => {}
-                    );
-                }
+        <h3 style="font-size: 14px; font-weight: 300; margin-top: 30px; margin-bottom: 10px">
+          4. Challenge: Fulldome work is often siloed from other creative disciplines
+        </h3>
+        <p>
+          The report notes that while many XR, music, and performance artists are interested in fulldome, there are few structures in place
+          to bring them in. Fulldome remains a "walled garden," inaccessible without significant technical or institutional support.
+        </p>
+        <p>
+          <strong>Response:</strong> Inspired by the cross-disciplinary legacy of Expanded Cinema and Experiments in Art and Technology,
+          DOME DREAMING brings together visual artists, composers, XR developers, filmmakers, designers, and performers. Our advisors and
+          collaborators span multiple disciplines, ensuring that the dome is not only a canvas, but a site of convergence.
+        </p>
 
-                scene.add(object);
-                loadingDiv.classList.add('hidden');
-                
-                // Set starting camera position
-                camera.position.set(0.17178936825823132, 3.1438119010983794, -1.8796967916588727);
-                camera.rotation.set(3.0648921990904108, 0.006068545975148434, -3.1411262813374163);
-                baseEuler.setFromEuler(camera.rotation);
-                euler.setFromQuaternion(camera.quaternion);
-                
-                // Create GUI for color controls
-                createColorGUI();
-            },
-            undefined,
-            (error) => {
-                loadingDiv.innerHTML = '<div style="color: #ff4444;">Error loading 3D model.</div>';
-            }
-        );
+        <p style="margin-top: 30px">
+          In short, DOME DREAMING is both an artistic statement and a sectoral prototype. It draws on the findings of the UK report not just
+          to describe what is missing, but to demonstrate what is possible. Through strategic collaborations, curated programming,
+          infrastructure development, and community building, it aims to catalyse a vibrant and sustainable dome culture across the
+          Nordic-Baltic region—where the fulldome is not a niche, but a new frontier. Read the fulldome report here.
+        </p>
+      </div>
+    </div>
 
-        // Drag and drop functionality
-        const dropZone = document.getElementById('drop-zone');
-        const canvasContainer = document.getElementById('canvas-container');
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
-        }
-
-        function highlightScreen(isHighlight) {
-            if (!screenObject) return;
-            
-            const material = Array.isArray(screenObject.material) 
-                ? screenObject.material[0] 
-                : screenObject.material;
-            
-            if (material) {
-                if (isHighlight) {
-                    // Create a glowing effect
-                    material.emissive = new THREE.Color(0x0096ff);
-                    material.emissiveIntensity = 0.5;
-                } else {
-                    // Remove highlight
-                    material.emissive = new THREE.Color(0x000000);
-                    material.emissiveIntensity = 0;
-                }
-            }
-        }
-
-        // Attach drag and drop to document to catch all events
-        document.addEventListener('dragenter', (e) => {
-            preventDefaults(e);
-            if (!isDragging) {
-                isDragging = true;
-                dropZone.classList.add('drag-over');
-                highlightScreen(true);
-            }
-        }, false);
-
-        document.addEventListener('dragover', (e) => {
-            preventDefaults(e);
-            if (!isDragging) {
-                isDragging = true;
-                dropZone.classList.add('drag-over');
-                highlightScreen(true);
-            }
-        }, false);
-
-        document.addEventListener('dragleave', (e) => {
-            preventDefaults(e);
-            // Only remove highlight if we're leaving the window
-            if (e.clientX === 0 && e.clientY === 0) {
-                isDragging = false;
-                dropZone.classList.remove('drag-over');
-                highlightScreen(false);
-            }
-        }, false);
-
-        document.addEventListener('drop', (e) => {
-            preventDefaults(e);
-            isDragging = false;
-            dropZone.classList.remove('drag-over');
-            highlightScreen(false);
-            handleDrop(e);
-        }, false);
-
-        function handleDrop(e) {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-
-            if (files.length > 0) {
-                const file = files[0];
-                if (file.type.startsWith('image/')) {
-                    loadImage(file);
-                } else if (file.type.startsWith('video/')) {
-                    loadVideo(file);
-                }
-            }
-        }
-
-        function loadImage(file) {
-            if (!screenObject) {
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const textureLoader = new THREE.TextureLoader();
-                textureLoader.load(
-                    e.target.result,
-                    (texture) => {
-                        // Clean up previous media
-                        if (currentVideoTexture) {
-                            currentVideoTexture.dispose();
-                            currentVideoTexture = null;
-                        }
-                        if (currentVideo) {
-                            currentVideo.pause();
-                            currentVideo.src = '';
-                            URL.revokeObjectURL(currentVideo.src);
-                            currentVideo = null;
-                        }
-                        if (currentImageTexture) {
-                            currentImageTexture.dispose();
-                        }
-
-                        texture.flipY = true;
-                        texture.wrapS = THREE.RepeatWrapping;
-                        texture.wrapT = THREE.RepeatWrapping;
-                        texture.needsUpdate = true;
-
-                        // Handle material array or single material
-                        const material = Array.isArray(screenObject.material) 
-                            ? screenObject.material[0] 
-                            : screenObject.material;
-
-                        if (material) {
-                            // Dispose old texture if it exists
-                            if (material.map) {
-                                material.map.dispose();
-                            }
-                            if (material.emissiveMap) {
-                                material.emissiveMap.dispose();
-                            }
-                            material.map = texture;
-                            material.emissiveMap = texture;
-                            material.emissive = new THREE.Color(0xffffff);
-                            material.emissiveIntensity = 1.0;
-                            material.needsUpdate = true;
-                            // Ensure the material is visible and properly configured
-                            material.transparent = false;
-                            material.opacity = 1.0;
-                        } else {
-                            const newMaterial = new THREE.MeshStandardMaterial({ 
-                                map: texture,
-                                emissiveMap: texture,
-                                emissive: new THREE.Color(0xffffff),
-                                emissiveIntensity: 1.0,
-                                transparent: false,
-                                opacity: 1.0
-                            });
-                            screenObject.material = newMaterial;
-                        }
-
-                        currentImageTexture = texture;
-                        
-                        // Visual feedback - brief flash
-                        const mat = Array.isArray(screenObject.material) 
-                            ? screenObject.material[0] 
-                            : screenObject.material;
-                        if (mat) {
-                            mat.emissive = new THREE.Color(0xffffff);
-                            mat.emissiveIntensity = 0.3;
-                            setTimeout(() => {
-                                mat.emissive = new THREE.Color(0x000000);
-                                mat.emissiveIntensity = 0;
-                            }, 200);
-                        }
-                    },
-                    undefined,
-                    () => {}
-                );
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function loadVideo(file) {
-            if (!screenObject) {
-                return;
-            }
-
-            const video = document.createElement('video');
-            video.src = URL.createObjectURL(file);
-            video.crossOrigin = 'anonymous';
-            video.loop = true;
-            video.muted = true;
-            video.playsInline = true;
-
-            video.addEventListener('loadedmetadata', () => {
-                video.play();
-
-                // Clean up previous media
-                if (currentVideoTexture) {
-                    currentVideoTexture.dispose();
-                }
-                if (currentVideo) {
-                    currentVideo.pause();
-                    currentVideo.src = '';
-                    URL.revokeObjectURL(currentVideo.src);
-                }
-                if (currentImageTexture) {
-                    currentImageTexture.dispose();
-                    currentImageTexture = null;
-                }
-
-                const videoTexture = new THREE.VideoTexture(video);
-                videoTexture.flipY = true;
-                videoTexture.wrapS = THREE.RepeatWrapping;
-                videoTexture.wrapT = THREE.RepeatWrapping;
-                videoTexture.minFilter = THREE.LinearFilter;
-                videoTexture.magFilter = THREE.LinearFilter;
-
-                // Handle material array or single material
-                const material = Array.isArray(screenObject.material) 
-                    ? screenObject.material[0] 
-                    : screenObject.material;
-
-                if (material) {
-                    // Dispose old texture if it exists
-                    if (material.map) {
-                        material.map.dispose();
-                    }
-                    if (material.emissiveMap) {
-                        material.emissiveMap.dispose();
-                    }
-                    material.map = videoTexture;
-                    material.emissiveMap = videoTexture;
-                    material.emissive = new THREE.Color(0xffffff);
-                    material.emissiveIntensity = 1.0;
-                    material.needsUpdate = true;
-                    // Ensure the material is visible and properly configured
-                    material.transparent = false;
-                    material.opacity = 1.0;
-                } else {
-                    screenObject.material = new THREE.MeshStandardMaterial({ 
-                        map: videoTexture,
-                        emissiveMap: videoTexture,
-                        emissive: new THREE.Color(0xffffff),
-                        emissiveIntensity: 1.0,
-                        transparent: false,
-                        opacity: 1.0
-                    });
-                }
-
-                currentVideoTexture = videoTexture;
-                currentVideo = video;
-                
-                // Visual feedback - brief flash
-                const mat = Array.isArray(screenObject.material) 
-                    ? screenObject.material[0] 
-                    : screenObject.material;
-                if (mat) {
-                    mat.emissive = new THREE.Color(0xffffff);
-                    mat.emissiveIntensity = 0.3;
-                    setTimeout(() => {
-                        mat.emissive = new THREE.Color(0x000000);
-                        mat.emissiveIntensity = 0;
-                    }, 200);
-                }
-            });
-
-            video.addEventListener('error', () => {});
-        }
-
-        // Create GUI for color controls
-        function createColorGUI() {
-            if (gui) {
-                gui.destroy();
-            }
-            
-            gui = new GUI({ title: 'FBX Colors' });
-            gui.domElement.style.position = 'absolute';
-            gui.domElement.style.top = '20px';
-            gui.domElement.style.right = '20px';
-            gui.domElement.style.zIndex = '1000';
-            
-            // Group meshes by name prefix or use individual controls
-            const colorControls = {};
-            
-            fbxMeshes.forEach((item, index) => {
-                const mesh = item.mesh;
-                const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-                
-                if (!material) return;
-                
-                // Get current color or use white
-                const currentColor = material.color ? 
-                    { r: material.color.r * 255, g: material.color.g * 255, b: material.color.b * 255 } :
-                    { r: 255, g: 255, b: 255 };
-                
-                // Create color object for GUI
-                const colorObj = {
-                    color: `#${Math.floor(currentColor.r).toString(16).padStart(2, '0')}${Math.floor(currentColor.g).toString(16).padStart(2, '0')}${Math.floor(currentColor.b).toString(16).padStart(2, '0')}`
-                };
-                
-                // Add color control
-                const folder = gui.addFolder(item.name || `Mesh ${index + 1}`);
-                const colorControl = folder.addColor(colorObj, 'color');
-                
-                colorControl.onChange((value) => {
-                    const color = new THREE.Color(value);
-                    if (Array.isArray(mesh.material)) {
-                        mesh.material.forEach(mat => {
-                            if (mat) {
-                                mat.color = color;
-                                mat.needsUpdate = true;
-                            }
-                        });
-                    } else if (mesh.material) {
-                        mesh.material.color = color;
-                        mesh.material.needsUpdate = true;
-                    }
-                });
-                
-                folder.open();
-            });
-            
-            // Add reset button
-            const resetObj = { reset: () => {
-                fbxMeshes.forEach(item => {
-                    const mesh = item.mesh;
-                    const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
-                    if (material && item.originalColor) {
-                        material.color = item.originalColor.clone();
-                        material.needsUpdate = true;
-                    }
-                });
-                // Recreate GUI to update colors
-                createColorGUI();
-            }};
-            gui.add(resetObj, 'reset').name('Reset All Colors');
-        }
-
-        // Log camera values
-        function logCameraValues() {
-            const pos = camera.position;
-            const rot = camera.rotation;
-            console.log('Camera Position:', {
-                x: pos.x,
-                y: pos.y,
-                z: pos.z
-            });
-            console.log('Camera Rotation:', {
-                x: rot.x,
-                y: rot.y,
-                z: rot.z
-            });
-            console.log('Full camera config:', {
-                position: { x: pos.x, y: pos.y, z: pos.z },
-                rotation: { x: rot.x, y: rot.y, z: rot.z }
-            });
-        }
-
-        // Keyboard controls
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'c' || e.key === 'C') {
-                logCameraValues();
-            }
-        });
-
-        // Animation loop
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            // Update video texture if playing
-            if (currentVideoTexture && currentVideo && !currentVideo.paused) {
-                currentVideoTexture.needsUpdate = true;
-            }
-            
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Handle window resize
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-    </script>
-</body>
+    <!-- Load A-Frame components and game logic -->
+    <script
+      type="module"
+      src="assets/main.js"></script>
+  </body>
 </html>
