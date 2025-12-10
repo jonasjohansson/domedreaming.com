@@ -12,6 +12,10 @@ export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
 
+export function setIsNightMode(value) {
+  isNightMode = value;
+}
+
 export function loadSettings() {
   try {
     const saved = localStorage.getItem("domeDreamingSettings");
@@ -46,7 +50,7 @@ export function loadSettings() {
     }
 
     if (settings.isNightMode !== undefined) {
-      isNightMode = settings.isNightMode;
+      setIsNightMode(settings.isNightMode);
     }
   } catch (error) {
     console.warn("Failed to load settings:", error);

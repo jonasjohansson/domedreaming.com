@@ -1,5 +1,6 @@
 import { canvasContainer } from "./scene.js";
 import * as settings from "./settings.js";
+import { setIsNightMode } from "./settings.js";
 import { glbLights } from "./model.js";
 
 let gradientOverlay = null;
@@ -85,7 +86,7 @@ export function updateSiteColors() {
 }
 
 export function toggleDayNightMode(createColorGUICallback) {
-  settings.isNightMode = !settings.isNightMode;
+  setIsNightMode(!settings.isNightMode);
   updateGradientOverlay();
   if (glbLights && glbLights.length > 0) {
     updateLightingForMode(glbLights);

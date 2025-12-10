@@ -29,7 +29,7 @@ canvas {
   background: #ffffff;
   color: #000000;
   padding: 60px 40px;
-  font-family: "Inter", sans-serif;
+  font-family: "Inter Tight", sans-serif;
   min-height: 50vh;
   transition: background-color 1s ease, color 1s ease;
 }
