@@ -249,14 +249,14 @@ let gui = null;
 
 // Starting camera position and rotation (editable via GUI)
 let startCameraPosition = {
-  x: 0.4518848657608032,
+  x: 0,
   y: 4.698056077957153,
   z: -2.9978184700012207,
 };
 
 let startCameraRotation = {
-  x: -2.9549761938978527,
-  y: 0.0015196047278375389,
+  x: -3,
+  y: 0,
   z: 3.121154018741333,
 };
 
@@ -367,8 +367,8 @@ loader.load(
           const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
 
           if (material) {
-            // Preserve the material's color when loading default texture
-            const preservedColor = material.color ? material.color.clone() : new THREE.Color(0xffffff);
+            // Screen: force bright white base and emissive, and disable tone mapping dimming
+            const preservedColor = new THREE.Color(0xffffff);
 
             if (material.map) material.map.dispose();
             if (material.emissiveMap) material.emissiveMap.dispose();
@@ -465,10 +465,14 @@ function highlightScreen(isHighlight) {
   if (material) {
     if (isHighlight) {
       material.emissive = new THREE.Color(0x0096ff);
-      material.emissiveIntensity = 0.5;
+      material.emissiveIntensity = 0.8;
     } else {
-      material.emissive = new THREE.Color(0x000000);
-      material.emissiveIntensity = 0;
+      // Restore bright white screen after hover/drag
+      material.emissive = new THREE.Color(0xffffff);
+      material.emissiveIntensity = 1.0;
+      material.color = new THREE.Color(0xffffff);
+      material.toneMapped = false;
+      material.needsUpdate = true;
     }
   }
 }
@@ -570,16 +574,17 @@ function loadImage(file) {
         const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
 
         if (material) {
-          // Preserve the material's color when loading texture
-          const preservedColor = material.color ? material.color.clone() : new THREE.Color(0xffffff);
+          // Screen: force bright white base and emissive, and disable tone mapping dimming
+          const preservedColor = new THREE.Color(0xffffff);
 
           if (material.map) material.map.dispose();
           if (material.emissiveMap) material.emissiveMap.dispose();
           material.map = texture;
           material.emissiveMap = texture;
-          material.emissive = preservedColor; // Use preserved color instead of forcing white
+          material.emissive = preservedColor;
           material.emissiveIntensity = 1.0;
-          material.color = preservedColor; // Preserve the color
+          material.color = preservedColor;
+          material.toneMapped = false; // keep brightness with ACES tone mapping
           material.needsUpdate = true;
           material.transparent = false;
           material.opacity = 1.0;
@@ -589,6 +594,8 @@ function loadImage(file) {
             emissiveMap: texture,
             emissive: new THREE.Color(0xffffff),
             emissiveIntensity: 1.0,
+            color: new THREE.Color(0xffffff),
+            toneMapped: false,
             transparent: false,
             opacity: 1.0,
           });
@@ -598,11 +605,17 @@ function loadImage(file) {
 
         const mat = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
         if (mat) {
+          // Brief flash, then ensure we stay bright white (match default intensity)
           mat.emissive = new THREE.Color(0xffffff);
-          mat.emissiveIntensity = 0.3;
+          mat.emissiveIntensity = 1.0;
+          mat.color = new THREE.Color(0xffffff);
+          mat.toneMapped = false;
           setTimeout(() => {
-            mat.emissive = new THREE.Color(0x000000);
-            mat.emissiveIntensity = 0;
+            mat.emissive = new THREE.Color(0xffffff);
+            mat.emissiveIntensity = 1.0;
+            mat.color = new THREE.Color(0xffffff);
+            mat.toneMapped = false;
+            mat.needsUpdate = true;
           }, 200);
         }
       },
@@ -650,16 +663,17 @@ function loadVideo(file) {
     const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
 
     if (material) {
-      // Preserve the material's color when loading video texture
-      const preservedColor = material.color ? material.color.clone() : new THREE.Color(0xffffff);
+      // Screen: force bright white base and emissive, and disable tone mapping dimming
+      const preservedColor = new THREE.Color(0xffffff);
 
       if (material.map) material.map.dispose();
       if (material.emissiveMap) material.emissiveMap.dispose();
       material.map = videoTexture;
       material.emissiveMap = videoTexture;
-      material.emissive = preservedColor; // Use preserved color instead of forcing white
+      material.emissive = preservedColor;
       material.emissiveIntensity = 1.0;
-      material.color = preservedColor; // Preserve the color
+      material.color = preservedColor;
+      material.toneMapped = false; // keep brightness with ACES tone mapping
       material.needsUpdate = true;
       material.transparent = false;
       material.opacity = 1.0;
@@ -679,11 +693,17 @@ function loadVideo(file) {
 
     const mat = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
     if (mat) {
+      // Brief flash, then ensure we stay bright white
       mat.emissive = new THREE.Color(0xffffff);
-      mat.emissiveIntensity = 0.3;
+      mat.emissiveIntensity = 1.5;
+      mat.color = new THREE.Color(0xffffff);
+      mat.toneMapped = false;
       setTimeout(() => {
-        mat.emissive = new THREE.Color(0x000000);
-        mat.emissiveIntensity = 0;
+        mat.emissive = new THREE.Color(0xffffff);
+        mat.emissiveIntensity = 1.5;
+        mat.color = new THREE.Color(0xffffff);
+        mat.toneMapped = false;
+        mat.needsUpdate = true;
       }, 200);
     }
   });
