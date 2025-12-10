@@ -1,68 +1,321 @@
-// A-Frame Components and Game Logic
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.21/+esm";
+import { init as initRecastNavigation, NavMeshQuery, importNavMesh } from "@recast-navigation/core";
+import { threeToSoloNavMesh, NavMeshHelper } from "@recast-navigation/three";
 
-// Global storage for screen object
-let screenObject = null;
-let fbxMeshes = [];
+// Scene setup
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x1a1a1a);
 
-// Debug: Toggle navmesh visibility with 'N' key
-document.addEventListener("keydown", (e) => {
-  if (e.key === "n" || e.key === "N") {
-    const navmesh = document.querySelector("#navmesh");
-    if (navmesh) {
-      const currentVisible = navmesh.getAttribute("visible");
-      navmesh.setAttribute("visible", !currentVisible);
-      console.log("Navmesh visibility toggled to:", !currentVisible);
-      
-      // If making visible, apply green material
-      if (!currentVisible) {
-        const model = navmesh.getObject3D("mesh");
-        if (model) {
-          const material = new THREE.MeshStandardMaterial({
-            color: 0x00ff00,
-            opacity: 0.3,
-            transparent: true,
-            side: THREE.DoubleSide,
-          });
-          
-          model.traverse((child) => {
-            if (child.isMesh) {
-              child.material = material;
-              child.visible = true;
-            }
-          });
+const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+// Starting position will be set after model loads
+camera.position.set(0, 5, 10);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+const canvasContainer = document.getElementById("canvas-container");
+canvasContainer.appendChild(renderer.domElement);
+
+// Camera controls - click and drag
+let isPointerLocked = false;
+let euler = new THREE.Euler(0, 0, 0, "YXZ");
+let modelLoaded = false;
+
+// Camera rotation settings
+let cameraSettings = {
+  sensitivity: 0.002, // Mouse sensitivity
+  rotationSpeed: 120, // Q/E rotation speed (degrees per second)
+};
+
+// Load settings from localStorage
+function loadSettings() {
+  try {
+    const saved = localStorage.getItem("domeDreamingSettings");
+    if (saved) {
+      const settings = JSON.parse(saved);
+
+      if (settings.moveSpeed !== undefined) moveSpeed = settings.moveSpeed;
+      if (settings.cameraSettings) {
+        if (settings.cameraSettings.sensitivity !== undefined) {
+          cameraSettings.sensitivity = settings.cameraSettings.sensitivity;
+        }
+        if (settings.cameraSettings.rotationSpeed !== undefined) {
+          cameraSettings.rotationSpeed = settings.cameraSettings.rotationSpeed;
         }
       }
+      if (settings.startCameraPosition) {
+        startCameraPosition.x = settings.startCameraPosition.x;
+        startCameraPosition.y = settings.startCameraPosition.y;
+        startCameraPosition.z = settings.startCameraPosition.z;
+        console.log("Loaded start camera position from localStorage:", startCameraPosition);
+      }
+      if (settings.startCameraRotation) {
+        startCameraRotation.x = settings.startCameraRotation.x;
+        startCameraRotation.y = settings.startCameraRotation.y;
+        startCameraRotation.z = settings.startCameraRotation.z;
+        console.log("Loaded start camera rotation from localStorage:", startCameraRotation);
+      }
+      if (settings.colorSettings) {
+        // Color settings will be applied when GUI is created
+        window.savedColorSettings = settings.colorSettings;
+        console.log("Loaded color settings from localStorage:", settings.colorSettings);
+      } else {
+        window.savedColorSettings = null;
+        console.log("No color settings found in localStorage");
+      }
+
+      console.log("Settings loaded from localStorage");
     }
+  } catch (error) {
+    console.warn("Failed to load settings from localStorage:", error);
+  }
+}
+
+// Save settings to localStorage
+function saveSettings() {
+  try {
+    // Collect current color settings
+    const colorSettings = {};
+    fbxMeshes.forEach((item, index) => {
+      const mesh = item.mesh;
+      const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+      if (material && material.color) {
+        const color = material.color;
+        // Use consistent naming: item.name or mesh_index
+        const meshName = item.name || `mesh_${index}`;
+        colorSettings[meshName] = {
+          r: color.r,
+          g: color.g,
+          b: color.b,
+        };
+      }
+    });
+
+    const settings = {
+      moveSpeed,
+      cameraSettings: {
+        sensitivity: cameraSettings.sensitivity,
+        rotationSpeed: cameraSettings.rotationSpeed,
+      },
+      startCameraPosition: {
+        x: startCameraPosition.x,
+        y: startCameraPosition.y,
+        z: startCameraPosition.z,
+      },
+      startCameraRotation: {
+        x: startCameraRotation.x,
+        y: startCameraRotation.y,
+        z: startCameraRotation.z,
+      },
+      colorSettings,
+    };
+    localStorage.setItem("domeDreamingSettings", JSON.stringify(settings));
+    console.log("Settings saved to localStorage, colorSettings:", colorSettings);
+  } catch (error) {
+    console.warn("Failed to save settings to localStorage:", error);
+  }
+}
+
+const canvas = renderer.domElement;
+
+// Pointer lock for click and drag
+function requestPointerLock() {
+  canvas.requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
+  if (canvas.requestPointerLock) {
+    canvas.requestPointerLock();
+  }
+}
+
+function onPointerLockChange() {
+  const wasLocked = isPointerLocked;
+  isPointerLocked =
+    document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas;
+
+  // When pointer lock activates, sync euler with current camera rotation to prevent flip
+  if (!wasLocked && isPointerLocked && modelLoaded) {
+    euler.setFromQuaternion(camera.quaternion);
+    console.log("Pointer lock activated, synced euler with camera rotation");
+  }
+}
+
+function onPointerLockError() {
+  console.error("Pointer lock failed");
+}
+
+document.addEventListener("pointerlockchange", onPointerLockChange);
+document.addEventListener("mozpointerlockchange", onPointerLockChange);
+document.addEventListener("webkitpointerlockchange", onPointerLockChange);
+document.addEventListener("pointerlockerror", onPointerLockError);
+document.addEventListener("mozpointerlockerror", onPointerLockError);
+document.addEventListener("webkitpointerlockerror", onPointerLockError);
+
+// Click to lock pointer
+canvas.addEventListener("click", () => {
+  if (!isPointerLocked) {
+    requestPointerLock();
   }
 });
 
-// Component to handle Wisdome model setup
-AFRAME.registerComponent("wisdome-model", {
-  init: function() {
-    const el = this.el;
-    el.addEventListener("model-loaded", () => {
-      this.setupModel();
-    });
-  },
-  
-  setupModel: function() {
-    const el = this.el;
-    const model = el.getObject3D("mesh");
-    
-    if (!model) {
-      console.warn("Model not loaded yet");
-      return;
+// Mouse movement for camera rotation
+function onMouseMove(event) {
+  if (!isPointerLocked || !modelLoaded) return;
+
+  const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+  const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+
+  // Mouse movement: right = rotate right, up = look up
+  // In Three.js, positive Y rotation rotates counter-clockwise (left), so we invert
+  euler.y -= movementX * cameraSettings.sensitivity;
+  // Pitch: mouse up should look up (decrease X rotation in YXZ order)
+  euler.x -= movementY * cameraSettings.sensitivity;
+
+  // Clamp pitch to prevent flipping
+  euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+
+  camera.quaternion.setFromEuler(euler);
+}
+
+canvas.addEventListener("mousemove", onMouseMove);
+
+// Cinema-style lighting setup (inspired by klp project)
+// Low ambient light for moody atmosphere
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
+scene.add(ambientLight);
+
+// Main directional light (key light) - warmer tone, softer
+const directionalLight = new THREE.DirectionalLight(0xffeedd, 0.8);
+directionalLight.position.set(10, 10, 5);
+directionalLight.castShadow = true;
+directionalLight.shadow.mapSize.width = 2048;
+directionalLight.shadow.mapSize.height = 2048;
+directionalLight.shadow.camera.near = 0.5;
+directionalLight.shadow.camera.far = 50;
+directionalLight.shadow.camera.left = -10;
+directionalLight.shadow.camera.right = 10;
+directionalLight.shadow.camera.top = 10;
+directionalLight.shadow.camera.bottom = -10;
+directionalLight.shadow.radius = 4; // Softer shadows
+directionalLight.shadow.bias = -0.0001;
+scene.add(directionalLight);
+
+// Fill light (cooler tone, softer)
+const fillLight = new THREE.DirectionalLight(0x88aaff, 0.3);
+fillLight.position.set(-5, 3, -5);
+scene.add(fillLight);
+
+// Atmospheric accent lights (cinema spotlights)
+const accentLight1 = new THREE.PointLight(0xffaa88, 0.4, 20, 2);
+accentLight1.position.set(-4, 4, -3);
+scene.add(accentLight1);
+
+const accentLight2 = new THREE.PointLight(0x88aaff, 0.3, 20, 2);
+accentLight2.position.set(4, 4, 3);
+scene.add(accentLight2);
+
+// Rim light for depth (behind scene)
+const rimLight = new THREE.DirectionalLight(0x4488ff, 0.2);
+rimLight.position.set(-10, 5, -10);
+scene.add(rimLight);
+
+// Hemisphere light for subtle global illumination
+const hemisphereLight = new THREE.HemisphereLight(0x4488ff, 0x222222, 0.1);
+scene.add(hemisphereLight);
+
+// Add subtle fog for atmospheric depth (cinema-like)
+// Fog color matches background, subtle with moderate distance
+scene.fog = new THREE.Fog(0x1a1a1a, 20, 60);
+
+// Enable ACES Filmic tone mapping for cinematic look
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.8; // Slightly underexposed for mood
+
+// Variables
+let wisdomeModel = null;
+let screenObject = null;
+let currentVideoTexture = null;
+let currentVideo = null;
+let currentImageTexture = null;
+let isDragging = false;
+let navmesh = null;
+let navmeshMeshes = [];
+let navMeshQuery = null;
+let navMeshHelper = null;
+let recastInitialized = false;
+const cameraHeight = 1.6;
+let fbxMeshes = [];
+let gui = null;
+
+// Starting camera position and rotation (editable via GUI)
+let startCameraPosition = {
+  x: 0.4518848657608032,
+  y: 4.698056077957153,
+  z: -2.9978184700012207,
+};
+
+let startCameraRotation = {
+  x: -2.9549761938978527,
+  y: 0.0015196047278375389,
+  z: 3.121154018741333,
+};
+
+// Current camera position and rotation (read-only, updated in real-time)
+let currentCameraPosition = { x: 0, y: 0, z: 0 };
+let currentCameraRotation = { x: 0, y: 0, z: 0 };
+
+// Navmesh settings
+let navmeshSettings = {
+  cellSize: 0.05,
+  cellHeight: 0.05,
+  walkableRadius: 0.2,
+  regenerate: () => {
+    if (navmeshMeshes.length > 0 && recastInitialized) {
+      regenerateNavmesh();
     }
-    
-    screenObject = null;
-    fbxMeshes = [];
-    
-    // Traverse model to find screen and collect meshes
-    model.traverse((child) => {
+  },
+};
+
+// Load settings on startup
+loadSettings();
+
+// Create player indicator (red cylinder)
+const playerGeometry = new THREE.CylinderGeometry(0.1, 0.1, 0.5, 16);
+const playerMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
+const playerIndicator = new THREE.Mesh(playerGeometry, playerMaterial);
+playerIndicator.position.copy(camera.position);
+playerIndicator.position.y -= cameraHeight / 2;
+playerIndicator.visible = true;
+scene.add(playerIndicator);
+
+// Load Wisdome model
+const loader = new GLTFLoader();
+const loadingDiv = document.getElementById("loading");
+
+loader.load(
+  "assets/models/wisdome.glb",
+  (gltf) => {
+    console.log("Wisdome GLB loaded successfully");
+    const object = gltf.scene;
+    wisdomeModel = object;
+
+    object.scale.setScalar(1);
+    object.position.set(0, 0, 0);
+
+    let meshCount = 0;
+    const allMeshes = [];
+
+    object.traverse((child) => {
       if (child.isMesh) {
+        meshCount++;
         const name = child.name.toLowerCase();
-        
-        // Look for screen objects
+        allMeshes.push({
+          name: child.name || "Unnamed",
+          type: child.type,
+          visible: child.visible,
+          position: child.position.clone(),
+        });
+
         if (
           name.includes("screen") ||
           name.includes("display") ||
@@ -72,27 +325,23 @@ AFRAME.registerComponent("wisdome-model", {
           name.includes("canvas")
         ) {
           screenObject = child;
-          // Keep screen visible
           screenObject.visible = true;
         } else {
-          // Store other meshes for color control
           const material = Array.isArray(child.material) ? child.material[0] : child.material;
-          if (material) {
-            material.color = new THREE.Color(0xffffff);
-            material.needsUpdate = true;
-          }
-          
+          // Store original color from the GLB file
+          const originalColor = material && material.color ? material.color.clone() : new THREE.Color(0xffffff);
+
           fbxMeshes.push({
             mesh: child,
             name: child.name || "Unnamed",
+            originalColor: originalColor,
           });
         }
       }
     });
-    
-    // If no screen found, use first mesh
-    if (!screenObject && model.children.length > 0) {
-      model.traverse((child) => {
+
+    if (!screenObject && object.children.length > 0) {
+      object.traverse((child) => {
         if (child.isMesh && !screenObject) {
           screenObject = child;
           screenObject.visible = true;
@@ -100,109 +349,107 @@ AFRAME.registerComponent("wisdome-model", {
         }
       });
     }
-    
-    // Load default background texture
+
+    // Colors are now preserved from the GLB file
+
+    // Load default texture
     if (screenObject) {
-      this.loadDefaultTexture(screenObject);
+      const textureLoader = new THREE.TextureLoader();
+      textureLoader.load(
+        "assets/media/background.jpg",
+        (texture) => {
+          texture.flipY = true;
+          texture.wrapS = THREE.RepeatWrapping;
+          texture.wrapT = THREE.RepeatWrapping;
+          texture.repeat.x = -1; // Flip horizontally (X axis)
+          texture.needsUpdate = true;
+
+          const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
+
+          if (material) {
+            // Preserve the material's color when loading default texture
+            const preservedColor = material.color ? material.color.clone() : new THREE.Color(0xffffff);
+
+            if (material.map) material.map.dispose();
+            if (material.emissiveMap) material.emissiveMap.dispose();
+            material.map = texture;
+            material.emissiveMap = texture;
+            material.emissive = preservedColor; // Use preserved color instead of forcing white
+            material.emissiveIntensity = 1.0;
+            material.color = preservedColor; // Preserve the color
+            material.needsUpdate = true;
+          } else {
+            screenObject.material = new THREE.MeshStandardMaterial({
+              map: texture,
+              emissiveMap: texture,
+              emissive: new THREE.Color(0xffffff),
+              emissiveIntensity: 1.0,
+            });
+          }
+
+          currentImageTexture = texture;
+        },
+        undefined,
+        () => {}
+      );
     }
-    
-    // Hide loading screen
-    const loadingDiv = document.getElementById("loading");
-    if (loadingDiv) {
-      loadingDiv.classList.add("hidden");
-    }
-    
-    // Position player on navmesh
-    this.positionPlayer();
-    
-    console.log("Wisdome model loaded with", fbxMeshes.length, "meshes");
-    if (screenObject) {
-      console.log("Screen object found:", screenObject.name);
-    }
-  },
-  
-  loadDefaultTexture: function(screenObject) {
-    const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(
-      "assets/media/background.jpg",
-      (texture) => {
-        texture.flipY = true;
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.needsUpdate = true;
-        
-        const material = Array.isArray(screenObject.material)
-          ? screenObject.material[0]
-          : screenObject.material;
-        
-        if (material) {
-          if (material.map) material.map.dispose();
-          if (material.emissiveMap) material.emissiveMap.dispose();
-          material.map = texture;
-          material.emissiveMap = texture;
-          material.emissive = new THREE.Color(0xffffff);
-          material.emissiveIntensity = 1.0;
-          material.needsUpdate = true;
-        } else {
-          screenObject.material = new THREE.MeshStandardMaterial({
-            map: texture,
-            emissiveMap: texture,
-            emissive: new THREE.Color(0xffffff),
-            emissiveIntensity: 1.0,
-          });
-        }
-      },
-      undefined,
-      () => {}
-    );
-  },
-  
-  positionPlayer: function() {
-    const rig = document.querySelector("#rig");
-    const cam = document.querySelector("#cam");
-    
-    if (!rig) {
-      console.warn("Rig not found");
-      return;
-    }
-    
-    // Set starting position
-    rig.setAttribute("position", {
-      x: 0.24088717289064746,
-      y: 2.52,
-      z: -1.7162879880386888
+
+    scene.add(object);
+
+    // Hide loading immediately after model is added to scene
+    loadingDiv.classList.add("hidden");
+
+    // Set starting camera position and rotation from stored values
+    camera.position.set(startCameraPosition.x, startCameraPosition.y, startCameraPosition.z);
+
+    // Rotation values are already in radians
+    const rotXRad = startCameraRotation.x;
+    const rotYRad = startCameraRotation.y;
+    const rotZRad = startCameraRotation.z;
+
+    camera.rotation.set(rotXRad, rotYRad, rotZRad);
+
+    // Set initial euler rotation
+    euler.set(rotXRad, rotYRad, rotZRad);
+
+    playerIndicator.position.copy(camera.position);
+    playerIndicator.position.y -= cameraHeight / 2;
+
+    console.log("Model loaded, camera positioned at:", camera.position);
+    console.log("Camera rotation (radians):", camera.rotation);
+    console.log("Camera rotation (degrees):", {
+      x: (camera.rotation.x * 180) / Math.PI,
+      y: (camera.rotation.y * 180) / Math.PI,
+      z: (camera.rotation.z * 180) / Math.PI,
     });
-    
-    // Set starting camera rotation
-    if (cam) {
-      cam.setAttribute("rotation", {
-        x: -9.854874076250143,
-        y: 539.726243013233,
-        z: 0
-      });
+
+    modelLoaded = true;
+
+    // Verify navmesh at starting position after model loads
+    if (navMeshQuery) {
+      verifyNavmeshAtStartPosition();
     }
-    
-    console.log("Player positioned at:", rig.getAttribute("position"));
-    if (cam) {
-      console.log("Camera rotation set to:", cam.getAttribute("rotation"));
+
+    // Initialize recast-navigation and load navmesh (async, won't block)
+    initRecast().catch((err) => {
+      console.error("Error initializing recast:", err);
+    });
+    createColorGUI();
+  },
+  (progress) => {
+    // Progress callback
+    if (progress.lengthComputable) {
+      const percentComplete = (progress.loaded / progress.total) * 100;
+      console.log("Loading progress:", percentComplete.toFixed(2) + "%");
     }
   },
-  
-  createColorGUI: function(fbxMeshes) {
-    if (fbxMeshes.length === 0) return;
-    
-    // GUI will be created here if needed
-    // For now, we'll skip it and focus on core functionality
-    console.log("GUI would be created for", fbxMeshes.length, "meshes");
-  },
-});
+  (error) => {
+    console.error("Error loading 3D model:", error);
+    loadingDiv.innerHTML = '<div style="color: #ff4444;">Error loading 3D model. Check console for details.</div>';
+  }
+);
 
 // Drag and drop functionality
-let isDragging = false;
-let currentVideoTexture = null;
-let currentVideo = null;
-let currentImageTexture = null;
-
 const dropZone = document.getElementById("drop-zone");
 
 function preventDefaults(e) {
@@ -212,11 +459,9 @@ function preventDefaults(e) {
 
 function highlightScreen(isHighlight) {
   if (!screenObject) return;
-  
-  const material = Array.isArray(screenObject.material)
-    ? screenObject.material[0]
-    : screenObject.material;
-  
+
+  const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
+
   if (material) {
     if (isHighlight) {
       material.emissive = new THREE.Color(0x0096ff);
@@ -228,45 +473,61 @@ function highlightScreen(isHighlight) {
   }
 }
 
-document.addEventListener("dragenter", (e) => {
-  preventDefaults(e);
-  if (!isDragging) {
-    isDragging = true;
-    dropZone.classList.add("drag-over");
-    highlightScreen(true);
-  }
-}, false);
+document.addEventListener(
+  "dragenter",
+  (e) => {
+    preventDefaults(e);
+    if (!isDragging) {
+      isDragging = true;
+      dropZone.classList.add("drag-over");
+      highlightScreen(true);
+    }
+  },
+  false
+);
 
-document.addEventListener("dragover", (e) => {
-  preventDefaults(e);
-  if (!isDragging) {
-    isDragging = true;
-    dropZone.classList.add("drag-over");
-    highlightScreen(true);
-  }
-}, false);
+document.addEventListener(
+  "dragover",
+  (e) => {
+    preventDefaults(e);
+    if (!isDragging) {
+      isDragging = true;
+      dropZone.classList.add("drag-over");
+      highlightScreen(true);
+    }
+  },
+  false
+);
 
-document.addEventListener("dragleave", (e) => {
-  preventDefaults(e);
-  if (e.clientX === 0 && e.clientY === 0) {
+document.addEventListener(
+  "dragleave",
+  (e) => {
+    preventDefaults(e);
+    if (e.clientX === 0 && e.clientY === 0) {
+      isDragging = false;
+      dropZone.classList.remove("drag-over");
+      highlightScreen(false);
+    }
+  },
+  false
+);
+
+document.addEventListener(
+  "drop",
+  (e) => {
+    preventDefaults(e);
     isDragging = false;
     dropZone.classList.remove("drag-over");
     highlightScreen(false);
-  }
-}, false);
-
-document.addEventListener("drop", (e) => {
-  preventDefaults(e);
-  isDragging = false;
-  dropZone.classList.remove("drag-over");
-  highlightScreen(false);
-  handleDrop(e);
-}, false);
+    handleDrop(e);
+  },
+  false
+);
 
 function handleDrop(e) {
   const dt = e.dataTransfer;
   const files = dt.files;
-  
+
   if (files.length > 0) {
     const file = files[0];
     if (file.type.startsWith("image/")) {
@@ -279,17 +540,13 @@ function handleDrop(e) {
 
 function loadImage(file) {
   if (!screenObject) return;
-  
-  // Make screen visible when loading image
-  screenObject.visible = true;
-  
+
   const reader = new FileReader();
   reader.onload = (e) => {
     const textureLoader = new THREE.TextureLoader();
     textureLoader.load(
       e.target.result,
       (texture) => {
-        // Clean up previous media
         if (currentVideoTexture) {
           currentVideoTexture.dispose();
           currentVideoTexture = null;
@@ -303,23 +560,26 @@ function loadImage(file) {
         if (currentImageTexture) {
           currentImageTexture.dispose();
         }
-        
+
         texture.flipY = true;
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.x = -1; // Flip horizontally (X axis)
         texture.needsUpdate = true;
-        
-        const material = Array.isArray(screenObject.material)
-          ? screenObject.material[0]
-          : screenObject.material;
-        
+
+        const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
+
         if (material) {
+          // Preserve the material's color when loading texture
+          const preservedColor = material.color ? material.color.clone() : new THREE.Color(0xffffff);
+
           if (material.map) material.map.dispose();
           if (material.emissiveMap) material.emissiveMap.dispose();
           material.map = texture;
           material.emissiveMap = texture;
-          material.emissive = new THREE.Color(0xffffff);
+          material.emissive = preservedColor; // Use preserved color instead of forcing white
           material.emissiveIntensity = 1.0;
+          material.color = preservedColor; // Preserve the color
           material.needsUpdate = true;
           material.transparent = false;
           material.opacity = 1.0;
@@ -333,13 +593,10 @@ function loadImage(file) {
             opacity: 1.0,
           });
         }
-        
+
         currentImageTexture = texture;
-        
-        // Visual feedback
-        const mat = Array.isArray(screenObject.material)
-          ? screenObject.material[0]
-          : screenObject.material;
+
+        const mat = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
         if (mat) {
           mat.emissive = new THREE.Color(0xffffff);
           mat.emissiveIntensity = 0.3;
@@ -358,21 +615,17 @@ function loadImage(file) {
 
 function loadVideo(file) {
   if (!screenObject) return;
-  
-  // Make screen visible when loading video
-  screenObject.visible = true;
-  
+
   const video = document.createElement("video");
   video.src = URL.createObjectURL(file);
   video.crossOrigin = "anonymous";
   video.loop = true;
   video.muted = true;
   video.playsInline = true;
-  
+
   video.addEventListener("loadedmetadata", () => {
     video.play();
-    
-    // Clean up previous media
+
     if (currentVideoTexture) {
       currentVideoTexture.dispose();
     }
@@ -385,25 +638,28 @@ function loadVideo(file) {
       currentImageTexture.dispose();
       currentImageTexture = null;
     }
-    
+
     const videoTexture = new THREE.VideoTexture(video);
     videoTexture.flipY = true;
     videoTexture.wrapS = THREE.RepeatWrapping;
     videoTexture.wrapT = THREE.RepeatWrapping;
+    videoTexture.repeat.x = -1; // Flip horizontally (X axis)
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
-    
-    const material = Array.isArray(screenObject.material)
-      ? screenObject.material[0]
-      : screenObject.material;
-    
+
+    const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
+
     if (material) {
+      // Preserve the material's color when loading video texture
+      const preservedColor = material.color ? material.color.clone() : new THREE.Color(0xffffff);
+
       if (material.map) material.map.dispose();
       if (material.emissiveMap) material.emissiveMap.dispose();
       material.map = videoTexture;
       material.emissiveMap = videoTexture;
-      material.emissive = new THREE.Color(0xffffff);
+      material.emissive = preservedColor; // Use preserved color instead of forcing white
       material.emissiveIntensity = 1.0;
+      material.color = preservedColor; // Preserve the color
       material.needsUpdate = true;
       material.transparent = false;
       material.opacity = 1.0;
@@ -417,22 +673,11 @@ function loadVideo(file) {
         opacity: 1.0,
       });
     }
-    
+
     currentVideoTexture = videoTexture;
     currentVideo = video;
-    
-    // Update video texture in animation loop
-    const scene = document.querySelector("a-scene");
-    scene.addEventListener("renderstart", function updateVideoTexture() {
-      if (currentVideoTexture && currentVideo && !currentVideo.paused) {
-        currentVideoTexture.needsUpdate = true;
-      }
-    });
-    
-    // Visual feedback
-    const mat = Array.isArray(screenObject.material)
-      ? screenObject.material[0]
-      : screenObject.material;
+
+    const mat = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
     if (mat) {
       mat.emissive = new THREE.Color(0xffffff);
       mat.emissiveIntensity = 0.3;
@@ -442,24 +687,559 @@ function loadVideo(file) {
       }, 200);
     }
   });
-  
+
   video.addEventListener("error", () => {});
 }
 
-// Log camera values (press 'C' key)
-document.addEventListener("keydown", (e) => {
-  if (e.key === "c" || e.key === "C") {
-    const rig = document.querySelector("#rig");
-    const cam = document.querySelector("#cam");
-    if (rig && cam) {
-      const pos = rig.getAttribute("position");
-      const rot = cam.getAttribute("rotation");
-      console.log("Rig Position:", pos);
-      console.log("Camera Rotation:", rot);
-      console.log("Full config:", {
-        position: { x: pos.x, y: pos.y, z: pos.z },
-        rotation: { x: rot.x, y: rot.y, z: rot.z },
-      });
-    }
+// Generate navmesh from meshes with current settings
+function generateNavmeshFromMeshes() {
+  if (navmeshMeshes.length === 0 || !recastInitialized) return;
+
+  const { success, navMesh } = threeToSoloNavMesh(navmeshMeshes, {
+    cs: navmeshSettings.cellSize,
+    ch: navmeshSettings.cellHeight,
+    walkableRadius: navmeshSettings.walkableRadius,
+  });
+
+  if (success) {
+    navMeshQuery = new NavMeshQuery(navMesh);
+    console.log("Recast navmesh generated successfully with settings:", navmeshSettings);
+
+    // Optional: Add debug visualization
+    // if (navMeshHelper) {
+    //   scene.remove(navMeshHelper);
+    //   navMeshHelper.dispose();
+    // }
+    // navMeshHelper = new NavMeshHelper(navMesh);
+    // scene.add(navMeshHelper);
+  } else {
+    console.warn("Failed to generate recast navmesh");
   }
+}
+
+// Regenerate navmesh with new settings
+function regenerateNavmesh() {
+  console.log("Regenerating navmesh with new settings:", navmeshSettings);
+  generateNavmeshFromMeshes();
+}
+
+// Create GUI for color controls
+function createColorGUI() {
+  if (gui) {
+    gui.destroy();
+  }
+
+  if (fbxMeshes.length === 0) {
+    return;
+  }
+
+  gui = new GUI({ title: "FBX Colors" });
+  gui.domElement.style.position = "fixed";
+  gui.domElement.style.top = "20px";
+  gui.domElement.style.right = "20px";
+  gui.domElement.style.zIndex = "1000";
+  gui.domElement.style.maxHeight = "80vh";
+  gui.domElement.style.overflowY = "auto";
+
+  // Debug: Log what we have in savedColorSettings
+  console.log("Creating color GUI, savedColorSettings:", window.savedColorSettings);
+  console.log("fbxMeshes count:", fbxMeshes.length);
+
+  fbxMeshes.forEach((item, index) => {
+    const mesh = item.mesh;
+    const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+
+    if (!material) return;
+
+    if (!material.color) {
+      material.color = new THREE.Color(0xffffff);
+    }
+
+    // Check for saved color first, otherwise use current material color
+    // Use consistent naming: item.name or mesh_index
+    const meshName = item.name || `mesh_${index}`;
+    let colorToUse = material.color;
+
+    // Load saved color if available
+    if (window.savedColorSettings) {
+      console.log(`Checking for saved color: meshName="${meshName}", available keys:`, Object.keys(window.savedColorSettings));
+
+      if (window.savedColorSettings[meshName]) {
+        const savedColor = window.savedColorSettings[meshName];
+        colorToUse = new THREE.Color(savedColor.r, savedColor.g, savedColor.b);
+        // Apply saved color to material immediately
+        if (Array.isArray(mesh.material)) {
+          mesh.material.forEach((mat) => {
+            if (mat) {
+              mat.color = colorToUse;
+              mat.needsUpdate = true;
+            }
+          });
+        } else if (mesh.material) {
+          mesh.material.color = colorToUse;
+          mesh.material.needsUpdate = true;
+        }
+        console.log(`✓ Loaded saved color for "${meshName}":`, savedColor);
+      } else {
+        console.log(`✗ No saved color found for "${meshName}"`);
+      }
+    } else {
+      console.log(`No savedColorSettings available for "${meshName}"`);
+    }
+
+    const colorObj = {
+      color: `#${Math.floor(colorToUse.r * 255)
+        .toString(16)
+        .padStart(2, "0")}${Math.floor(colorToUse.g * 255)
+        .toString(16)
+        .padStart(2, "0")}${Math.floor(colorToUse.b * 255)
+        .toString(16)
+        .padStart(2, "0")}`,
+    };
+
+    const folder = gui.addFolder(item.name || `Mesh ${index + 1}`);
+    const colorControl = folder.addColor(colorObj, "color");
+
+    colorControl.onChange((value) => {
+      const newColor = new THREE.Color(value);
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach((mat) => {
+          if (mat) {
+            mat.color = newColor;
+            mat.needsUpdate = true;
+          }
+        });
+      } else if (mesh.material) {
+        mesh.material.color = newColor;
+        mesh.material.needsUpdate = true;
+      }
+      // Save color changes immediately
+      saveSettings();
+      console.log(`Color changed for ${meshName}, saved to localStorage`);
+    });
+
+    folder.open();
+  });
+
+  const resetObj = {
+    reset: () => {
+      fbxMeshes.forEach((item) => {
+        const mesh = item.mesh;
+        const material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
+        if (material) {
+          // Reset to original color from GLB file
+          material.color = item.originalColor.clone();
+          material.needsUpdate = true;
+        }
+      });
+      saveSettings(); // Save reset colors
+      createColorGUI();
+    },
+  };
+  gui.add(resetObj, "reset").name("Reset All Colors");
+
+  // Add movement settings
+  const movementFolder = gui.addFolder("Movement Settings");
+  movementFolder
+    .add({ moveSpeed }, "moveSpeed", 0.001, 0.2, 0.001)
+    .name("Move Speed")
+    .onChange((value) => {
+      moveSpeed = value;
+      saveSettings();
+    });
+  movementFolder
+    .add(cameraSettings, "sensitivity", 0.0001, 0.01, 0.0001)
+    .name("Mouse Sensitivity")
+    .onChange(() => {
+      saveSettings();
+    });
+  movementFolder
+    .add(cameraSettings, "rotationSpeed", 30, 360, 10)
+    .name("Q/E Rotation Speed (deg/sec)")
+    .onChange(() => {
+      saveSettings();
+    });
+  movementFolder.open();
+
+  // Add camera position/rotation settings
+  const cameraFolder = gui.addFolder("Camera Settings");
+
+  // Starting position
+  const startPosFolder = cameraFolder.addFolder("Starting Position");
+  startPosFolder
+    .add(startCameraPosition, "x")
+    .name("Start X")
+    .onChange(() => {
+      saveSettings();
+    });
+  startPosFolder
+    .add(startCameraPosition, "y")
+    .name("Start Y")
+    .onChange(() => {
+      saveSettings();
+    });
+  startPosFolder
+    .add(startCameraPosition, "z")
+    .name("Start Z")
+    .onChange(() => {
+      saveSettings();
+    });
+
+  // Starting rotation
+  const startRotFolder = cameraFolder.addFolder("Starting Rotation");
+  startRotFolder
+    .add(startCameraRotation, "x")
+    .name("Start Rot X")
+    .onChange(() => {
+      saveSettings();
+    });
+  startRotFolder
+    .add(startCameraRotation, "y")
+    .name("Start Rot Y")
+    .onChange(() => {
+      saveSettings();
+    });
+  startRotFolder
+    .add(startCameraRotation, "z")
+    .name("Start Rot Z")
+    .onChange(() => {
+      saveSettings();
+    });
+
+  // Current position (read-only, updated in animation loop)
+  const currentPosFolder = cameraFolder.addFolder("Current Position");
+  currentPosFolder.add(currentCameraPosition, "x").name("Current X").listen();
+  currentPosFolder.add(currentCameraPosition, "y").name("Current Y").listen();
+  currentPosFolder.add(currentCameraPosition, "z").name("Current Z").listen();
+
+  // Current rotation (read-only, updated in animation loop)
+  const currentRotFolder = cameraFolder.addFolder("Current Rotation");
+  currentRotFolder.add(currentCameraRotation, "x").name("Current Rot X").listen();
+  currentRotFolder.add(currentCameraRotation, "y").name("Current Rot Y").listen();
+  currentRotFolder.add(currentCameraRotation, "z").name("Current Rot Z").listen();
+
+  // Button to copy current to starting values
+  const cameraActions = {
+    copyCurrentToStart: () => {
+      startCameraPosition.x = currentCameraPosition.x;
+      startCameraPosition.y = currentCameraPosition.y;
+      startCameraPosition.z = currentCameraPosition.z;
+      startCameraRotation.x = currentCameraRotation.x;
+      startCameraRotation.y = currentCameraRotation.y;
+      startCameraRotation.z = currentCameraRotation.z;
+      saveSettings();
+      createColorGUI(); // Refresh GUI to show updated values
+    },
+    logCurrentValues: () => {
+      logCameraValues();
+    },
+  };
+
+  cameraFolder.add(cameraActions, "copyCurrentToStart").name("Copy Current → Start");
+  cameraFolder.add(cameraActions, "logCurrentValues").name("Log Current Values (Console)");
+
+  cameraFolder.open();
+}
+
+// Log camera values
+function logCameraValues() {
+  const pos = camera.position;
+  const rot = camera.rotation;
+  console.log("Camera Position:", { x: pos.x, y: pos.y, z: pos.z });
+  console.log("Camera Rotation:", { x: rot.x, y: rot.y, z: rot.z });
+  console.log("Full camera config:", {
+    position: { x: pos.x, y: pos.y, z: pos.z },
+    rotation: { x: rot.x, y: rot.y, z: rot.z },
+  });
+}
+
+// Initialize recast-navigation
+async function initRecast() {
+  if (recastInitialized) return;
+
+  try {
+    console.log("Initializing recast-navigation...");
+    await initRecastNavigation();
+    recastInitialized = true;
+    console.log("Recast-navigation initialized");
+    loadNavmesh();
+  } catch (error) {
+    console.error("Failed to initialize recast-navigation:", error);
+    // Continue without recast-navigation
+    recastInitialized = true; // Set to true to prevent retries
+  }
+}
+
+// Load navmesh - try to import pre-generated .bin file first, otherwise generate from GLTF
+async function loadNavmesh() {
+  if (!recastInitialized) {
+    await initRecast();
+    return;
+  }
+
+  // First, try to load pre-generated navmesh.bin file
+  try {
+    const response = await fetch("assets/models/navmesh.bin");
+    if (response.ok) {
+      const data = await response.arrayBuffer();
+      const navMeshData = new Uint8Array(data);
+
+      const { navMesh } = importNavMesh(navMeshData);
+      navMeshQuery = new NavMeshQuery(navMesh);
+      console.log("Pre-generated navmesh imported from navmesh.bin - ready for navigation");
+
+      // Verify navmesh is working by testing a query (after model loads)
+      if (modelLoaded) {
+        verifyNavmeshAtStartPosition();
+      }
+
+      return;
+    } else {
+      console.log("navmesh.bin not found (status:", response.status, "), will generate from GLTF");
+    }
+  } catch (error) {
+    console.log("navmesh.bin not found, will generate from GLTF:", error);
+  }
+
+  // Fallback: Load GLTF and generate navmesh from it
+  loadNavmeshGLTF();
+}
+
+// Load navmesh GLTF and generate recast navmesh from it
+function loadNavmeshGLTF() {
+  const gltfLoader = new GLTFLoader();
+  gltfLoader.load(
+    "assets/models/navmesh.gltf",
+    async (gltf) => {
+      navmesh = gltf.scene;
+      navmesh.scale.setScalar(1);
+      navmesh.visible = false;
+
+      // Collect all meshes from navmesh
+      navmesh.traverse((child) => {
+        if (child.isMesh) {
+          navmeshMeshes.push(child);
+          child.updateMatrixWorld();
+        }
+      });
+
+      scene.add(navmesh);
+      console.log("Navmesh GLTF loaded with", navmeshMeshes.length, "meshes");
+
+      // Generate recast navmesh from the loaded meshes
+      if (navmeshMeshes.length > 0) {
+        generateNavmeshFromMeshes();
+      }
+    },
+    undefined,
+    (error) => {
+      console.warn("Navmesh GLTF not found or failed to load:", error);
+      console.log("Movement will work without navmesh constraint");
+    }
+  );
+}
+
+// Verify navmesh at starting position
+function verifyNavmeshAtStartPosition() {
+  if (!navMeshQuery || !modelLoaded) return;
+
+  const feetPosition = {
+    x: camera.position.x,
+    y: camera.position.y - cameraHeight,
+    z: camera.position.z,
+  };
+
+  const testResult = navMeshQuery.findClosestPoint(feetPosition, {
+    halfExtents: { x: 5, y: 10, z: 5 },
+  });
+
+  if (testResult.success) {
+    console.log("Navmesh query test successful - player position is valid");
+    // Snap player to navmesh on load
+    camera.position.y = testResult.point.y + cameraHeight;
+  } else {
+    console.warn("Navmesh query test failed at starting position:", testResult.status);
+    console.warn("Player may not be on walkable surface. Position:", feetPosition);
+  }
+}
+
+// Constrain camera to navmesh surface using recast-navigation
+function constrainToNavmesh() {
+  if (!navMeshQuery) return;
+
+  // Find the closest point on the navmesh to the player's feet position
+  const feetPosition = {
+    x: camera.position.x,
+    y: camera.position.y - cameraHeight,
+    z: camera.position.z,
+  };
+
+  const result = navMeshQuery.findClosestPoint(feetPosition, {
+    halfExtents: { x: 5, y: 10, z: 5 }, // Larger search box for better results
+  });
+
+  if (result.success) {
+    // Set camera height based on navmesh surface
+    camera.position.y = result.point.y + cameraHeight;
+  }
+  // Silently fail if not found (player might be off navmesh temporarily)
+}
+
+// Movement controls
+const keys = {};
+let moveSpeed = 0.02;
+
+// Q/E rotation state for smooth rotation
+let qeRotationSpeed = 0; // radians per second
+
+window.addEventListener("keydown", (e) => {
+  keys[e.key.toLowerCase()] = true;
+  if (e.key === "c" || e.key === "C") {
+    logCameraValues();
+  }
+});
+
+window.addEventListener("keyup", (e) => {
+  keys[e.key.toLowerCase()] = false;
+  // Stop Q/E rotation when key is released
+  if (e.key === "q" || e.key === "Q" || e.key === "e" || e.key === "E") {
+    qeRotationSpeed = 0;
+  }
+});
+
+// Update movement - constrained to navmesh
+function updateMovement() {
+  // Update camera matrix before getting vectors
+  camera.updateMatrixWorld();
+
+  // Get movement direction vectors
+  const forward = new THREE.Vector3();
+  forward.setFromMatrixColumn(camera.matrixWorld, 2);
+  forward.multiplyScalar(-1);
+  forward.normalize();
+
+  const right = new THREE.Vector3();
+  right.setFromMatrixColumn(camera.matrixWorld, 0);
+  right.normalize();
+
+  const movement = new THREE.Vector3();
+
+  if (keys["w"]) movement.add(forward.clone().multiplyScalar(moveSpeed));
+  if (keys["s"]) movement.add(forward.clone().multiplyScalar(-moveSpeed));
+  if (keys["a"]) movement.add(right.clone().multiplyScalar(-moveSpeed));
+  if (keys["d"]) movement.add(right.clone().multiplyScalar(moveSpeed));
+
+  if (movement.length() === 0) return;
+
+  // If navmesh is loaded, constrain movement to it using recast-navigation
+  if (navMeshQuery) {
+    // Calculate new position
+    const newPosition = camera.position.clone();
+    newPosition.x += movement.x;
+    newPosition.z += movement.z;
+
+    // Find closest valid point on navmesh for the new position (at feet level)
+    const feetPosition = {
+      x: newPosition.x,
+      y: newPosition.y - cameraHeight,
+      z: newPosition.z,
+    };
+
+    const result = navMeshQuery.findClosestPoint(feetPosition, {
+      halfExtents: { x: 5, y: 10, z: 5 }, // Larger search box
+    });
+
+    if (result.success) {
+      // Move to the valid point on navmesh
+      camera.position.x = result.point.x;
+      camera.position.y = result.point.y + cameraHeight;
+      camera.position.z = result.point.z;
+    } else {
+      // If direct movement failed, try sliding along X or Z axis separately
+      const tryX = navMeshQuery.findClosestPoint(
+        { x: newPosition.x, y: camera.position.y - cameraHeight, z: camera.position.z },
+        { halfExtents: { x: 5, y: 10, z: 5 } }
+      );
+
+      if (tryX.success) {
+        camera.position.x = tryX.point.x;
+        camera.position.y = tryX.point.y + cameraHeight;
+      } else {
+        // Try Z axis
+        const tryZ = navMeshQuery.findClosestPoint(
+          { x: camera.position.x, y: camera.position.y - cameraHeight, z: newPosition.z },
+          { halfExtents: { x: 5, y: 10, z: 5 } }
+        );
+
+        if (tryZ.success) {
+          camera.position.z = tryZ.point.z;
+          camera.position.y = tryZ.point.y + cameraHeight;
+        }
+        // If both fail, stay in place (movement blocked)
+      }
+    }
+  } else {
+    // No navmesh loaded, free movement
+    camera.position.add(movement);
+  }
+}
+
+// Animation loop
+let lastTime = performance.now();
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  const currentTime = performance.now();
+  const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+  lastTime = currentTime;
+
+  // Update Q/E rotation speed based on keys (like facingworlds - smooth continuous rotation)
+  if (keys["q"] || keys["Q"]) {
+    qeRotationSpeed = -cameraSettings.rotationSpeed * (Math.PI / 180); // Convert degrees/sec to radians/sec
+  } else if (keys["e"] || keys["E"]) {
+    qeRotationSpeed = cameraSettings.rotationSpeed * (Math.PI / 180);
+  } else {
+    qeRotationSpeed = 0;
+  }
+
+  // Apply smooth Q/E rotation using deltaTime (like facingworlds tick function)
+  if (qeRotationSpeed !== 0 && modelLoaded) {
+    const rotationStep = qeRotationSpeed * deltaTime;
+    euler.y += rotationStep;
+    camera.quaternion.setFromEuler(euler);
+  }
+
+  updateMovement();
+
+  // Constrain player to navmesh even when not moving (handles falling, etc.)
+  if (navMeshQuery && modelLoaded) {
+    constrainToNavmesh();
+  }
+
+  // Update current camera values for GUI display
+  currentCameraPosition.x = camera.position.x;
+  currentCameraPosition.y = camera.position.y;
+  currentCameraPosition.z = camera.position.z;
+  currentCameraRotation.x = camera.rotation.x;
+  currentCameraRotation.y = camera.rotation.y;
+  currentCameraRotation.z = camera.rotation.z;
+
+  // Update player indicator position
+  playerIndicator.position.copy(camera.position);
+  playerIndicator.position.y -= cameraHeight / 2;
+
+  if (currentVideoTexture && currentVideo && !currentVideo.paused) {
+    currentVideoTexture.needsUpdate = true;
+  }
+
+  renderer.render(scene, camera);
+}
+animate();
+
+// Handle window resize
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });

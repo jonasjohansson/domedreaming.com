@@ -28,10 +28,6 @@
     <link
       rel="stylesheet"
       href="assets/styles.css" />
-
-    <!-- Load A-Frame and Extras from local files -->
-    <script src="./assets/libraries/aframe/aframe.min.js"></script>
-    <script src="./assets/libraries/aframe-extras.min.js"></script>
   </head>
   <body>
     <div id="canvas-container">
@@ -41,80 +37,6 @@
         <div>Loading 3D model...</div>
       </div>
     </div>
-
-    <a-scene
-      inspector="enabled: true; url: https://cdn.jsdelivr.net/gh/aframevr/aframe-inspector@master/dist/aframe-inspector.min.js"
-      loading-screen="enabled: false"
-      xr-mode-ui="enabled: false"
-      renderer="colorManagement: true; physicallyCorrectLights: true; antialias: true">
-      <a-assets>
-        <a-asset-item
-          id="wisdome-gltf"
-          src="assets/models/wisdome.glb"></a-asset-item>
-        <a-asset-item
-          id="navmesh-gltf"
-          src="assets/models/navmesh.gltf"></a-asset-item>
-        <img
-          id="background-img"
-          src="assets/media/background.jpg" />
-      </a-assets>
-
-      <!-- Lighting -->
-      <a-entity
-        light="type: ambient; intensity: 1.0; color: #ffffff"
-        position="0 0 0"></a-entity>
-      <a-entity
-        light="type: directional; intensity: 1.0; color: #ffffff; castShadow: true"
-        position="10 10 5"></a-entity>
-      <a-entity
-        light="type: point; intensity: 0.8; color: #ffffff"
-        position="-10 5 -5"></a-entity>
-      <a-entity
-        light="type: hemisphere; intensity: 0.6; groundColor: #444444; color: #ffffff"
-        position="0 0 0"></a-entity>
-
-      <!-- Wisdome Model -->
-      <a-entity
-        id="wisdome"
-        gltf-model="#wisdome-gltf"
-        position="0 0 0"
-        rotation="0 0 0"
-        scale="1 1 1"
-        wisdome-model></a-entity>
-
-      <!-- Navmesh (hidden, used for navigation) -->
-      <a-entity
-        id="navmesh"
-        gltf-model="#navmesh-gltf"
-        nav-mesh
-        visible="false"
-        position="0 0 0"
-        rotation="0 0 0"
-        scale="1 1 1"></a-entity>
-
-      <!-- Player Rig (moves and rotates) -->
-      <a-entity
-        id="rig"
-        movement-controls="constrainToNavMesh: true; speed: 0.1; fly: false"
-        position="0 0 0">
-        <!-- Player Avatar (Red Cylinder) - child of rig, moves with it -->
-        <a-entity
-          id="player-avatar"
-          geometry="primitive: cylinder; radius: 0.1; height: 0.5"
-          material="color: #ff0000"
-          position="0 0.25 0"
-          visible="true"
-          rotation="0 0 0"></a-entity>
-
-        <!-- Camera (child of rig, follows movement and rotation) -->
-        <a-entity
-          id="cam"
-          camera="active: true"
-          look-controls="enabled: true"
-          position="0 1.7 0"
-          wasd-controls="enabled: false"></a-entity>
-      </a-entity>
-    </a-scene>
 
     <div id="info-panel">
       <h1>DOME DREAMING</h1>
@@ -352,7 +274,19 @@
       </div>
     </div>
 
-    <!-- Load A-Frame components and game logic -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+          "@recast-navigation/core": "https://unpkg.com/@recast-navigation/core@0.38.0/dist/index.mjs",
+          "@recast-navigation/wasm": "https://unpkg.com/@recast-navigation/wasm@0.38.0/dist/recast-navigation.wasm-compat.js",
+          "@recast-navigation/generators": "https://unpkg.com/@recast-navigation/generators@0.38.0/dist/index.mjs",
+          "@recast-navigation/three": "https://unpkg.com/@recast-navigation/three@0.38.0/dist/index.mjs"
+        }
+      }
+    </script>
+
     <script
       type="module"
       src="assets/main.js"></script>
