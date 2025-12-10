@@ -179,6 +179,71 @@ function onMouseMove(event) {
 
 canvas.addEventListener("mousemove", onMouseMove);
 
+// Touch support for mobile camera rotation
+let touchStartX = 0;
+let touchStartY = 0;
+let isTouching = false;
+
+canvas.addEventListener(
+  "touchstart",
+  (event) => {
+    if (!modelLoaded) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+    isTouching = true;
+
+    // Sync euler with current camera rotation when touch starts (prevents jump/flip)
+    euler.setFromQuaternion(camera.quaternion);
+  },
+  { passive: false }
+);
+
+canvas.addEventListener(
+  "touchmove",
+  (event) => {
+    if (!isTouching || !modelLoaded) return;
+    event.preventDefault();
+    const touch = event.touches[0];
+
+    const deltaX = touch.clientX - touchStartX;
+    const deltaY = touch.clientY - touchStartY;
+
+    // Apply rotation similar to mouse movement
+    euler.y -= deltaX * cameraSettings.sensitivity;
+    euler.x -= deltaY * cameraSettings.sensitivity;
+
+    // Clamp pitch to prevent flipping
+    euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+
+    camera.quaternion.setFromEuler(euler);
+
+    // Update touch start position for next move
+    touchStartX = touch.clientX;
+    touchStartY = touch.clientY;
+  },
+  { passive: false }
+);
+
+canvas.addEventListener(
+  "touchend",
+  (event) => {
+    event.preventDefault();
+    isTouching = false;
+  },
+  { passive: false }
+);
+
+canvas.addEventListener(
+  "touchcancel",
+  (event) => {
+    event.preventDefault();
+    isTouching = false;
+  },
+  { passive: false }
+);
+
 // Cinema-style lighting setup (inspired by klp project)
 // Low ambient light for moody atmosphere
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.15);
