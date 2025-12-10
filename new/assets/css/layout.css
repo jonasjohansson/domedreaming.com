@@ -21,6 +21,8 @@
 
 canvas {
   cursor: default !important;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
 #info-panel {
@@ -31,7 +33,6 @@ canvas {
   padding: 60px 40px;
   font-family: "Inter Tight", sans-serif;
   min-height: 50vh;
-  transition: background-color 1s ease, color 1s ease;
 }
 
 #info-panel .section {

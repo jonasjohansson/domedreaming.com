@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import GUI from "https://cdn.jsdelivr.net/npm/lil-gui@0.21/+esm";
+import GUI from "./libs/lil-gui/lil-gui.esm.min.js";
 import { getMaterial, colorToHex } from "./utils.js";
 import * as settings from "./settings.js";
 import { camera } from "./scene.js";
@@ -13,15 +13,7 @@ export function createColorGUI() {
 
   if (fbxMeshes.length === 0) return;
 
-  gui = new GUI({ title: "Scene Controls" });
-  gui.domElement.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    z-index: 1000;
-    max-height: 80vh;
-    overflow-y: auto;
-  `;
+  gui = new GUI({ title: "Scene Controls", autoPlace: true });
 
   // Day/Night mode toggle
   const modeActions = {

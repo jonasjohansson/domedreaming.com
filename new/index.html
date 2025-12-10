@@ -23,13 +23,13 @@
       href="https://fonts.gstatic.com"
       crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Domine:wght@400..700&family=EB+Garamond:ital,wght@0,400..800;1,400..800&family=Inter+Tight:ital,wght@0,100..900;1,100..900&family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap"
-      rel="stylesheet" />
-    <link
       rel="stylesheet"
       href="assets/css/main.css" />
+    <link
+      rel="stylesheet"
+      href="assets/css/gui.css" />
   </head>
-  <body>
+  <body class="day-mode">
     <div id="canvas-container">
       <div id="drop-zone"></div>
       <div id="loading">
@@ -38,7 +38,9 @@
       </div>
     </div>
 
-    <div id="info-panel">
+    <div
+      id="info-panel"
+      class="day-mode">
       <h1>DOME DREAMING</h1>
       <p>
         DOME DREAMING is an interdisciplinary festival divided between Wisdome Stockholm and Malmö, two newly built state-of-the-art domes.
@@ -296,8 +298,10 @@
     <script type="importmap">
       {
         "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+          "three": "./assets/js/libs/three/three.module.js",
+          "three/addons/loaders/": "./assets/js/libs/three/",
+          "three/addons/utils/": "./assets/js/libs/utils/",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/",
           "@recast-navigation/core": "https://unpkg.com/@recast-navigation/core@0.38.0/dist/index.mjs",
           "@recast-navigation/wasm": "https://unpkg.com/@recast-navigation/wasm@0.38.0/dist/recast-navigation.wasm-compat.js",
           "@recast-navigation/generators": "https://unpkg.com/@recast-navigation/generators@0.38.0/dist/index.mjs",

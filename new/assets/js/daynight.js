@@ -1,36 +1,13 @@
-import { canvasContainer } from "./scene.js";
 import * as settings from "./settings.js";
 import { setIsNightMode } from "./settings.js";
 import { glbLights } from "./model.js";
 
-let gradientOverlay = null;
-
 export function createGradientOverlay() {
-  const gradient = document.createElement("div");
-  gradient.id = "gradient-overlay";
-  gradient.style.cssText = `
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 30%;
-    pointer-events: none;
-    z-index: 100;
-    transition: background 1s ease;
-  `;
-  updateGradientOverlay();
-  canvasContainer.appendChild(gradient);
-  gradientOverlay = gradient;
+  // Gradients removed - no longer needed
 }
 
 export function updateGradientOverlay() {
-  if (!gradientOverlay) return;
-
-  if (settings.isNightMode) {
-    gradientOverlay.style.background = "linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%)";
-  } else {
-    gradientOverlay.style.background = "linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0) 100%)";
-  }
+  // Gradients removed - no longer needed
 }
 
 export function updateLightingForMode(glbLights) {
@@ -60,34 +37,21 @@ export function updateSiteColors() {
 
   if (settings.isNightMode) {
     // Night mode: black background, white text
-    body.style.backgroundColor = "#000000";
-    body.style.color = "#ffffff";
-    infoPanel.style.backgroundColor = "#000000";
-    infoPanel.style.color = "#ffffff";
-
-    // Update all text elements in info panel
-    const textElements = infoPanel.querySelectorAll("h1, h2, h3, p, strong");
-    textElements.forEach((el) => {
-      el.style.color = "#ffffff";
-    });
+    body.classList.remove("day-mode");
+    body.classList.add("night-mode");
+    infoPanel.classList.remove("day-mode");
+    infoPanel.classList.add("night-mode");
   } else {
-    // Day mode: white background, black text
-    body.style.backgroundColor = "#000000"; // Keep body black (canvas background)
-    body.style.color = "#ffffff";
-    infoPanel.style.backgroundColor = "#ffffff";
-    infoPanel.style.color = "#000000";
-
-    // Update all text elements in info panel
-    const textElements = infoPanel.querySelectorAll("h1, h2, h3, p, strong");
-    textElements.forEach((el) => {
-      el.style.color = "#000000";
-    });
+    // Day mode: white background, black text (default)
+    body.classList.remove("night-mode");
+    body.classList.add("day-mode");
+    infoPanel.classList.remove("night-mode");
+    infoPanel.classList.add("day-mode");
   }
 }
 
 export function toggleDayNightMode(createColorGUICallback) {
   setIsNightMode(!settings.isNightMode);
-  updateGradientOverlay();
   if (glbLights && glbLights.length > 0) {
     updateLightingForMode(glbLights);
   }
