@@ -13,6 +13,7 @@ export let wisdomeModel = null;
 export let fbxMeshes = [];
 export let glbLights = [];
 export let glbLightsGroup = null;
+export let hotspots = [];
 
 export function loadModel(createColorGUI) {
   const loader = new GLTFLoader();
@@ -90,6 +91,28 @@ export function loadModel(createColorGUI) {
       } else {
         console.log("No lights found in GLB file. Lights GUI will not be available.");
       }
+
+      // Find and store hotspots
+      safeTraverse(object, (child) => {
+        // Look for "Hotspots" group/empty axis
+        if (child.name === "Hotspots") {
+          safeTraverse(child, (hotspotChild) => {
+            // Look for "Hotspot.001" or any object with "Hotspot" in the name
+            if (hotspotChild.name === "Hotspot.001" || hotspotChild.name.includes("Hotspot")) {
+              // Get world position
+              const worldPosition = new THREE.Vector3();
+              hotspotChild.getWorldPosition(worldPosition);
+              hotspots.push({
+                object: hotspotChild,
+                position: worldPosition,
+                name: hotspotChild.name,
+                triggered: false,
+              });
+              console.log(`Found hotspot: ${hotspotChild.name} at position:`, worldPosition);
+            }
+          });
+        }
+      });
 
       // Process meshes
       safeTraverse(object, (child) => {

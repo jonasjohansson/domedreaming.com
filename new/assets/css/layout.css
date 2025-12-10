@@ -35,7 +35,44 @@ canvas {
   min-height: 50vh;
 }
 
+#info-panel .content-wrapper {
+  column-count: 1;
+  column-gap: 40px;
+  column-fill: balance;
+}
+
 #info-panel .section {
-  max-width: 800px;
-  margin: 0 auto 40px auto;
+  margin: 0 0 40px 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Tablet and up - 2 columns */
+@media (min-width: 768px) {
+  #info-panel .content-wrapper {
+    column-count: 2;
+  }
+}
+
+/* Desktop - 3 columns */
+@media (min-width: 1024px) {
+  #info-panel .content-wrapper {
+    column-count: 3;
+  }
+}
+
+/* Large desktop - 4 columns */
+@media (min-width: 1440px) {
+  #info-panel .content-wrapper {
+    column-count: 4;
+  }
+}
+
+/* Prevent breaking inside headings and paragraphs */
+#info-panel h1,
+#info-panel h2,
+#info-panel h3,
+#info-panel p {
+  break-inside: avoid;
+  page-break-inside: avoid;
 }

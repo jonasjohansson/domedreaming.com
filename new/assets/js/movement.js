@@ -3,6 +3,7 @@ import { camera } from "./scene.js";
 import { CAMERA_HEIGHT, NAVMESH_SEARCH_BOX } from "./config.js";
 import { moveSpeed, cameraSettings } from "./settings.js";
 import { keys, qeRotationSpeed, euler, modelLoaded, setQeRotationSpeed } from "./camera.js";
+import { hotspots } from "./model.js";
 
 let navMeshQuery = null;
 
@@ -97,5 +98,38 @@ export function updateRotation(deltaTime) {
   if (qeRotationSpeed !== 0 && modelLoaded) {
     euler.y += qeRotationSpeed * deltaTime;
     camera.quaternion.setFromEuler(euler);
+  }
+}
+
+export function checkHotspots() {
+  if (!modelLoaded || !hotspots || hotspots.length === 0) return;
+
+  const HOTSPOT_TRIGGER_DISTANCE = 0.4; // Distance in units to trigger hotspot (avatar walking over it)
+
+  // Iterate backwards to safely remove items
+  for (let i = hotspots.length - 1; i >= 0; i--) {
+    const hotspot = hotspots[i];
+    if (!hotspot || !hotspot.object || hotspot.triggered) continue; // Already removed or triggered
+
+    // Calculate horizontal distance (ignore Y difference for walking over)
+    const dx = camera.position.x - hotspot.position.x;
+    const dz = camera.position.z - hotspot.position.z;
+    const horizontalDistance = Math.sqrt(dx * dx + dz * dz);
+
+    if (horizontalDistance < HOTSPOT_TRIGGER_DISTANCE) {
+      // Mark as triggered immediately to prevent multiple alerts
+      hotspot.triggered = true;
+
+      // Remove hotspot from scene
+      if (hotspot.object.parent) {
+        hotspot.object.parent.remove(hotspot.object);
+      }
+      // Remove from array
+      hotspots.splice(i, 1);
+      // Show alert (only once)
+      alert("");
+      console.log(`Hotspot ${hotspot.name} triggered and removed`);
+      break; // Exit loop after triggering one hotspot
+    }
   }
 }

@@ -6,7 +6,7 @@ import { setupDragAndDrop } from "./texture.js";
 import { createGradientOverlay, updateSiteColors } from "./daynight.js";
 import { loadModel } from "./model.js";
 import { createColorGUI } from "./gui.js";
-import { updateMovement, constrainToNavmesh, updateRotation } from "./movement.js";
+import { updateMovement, constrainToNavmesh, updateRotation, checkHotspots } from "./movement.js";
 import { getNavMeshQuery } from "./navmesh.js";
 import { getCurrentVideoTexture, getCurrentVideo } from "./texture.js";
 import { currentCameraPosition, currentCameraRotation } from "./settings.js";
@@ -37,6 +37,11 @@ function animate() {
   const navMeshQuery = getNavMeshQuery();
   if (navMeshQuery && modelLoaded) {
     constrainToNavmesh();
+  }
+
+  // Check for hotspot proximity
+  if (modelLoaded) {
+    checkHotspots();
   }
 
   // Update GUI values
