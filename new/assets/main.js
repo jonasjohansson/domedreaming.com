@@ -285,7 +285,7 @@ const playerMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000 });
 const playerIndicator = new THREE.Mesh(playerGeometry, playerMaterial);
 playerIndicator.position.copy(camera.position);
 playerIndicator.position.y -= cameraHeight / 2;
-playerIndicator.visible = true;
+playerIndicator.visible = false; // hide debug player indicator
 scene.add(playerIndicator);
 
 // Load Wisdome model
