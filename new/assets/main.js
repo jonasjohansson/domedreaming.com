@@ -427,6 +427,7 @@ loader.load(
           texture.wrapS = THREE.RepeatWrapping;
           texture.wrapT = THREE.RepeatWrapping;
           texture.repeat.x = -1; // Flip horizontally (X axis)
+          texture.colorSpace = THREE.SRGBColorSpace; // Preserve color saturation
           texture.needsUpdate = true;
 
           const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
@@ -439,10 +440,13 @@ loader.load(
             if (material.emissiveMap) material.emissiveMap.dispose();
             material.map = texture;
             material.emissiveMap = texture;
-            material.emissive = preservedColor; // Use preserved color instead of forcing white
+            material.emissive = preservedColor;
             material.emissiveIntensity = 1.0;
-            material.color = preservedColor; // Preserve the color
+            material.color = preservedColor;
+            material.toneMapped = false; // keep brightness with ACES tone mapping
             material.needsUpdate = true;
+            material.transparent = false;
+            material.opacity = 1.0;
           } else {
             screenObject.material = new THREE.MeshStandardMaterial({
               map: texture,
@@ -634,6 +638,7 @@ function loadImage(file) {
         texture.wrapS = THREE.RepeatWrapping;
         texture.wrapT = THREE.RepeatWrapping;
         texture.repeat.x = -1; // Flip horizontally (X axis)
+        texture.colorSpace = THREE.SRGBColorSpace; // Preserve color saturation
         texture.needsUpdate = true;
 
         const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
@@ -653,6 +658,9 @@ function loadImage(file) {
           material.needsUpdate = true;
           material.transparent = false;
           material.opacity = 1.0;
+
+          // Ensure texture colors are not washed out - use sRGB encoding
+          texture.colorSpace = THREE.SRGBColorSpace;
         } else {
           screenObject.material = new THREE.MeshStandardMaterial({
             map: texture,
@@ -722,6 +730,7 @@ function loadVideo(file) {
     videoTexture.wrapS = THREE.RepeatWrapping;
     videoTexture.wrapT = THREE.RepeatWrapping;
     videoTexture.repeat.x = -1; // Flip horizontally (X axis)
+    videoTexture.colorSpace = THREE.SRGBColorSpace; // Preserve color saturation
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
 
