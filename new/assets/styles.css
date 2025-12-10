@@ -83,6 +83,7 @@ canvas {
     padding: 60px 40px;
     font-family: 'Inter', sans-serif;
     min-height: 50vh;
+    transition: background-color 1s ease, color 1s ease;
 }
 
 #info-panel h1 {
@@ -94,6 +95,7 @@ canvas {
     margin-left: auto;
     margin-right: auto;
     color: #000000;
+    transition: color 1s ease;
 }
 
 #info-panel h2 {
@@ -106,6 +108,7 @@ canvas {
     margin-left: auto;
     margin-right: auto;
     color: #000000;
+    transition: color 1s ease;
 }
 
 #info-panel p {
@@ -115,6 +118,7 @@ canvas {
     max-width: 800px;
     margin: 0 auto 20px auto;
     color: #000000;
+    transition: color 1s ease;
 }
 
 #info-panel .section {
@@ -124,10 +128,12 @@ canvas {
 
 #info-panel h3 {
     color: #000000;
+    transition: color 1s ease;
 }
 
 #info-panel strong {
     color: #000000;
     font-weight: 500;
+    transition: color 1s ease;
 }
 
