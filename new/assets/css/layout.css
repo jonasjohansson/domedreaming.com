@@ -2,6 +2,12 @@
   width: 100vw;
   height: 100vh;
   position: relative;
+  opacity: 0;
+  transition: opacity 0.5s ease-in;
+}
+
+#canvas-container.loaded {
+  opacity: 1;
 }
 
 #drop-zone {
@@ -33,6 +39,12 @@ canvas {
   padding: 60px 40px;
   font-family: "Inter Tight", sans-serif;
   min-height: 50vh;
+  opacity: 0;
+  transition: opacity 0.5s ease-in;
+}
+
+#info-panel.loaded {
+  opacity: 1;
 }
 
 #info-panel .content-wrapper {

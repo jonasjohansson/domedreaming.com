@@ -4,7 +4,6 @@ import { getMaterial, colorToHex } from "./utils.js";
 import * as settings from "./settings.js";
 import { camera } from "./scene.js";
 import { fbxMeshes, glbLights } from "./model.js";
-import { toggleDayNightMode } from "./daynight.js";
 
 let gui = null;
 
@@ -14,14 +13,6 @@ export function createColorGUI() {
   if (fbxMeshes.length === 0) return;
 
   gui = new GUI({ title: "Scene Controls", autoPlace: true });
-
-  // Day/Night mode toggle
-  const modeActions = {
-    toggleMode: () => {
-      toggleDayNightMode(createColorGUI);
-    },
-  };
-  gui.add(modeActions, "toggleMode").name(settings.isNightMode ? "Switch to Day" : "Switch to Night");
 
   // Mesh colors
   const meshFolder = gui.addFolder("Mesh Colors");
@@ -91,8 +82,8 @@ export function createColorGUI() {
       const lightName = light.name || `Light ${index + 1}`;
       const lightType = light.constructor.name || "Light";
 
-      // Store original intensity for night mode calculations
-      const originalIntensity = light.intensity / (settings.isNightMode ? 0.1 : 1.0);
+      // Store original intensity
+      const originalIntensity = light.intensity;
 
       const lightObj = {
         color: colorToHex(light.color),
@@ -109,8 +100,7 @@ export function createColorGUI() {
       });
 
       intensityControl.onChange((value) => {
-        // Apply intensity with night mode multiplier if needed
-        light.intensity = settings.isNightMode ? value * 0.1 : value;
+        light.intensity = value;
         settings.saveSettings(fbxMeshes, glbLights);
       });
 
@@ -123,11 +113,13 @@ export function createColorGUI() {
 
   // Movement settings
   const movementFolder = gui.addFolder("Movement Settings");
+  const moveSpeedObj = { moveSpeed: settings.moveSpeed };
   movementFolder
-    .add({ moveSpeed: settings.moveSpeed }, "moveSpeed", 0.001, 0.2, 0.001)
+    .add(moveSpeedObj, "moveSpeed", 0.001, 0.2, 0.001)
     .name("Move Speed")
     .onChange((value) => {
-      settings.moveSpeed = value;
+      settings.setMoveSpeed(value);
+      moveSpeedObj.moveSpeed = value; // Keep GUI in sync
       settings.saveSettings(fbxMeshes, glbLights);
     });
   movementFolder

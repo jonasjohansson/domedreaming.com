@@ -3,13 +3,14 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: white;
-  font-size: 18px;
   z-index: 200;
+  opacity: 1;
+  transition: opacity 0.5s ease-out;
 }
 
 #loading.hidden {
-  display: none;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .spinner {
@@ -58,6 +59,17 @@
 
 #info-panel h3 {
   color: #000000;
+}
+
+#info-panel .challenge-title {
+  font-size: 14px;
+  font-weight: 300;
+  margin-top: 30px;
+  margin-bottom: 10px;
+}
+
+#info-panel .section-footer {
+  margin-top: 30px;
 }
 
 #info-panel strong {

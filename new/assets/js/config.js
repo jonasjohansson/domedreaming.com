@@ -11,3 +11,4 @@ export const SCREEN_MATERIAL_SETTINGS = {
   transparent: false,
   opacity: 1.0,
 };
+

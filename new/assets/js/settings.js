@@ -16,6 +16,10 @@ export function setIsNightMode(value) {
   isNightMode = value;
 }
 
+export function setMoveSpeed(value) {
+  moveSpeed = value;
+}
+
 export function loadSettings() {
   try {
     const saved = localStorage.getItem("domeDreamingSettings");
@@ -98,3 +102,4 @@ export function saveSettings(fbxMeshes, glbLights) {
     console.warn("Failed to save settings:", error);
   }
 }
+

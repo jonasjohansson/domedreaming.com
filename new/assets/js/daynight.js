@@ -61,3 +61,4 @@ export function toggleDayNightMode(createColorGUICallback) {
     createColorGUICallback();
   }
 }
+

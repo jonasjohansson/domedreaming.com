@@ -113,3 +113,4 @@ export function verifyNavmeshAtStartPosition() {
 export function initNavmesh() {
   initRecast().catch(console.error);
 }
+

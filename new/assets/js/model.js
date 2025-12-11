@@ -6,7 +6,6 @@ import * as settings from "./settings.js";
 import { euler, setModelLoaded } from "./camera.js";
 import { setScreenObject } from "./texture.js";
 import { loadDefaultScreenTexture } from "./texture.js";
-import { updateLightingForMode } from "./daynight.js";
 import { verifyNavmeshAtStartPosition, initNavmesh, getNavMeshQuery } from "./navmesh.js";
 
 export let wisdomeModel = null;
@@ -82,9 +81,6 @@ export function loadModel(createColorGUI) {
             if (saved) {
               light.color.setRGB(saved.r, saved.g, saved.b);
               light.intensity = saved.intensity;
-              if (settings.isNightMode) {
-                light.intensity *= 0.1;
-              }
             }
           });
         }
@@ -190,7 +186,15 @@ export function loadModel(createColorGUI) {
       }
 
       scene.add(object);
-      loadingDiv.classList.add("hidden");
+
+      // Fade in the site
+      setTimeout(() => {
+        loadingDiv.classList.add("hidden");
+        const canvasContainer = document.getElementById("canvas-container");
+        const infoPanel = document.getElementById("info-panel");
+        if (canvasContainer) canvasContainer.classList.add("loaded");
+        if (infoPanel) infoPanel.classList.add("loaded");
+      }, 300);
 
       // Set camera position
       camera.position.set(settings.startCameraPosition.x, settings.startCameraPosition.y, settings.startCameraPosition.z);

@@ -3,7 +3,6 @@ import { loadSettings } from "./settings.js";
 import { setupLighting } from "./lighting.js";
 import { setupCameraControls, setModelLoaded } from "./camera.js";
 import { setupDragAndDrop } from "./texture.js";
-import { createGradientOverlay, updateSiteColors } from "./daynight.js";
 import { loadModel } from "./model.js";
 import { createColorGUI } from "./gui.js";
 import { updateMovement, constrainToNavmesh, updateRotation, checkHotspots } from "./movement.js";
@@ -17,8 +16,6 @@ loadSettings();
 setupLighting();
 setupCameraControls();
 setupDragAndDrop();
-createGradientOverlay();
-updateSiteColors();
 loadModel(createColorGUI);
 
 // Animation loop

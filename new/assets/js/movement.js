@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { camera } from "./scene.js";
 import { CAMERA_HEIGHT, NAVMESH_SEARCH_BOX } from "./config.js";
-import { moveSpeed, cameraSettings } from "./settings.js";
+import * as settings from "./settings.js";
 import { keys, qeRotationSpeed, euler, modelLoaded, setQeRotationSpeed } from "./camera.js";
 import { hotspots } from "./model.js";
 
@@ -23,10 +23,11 @@ export function updateMovement() {
   right.normalize();
 
   const movement = new THREE.Vector3();
-  if (keys["w"]) movement.add(forward.clone().multiplyScalar(moveSpeed));
-  if (keys["s"]) movement.add(forward.clone().multiplyScalar(-moveSpeed));
-  if (keys["a"]) movement.add(right.clone().multiplyScalar(-moveSpeed));
-  if (keys["d"]) movement.add(right.clone().multiplyScalar(moveSpeed));
+  const currentMoveSpeed = settings.moveSpeed;
+  if (keys["w"]) movement.add(forward.clone().multiplyScalar(currentMoveSpeed));
+  if (keys["s"]) movement.add(forward.clone().multiplyScalar(-currentMoveSpeed));
+  if (keys["a"]) movement.add(right.clone().multiplyScalar(-currentMoveSpeed));
+  if (keys["d"]) movement.add(right.clone().multiplyScalar(currentMoveSpeed));
 
   if (movement.length() === 0) return;
 
@@ -88,9 +89,9 @@ export function constrainToNavmesh() {
 export function updateRotation(deltaTime) {
   // Q/E rotation
   if (keys["q"] || keys["Q"]) {
-    setQeRotationSpeed(-cameraSettings.rotationSpeed * (Math.PI / 180));
+    setQeRotationSpeed(-settings.cameraSettings.rotationSpeed * (Math.PI / 180));
   } else if (keys["e"] || keys["E"]) {
-    setQeRotationSpeed(cameraSettings.rotationSpeed * (Math.PI / 180));
+    setQeRotationSpeed(settings.cameraSettings.rotationSpeed * (Math.PI / 180));
   } else {
     setQeRotationSpeed(0);
   }
@@ -133,3 +134,4 @@ export function checkHotspots() {
     }
   }
 }
+
