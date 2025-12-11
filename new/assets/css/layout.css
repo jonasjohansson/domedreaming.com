@@ -59,6 +59,149 @@ canvas {
   page-break-inside: avoid;
 }
 
+/* Hero */
+.hero {
+  max-width: 960px;
+  margin: 0 auto 60px auto;
+  text-align: center;
+  break-inside: avoid;
+  padding: 80px 20px 40px 20px;
+}
+
+.hero-logo {
+  margin-bottom: 50px;
+}
+
+.hero-logo img {
+  width: 300px;
+  height: 300px;
+  margin: 0 auto;
+  display: block;
+  object-fit: contain;
+}
+
+.hero-text {
+  display: grid;
+  gap: 20px;
+  justify-items: center;
+}
+
+.hero .intro-text {
+  max-width: 720px;
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.hero .intro-text a {
+  color: #000000;
+  text-decoration: underline;
+}
+
+.hero .intro-text a:hover {
+  text-decoration: none;
+}
+
+/* Team intro text */
+.team-intro {
+  margin: 60px 0;
+  text-align: center;
+  break-inside: avoid;
+}
+
+.team-intro-text {
+  font-size: 32px;
+  font-weight: 300;
+  line-height: 1.6;
+  max-width: 800px;
+  margin: 0 auto;
+  color: #000000;
+}
+
+/* Team section */
+.team-section {
+  margin: 60px 0;
+  break-inside: avoid;
+}
+
+.team-section h2 {
+  margin-bottom: 40px;
+}
+
+.team-group {
+  margin-bottom: 50px;
+}
+
+.team-group-title {
+  font-size: 18px;
+  font-weight: 400;
+  margin-bottom: 20px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 24px;
+}
+
+.team-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 16px;
+  background: #f9f9f9;
+}
+
+.team-card img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.team-info .role {
+  font-size: 16px;
+  font-weight: 400;
+  margin: 4px 0 8px 0;
+  color: #333;
+}
+
+/* Partners */
+.partners-section {
+  margin: 60px 0 20px 0;
+  break-inside: avoid;
+}
+
+.partners-section h2 {
+  margin-bottom: 16px;
+}
+
+.partners-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.partner {
+  padding: 10px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fafafa;
+  text-decoration: none;
+  color: #000;
+  transition: background 0.2s ease;
+}
+
+.partner:hover {
+  background: #f0f0f0;
+}
+
 /* Tablet and up - 2 columns */
 @media (min-width: 768px) {
   #info-panel .content-wrapper {

@@ -418,7 +418,7 @@ export function updateLEDAnimation(deltaTime) {
 
   animationTime += deltaTime * pulseSpeed;
 
-  // Create a pulsing wave effect
+  // Create a pulsing wave effect with continuous movement
   ledPixels.forEach((led, index) => {
     const normalizedIndex = index / LED_COUNT;
 
@@ -434,10 +434,10 @@ export function updateLEDAnimation(deltaTime) {
       // Use the closer wave
       wavePosition = Math.min(wave1, wave2);
     } else {
-      // Normal animation: single wave traveling around
+      // Normal animation: single wave traveling around continuously
       wavePosition = (normalizedIndex + animationTime) % 1.0;
     }
-
+    
     const distanceFromWave = Math.abs(wavePosition - 0.5) * 2; // 0 to 1
 
     // Calculate intensity based on distance from wave center
@@ -455,8 +455,9 @@ export function updateLEDAnimation(deltaTime) {
     // Update emissive intensity (lights are off when not in pulse)
     led.material.emissiveIntensity = Math.max(intensity, 0.0);
 
-    // Change color based on position in wave using color palette
-    const hue = (colorPalette.hueStart + (normalizedIndex + animationTime * 0.5) * colorPalette.hueRange) % 1.0;
+    // Change color based on position in wave using color palette + continuous drift
+    const hueDrift = animationTime * 0.1; // slow continuous movement
+    const hue = (colorPalette.hueStart + (normalizedIndex + animationTime * 0.5) * colorPalette.hueRange + hueDrift) % 1.0;
     const color = new THREE.Color().setHSL(hue, colorPalette.saturation, colorPalette.lightness);
     led.material.emissive = color;
 
