@@ -6,20 +6,37 @@ scene.background = new THREE.Color(0x1a1a1a);
 export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 camera.position.set(0, 5, 10);
 
-export const renderer = new THREE.WebGLRenderer({ antialias: true });
+export const renderer = new THREE.WebGLRenderer({ 
+  antialias: true,
+  powerPreference: "high-performance",
+  stencil: false,
+  depth: true
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
 renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.8;
+renderer.toneMappingExposure = 1.0; // Slightly brighter
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 export const canvasContainer = document.getElementById("canvas-container");
 canvasContainer.appendChild(renderer.domElement);
 export const canvas = renderer.domElement;
 
-// Window resize handler
-window.addEventListener("resize", () => {
+// Window resize handler - will be updated after post-processing is initialized
+let resizeHandler = () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+};
+
+window.addEventListener("resize", resizeHandler);
+
+export function setResizeHandler(handler) {
+  window.removeEventListener("resize", resizeHandler);
+  resizeHandler = handler;
+  window.addEventListener("resize", resizeHandler);
+}
 

@@ -33,7 +33,7 @@
 }
 
 #info-panel h1 {
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 300;
   margin-bottom: 20px;
   letter-spacing: -0.5px;
@@ -41,7 +41,7 @@
 }
 
 #info-panel h2 {
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 300;
   margin-top: 40px;
   margin-bottom: 15px;
@@ -50,7 +50,7 @@
 }
 
 #info-panel p {
-  font-size: 14px;
+  font-size: 20px;
   line-height: 1.6;
   font-weight: 300;
   margin: 0 0 20px 0;
@@ -58,11 +58,12 @@
 }
 
 #info-panel h3 {
+  font-size: 20px;
   color: #000000;
 }
 
 #info-panel .challenge-title {
-  font-size: 14px;
+  font-size: 20px;
   font-weight: 300;
   margin-top: 30px;
   margin-bottom: 10px;
@@ -78,3 +79,4 @@
 }
 
 /* GUI styles - using lil-gui's built-in autoPlace feature instead */
+

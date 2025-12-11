@@ -11,6 +11,22 @@ export let startCameraPosition = { x: 0, y: 4.698056077957153, z: -3 };
 export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
+export let bloomSettings = {
+  strength: 1.5,
+  radius: 0.4,
+  threshold: 0.85,
+};
+export let ledStripSettings = {
+  pulseSpeed: 2.0,
+  pulseWidth: 0.3,
+  baseIntensity: 0.0, // Off when not pulsing
+  maxIntensity: 4.0,
+  mirrored: false,
+  hueStart: 0.5,
+  hueRange: 0.3,
+  saturation: 1.0,
+  lightness: 0.5,
+};
 
 export function setIsNightMode(value) {
   isNightMode = value;
@@ -18,6 +34,12 @@ export function setIsNightMode(value) {
 
 export function setMoveSpeed(value) {
   moveSpeed = value;
+}
+
+export function setBloomSettings(strength, radius, threshold) {
+  bloomSettings.strength = strength;
+  bloomSettings.radius = radius;
+  bloomSettings.threshold = threshold;
 }
 
 export function loadSettings() {
@@ -55,6 +77,14 @@ export function loadSettings() {
 
     if (settings.isNightMode !== undefined) {
       setIsNightMode(settings.isNightMode);
+    }
+
+    if (settings.bloomSettings) {
+      Object.assign(bloomSettings, settings.bloomSettings);
+    }
+
+    if (settings.ledStripSettings) {
+      Object.assign(ledStripSettings, settings.ledStripSettings);
     }
   } catch (error) {
     console.warn("Failed to load settings:", error);
@@ -95,6 +125,8 @@ export function saveSettings(fbxMeshes, glbLights) {
       colorSettings,
       lightSettings,
       isNightMode,
+      bloomSettings,
+      ledStripSettings,
     };
 
     localStorage.setItem("domeDreamingSettings", JSON.stringify(settings));
@@ -102,4 +134,3 @@ export function saveSettings(fbxMeshes, glbLights) {
     console.warn("Failed to save settings:", error);
   }
 }
-

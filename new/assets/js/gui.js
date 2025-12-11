@@ -189,4 +189,127 @@ export function createColorGUI() {
   cameraFolder.add(cameraActions, "copyCurrentToStart").name("Copy Current → Start");
   cameraFolder.add(cameraActions, "logCurrentValues").name("Log Current Values");
   cameraFolder.open();
+
+  // Post-processing settings
+  const postProcFolder = gui.addFolder("Post-Processing");
+  import("./postprocessing.js").then((postProc) => {
+    const bloomPass = postProc.getBloomPass();
+    if (bloomPass) {
+      const bloomObj = {
+        strength: bloomPass.strength,
+        radius: bloomPass.radius,
+        threshold: bloomPass.threshold,
+      };
+
+      const saveBloomSettings = () => {
+        settings.saveSettings(fbxMeshes, glbLights);
+      };
+
+      postProcFolder
+        .add(bloomObj, "strength", 0, 3, 0.1)
+        .name("Bloom Strength")
+        .onChange((value) => {
+          bloomPass.strength = value;
+          settings.bloomSettings.strength = value;
+          saveBloomSettings();
+        });
+      postProcFolder
+        .add(bloomObj, "radius", 0, 2, 0.1)
+        .name("Bloom Radius")
+        .onChange((value) => {
+          bloomPass.radius = value;
+          settings.bloomSettings.radius = value;
+          saveBloomSettings();
+        });
+      postProcFolder
+        .add(bloomObj, "threshold", 0, 2, 0.1)
+        .name("Bloom Threshold")
+        .onChange((value) => {
+          bloomPass.threshold = value;
+          settings.bloomSettings.threshold = value;
+          saveBloomSettings();
+        });
+    }
+    postProcFolder.open();
+  });
+
+  // LED Strip animation settings
+  const ledFolder = gui.addFolder("LED Strip Animation");
+  import("./led-strip.js").then((ledStrip) => {
+    // Ensure settings are loaded
+    ledStrip.loadLEDStripSettings();
+
+    const ledAnimObj = {
+      pulseSpeed: ledStrip.pulseSpeed,
+      pulseWidth: ledStrip.pulseWidth,
+      baseIntensity: ledStrip.baseIntensity,
+      maxIntensity: ledStrip.maxIntensity,
+      mirrored: ledStrip.mirrored,
+      hueStart: ledStrip.colorPalette.hueStart,
+      hueRange: ledStrip.colorPalette.hueRange,
+      saturation: ledStrip.colorPalette.saturation,
+      lightness: ledStrip.colorPalette.lightness,
+    };
+
+    const pulseFolder = ledFolder.addFolder("Pulse Settings");
+    pulseFolder
+      .add(ledAnimObj, "pulseSpeed", 0.1, 10, 0.1)
+      .name("Pulse Speed")
+      .onChange((value) => {
+        ledStrip.setPulseSpeed(value);
+      });
+    pulseFolder
+      .add(ledAnimObj, "pulseWidth", 0.1, 1.0, 0.05)
+      .name("Pulse Width")
+      .onChange((value) => {
+        ledStrip.setPulseWidth(value);
+      });
+    pulseFolder
+      .add(ledAnimObj, "baseIntensity", 0.1, 2.0, 0.1)
+      .name("Base Intensity")
+      .onChange((value) => {
+        ledStrip.setBaseIntensity(value);
+      });
+    pulseFolder
+      .add(ledAnimObj, "maxIntensity", 1.0, 10.0, 0.5)
+      .name("Max Intensity")
+      .onChange((value) => {
+        ledStrip.setMaxIntensity(value);
+      });
+    pulseFolder
+      .add(ledAnimObj, "mirrored")
+      .name("Mirror Animation")
+      .onChange((value) => {
+        ledStrip.setMirrored(value);
+      });
+    pulseFolder.open();
+
+    const colorFolder = ledFolder.addFolder("Color Palette");
+    colorFolder
+      .add(ledAnimObj, "hueStart", 0, 1, 0.01)
+      .name("Hue Start")
+      .onChange((value) => {
+        ledStrip.setColorPalette(value, ledStrip.colorPalette.hueRange, ledStrip.colorPalette.saturation, ledStrip.colorPalette.lightness);
+      });
+    colorFolder
+      .add(ledAnimObj, "hueRange", 0, 1, 0.01)
+      .name("Hue Range")
+      .onChange((value) => {
+        ledStrip.setColorPalette(ledStrip.colorPalette.hueStart, value, ledStrip.colorPalette.saturation, ledStrip.colorPalette.lightness);
+      });
+    colorFolder
+      .add(ledAnimObj, "saturation", 0, 1, 0.01)
+      .name("Saturation")
+      .onChange((value) => {
+        ledStrip.setColorPalette(ledStrip.colorPalette.hueStart, ledStrip.colorPalette.hueRange, value, ledStrip.colorPalette.lightness);
+      });
+    colorFolder
+      .add(ledAnimObj, "lightness", 0, 1, 0.01)
+      .name("Lightness")
+      .onChange((value) => {
+        ledStrip.setColorPalette(ledStrip.colorPalette.hueStart, ledStrip.colorPalette.hueRange, ledStrip.colorPalette.saturation, value);
+      });
+    colorFolder.open();
+    ledFolder.open();
+  });
 }

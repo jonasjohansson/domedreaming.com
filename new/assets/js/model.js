@@ -7,6 +7,7 @@ import { euler, setModelLoaded } from "./camera.js";
 import { setScreenObject } from "./texture.js";
 import { loadDefaultScreenTexture } from "./texture.js";
 import { verifyNavmeshAtStartPosition, initNavmesh, getNavMeshQuery } from "./navmesh.js";
+import { findLEDRim, createLEDStrip } from "./led-strip.js";
 
 export let wisdomeModel = null;
 export let fbxMeshes = [];
@@ -19,7 +20,7 @@ export function loadModel(createColorGUI) {
   const loadingDiv = document.getElementById("loading");
 
   loader.load(
-    "assets/models/wisdome.glb",
+    "assets/models/wisdome-rim.glb",
     (gltf) => {
       console.log("Wisdome GLB loaded successfully");
       if (!gltf || !gltf.scene) {
@@ -110,10 +111,28 @@ export function loadModel(createColorGUI) {
         }
       });
 
+      // Find and create LED strip for LED_Rim
+      const ledRim = findLEDRim(object);
+      if (ledRim) {
+        console.log("Found LED_Rim object, creating LED strip...");
+        // Load LED strip settings before creating
+        import("./led-strip.js").then((ledStrip) => {
+          ledStrip.loadLEDStripSettings();
+        });
+        createLEDStrip(ledRim);
+      } else {
+        console.log("LED_Rim object not found in model");
+      }
+
       // Process meshes
       safeTraverse(object, (child) => {
         if (child.isMesh) {
           const name = child.name.toLowerCase();
+
+          // Skip LED_Rim and LED strip objects from mesh processing
+          if (name.includes("led_rim") || name.includes("led_strip") || name.startsWith("led_")) {
+            return; // Don't add to fbxMeshes
+          }
 
           if (
             name.includes("screen") ||
@@ -129,21 +148,32 @@ export function loadModel(createColorGUI) {
             const material = getMaterial(child);
             const originalColor = material?.color ? material.color.clone() : new THREE.Color(0xffffff);
 
-            // Make materials non-reflective (matte finish)
+            // Enhance materials for better visual quality
             if (material) {
-              // Set to non-metallic and fully rough to prevent reflections
+              // Improve material properties for better rendering
               if (material.metalness !== undefined) {
-                material.metalness = 0;
+                material.metalness = Math.max(material.metalness || 0, 0.1);
               }
               if (material.roughness !== undefined) {
-                material.roughness = 1.0;
+                material.roughness = Math.min(material.roughness || 0.5, 0.8);
               }
-              // Disable specular highlights
-              if (material.specular !== undefined) {
-                material.specular = new THREE.Color(0x000000);
+              // Ensure proper color space
+              if (material.map) {
+                material.map.colorSpace = THREE.SRGBColorSpace;
               }
-              if (material.shininess !== undefined) {
-                material.shininess = 0;
+              // Enable better lighting
+              if (material.isMeshBasicMaterial) {
+                // Convert basic materials to standard for better lighting
+                const newMaterial = new THREE.MeshStandardMaterial({
+                  color: material.color,
+                  map: material.map,
+                  transparent: material.transparent,
+                  opacity: material.opacity,
+                  metalness: 0.1,
+                  roughness: 0.5,
+                });
+                child.material = newMaterial;
+                material = newMaterial;
               }
               material.needsUpdate = true;
             }

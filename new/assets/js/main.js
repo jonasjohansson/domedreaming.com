@@ -10,12 +10,19 @@ import { getNavMeshQuery } from "./navmesh.js";
 import { getCurrentVideoTexture, getCurrentVideo } from "./texture.js";
 import { currentCameraPosition, currentCameraRotation } from "./settings.js";
 import { modelLoaded } from "./camera.js";
+import { initPostProcessing, updatePostProcessing } from "./postprocessing.js";
+import { updateLEDAnimation } from "./led-strip.js";
 
 // Initialize
 loadSettings();
+// Load LED strip settings after main settings are loaded
+import("./led-strip.js").then((ledStrip) => {
+  ledStrip.loadLEDStripSettings();
+});
 setupLighting();
 setupCameraControls();
 setupDragAndDrop();
+initPostProcessing();
 loadModel(createColorGUI);
 
 // Animation loop
@@ -41,6 +48,11 @@ function animate() {
     checkHotspots();
   }
 
+  // Update LED strip animation
+  if (modelLoaded) {
+    updateLEDAnimation(deltaTime);
+  }
+
   // Update GUI values
   currentCameraPosition.x = camera.position.x;
   currentCameraPosition.y = camera.position.y;
@@ -55,7 +67,8 @@ function animate() {
     currentVideoTexture.needsUpdate = true;
   }
 
-  renderer.render(scene, camera);
+  // Use post-processing composer instead of direct render
+  updatePostProcessing();
 }
 
 animate();
