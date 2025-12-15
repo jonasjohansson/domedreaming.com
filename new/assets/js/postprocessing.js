@@ -14,7 +14,9 @@ let fxaaPass = null;
 let outputPass = null;
 
 export function initPostProcessing() {
-  const resolution = new THREE.Vector2(window.innerWidth, window.innerHeight);
+  const canvasContainer = document.getElementById("canvas-container");
+  const rect = canvasContainer.getBoundingClientRect();
+  const resolution = new THREE.Vector2(rect.width, rect.height);
 
   // Create render target with multisampling for better quality
   const renderTarget = new THREE.WebGLRenderTarget(resolution.width, resolution.height, {
@@ -43,9 +45,14 @@ export function initPostProcessing() {
 
   // Update resize handler to include post-processing
   setResizeHandler(() => {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    const canvasContainer = document.getElementById("canvas-container");
+    const rect = canvasContainer.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    camera.aspect = width / height;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     resizePostProcessing();
   });
@@ -63,8 +70,10 @@ export function updatePostProcessing() {
 
 export function resizePostProcessing() {
   if (composer) {
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    const canvasContainer = document.getElementById("canvas-container");
+    const rect = canvasContainer.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
     composer.setSize(width, height);
 
     if (bloomPass) {
@@ -80,3 +89,7 @@ export function resizePostProcessing() {
 export function getBloomPass() {
   return bloomPass;
 }
+
+
+
+

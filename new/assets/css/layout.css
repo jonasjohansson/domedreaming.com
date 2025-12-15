@@ -1,13 +1,92 @@
-#canvas-container {
-  width: 100vw;
-  height: 100vh;
-  position: relative;
-  opacity: 0;
-  transition: opacity 0.5s ease-in;
+/* Vertical bars on sides */
+.vertical-bars {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 11;
 }
 
-#canvas-container.loaded {
+.vertical-bars .vertical-bar-left,
+.vertical-bars .vertical-bar-right {
+  position: absolute;
+  top: 0;
+  width: calc(var(--col-width) / 2);
+  background-color: var(--color-bar);
+  height: 100%;
+  min-height: 100%;
+  overflow: visible;
+  padding: 0;
+  box-sizing: border-box;
+  z-index: 1;
+}
+
+.vertical-bars .vertical-bar-left {
+  left: 0;
+}
+
+.vertical-bars .vertical-bar-right {
+  right: 0;
+}
+
+.vertical-bar-content {
+  font-size: clamp(20px, calc(var(--row-height) * 0.25), 36px);
+  letter-spacing: 3px;
   opacity: 1;
+  white-space: pre;
+  font-family: var(--font-family);
+  position: absolute;
+  z-index: 12;
+  padding: 0;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  min-height: 100vh;
+  overflow: visible;
+  box-sizing: border-box;
+  text-align: center;
+  visibility: visible;
+  display: block;
+  line-height: var(--half-row-height);
+}
+
+.vertical-bar-content span {
+  display: block;
+  text-align: center;
+  width: 100%;
+  line-height: var(--half-row-height);
+  visibility: visible;
+}
+
+/* Canvas wrapper */
+.canvas-wrapper {
+  width: 100%;
+  margin: var(--row-height) 0 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), 1fr);
+  column-gap: var(--grid-gap);
+  position: relative;
+  /* Height will be set by JavaScript to match row-heights */
+}
+
+#canvas-container {
+  grid-column: 2 / span 12; /* Start at column 2, span 12 columns (columns 2-13, 1 column gap on each side) */
+  width: 100%;
+  height: 100vh; /* Will be set dynamically by JavaScript to match row-heights */
+  position: relative;
+  opacity: 1;
+  overflow: hidden;
+  z-index: 10;
+  display: block;
+  padding: 0;
+  margin: 0;
+  /* Vignette mask is now controlled via JavaScript in settings.js */
 }
 
 #drop-zone {
@@ -16,7 +95,7 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 10;
+  z-index: var(--z-dropzone);
   pointer-events: none;
 }
 
@@ -27,207 +106,160 @@
 
 canvas {
   cursor: default !important;
-  padding: 1rem;
+  padding: 0;
+  box-sizing: border-box;
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+  object-fit: cover;
+  pointer-events: auto;
+}
+
+main {
+  position: relative;
+  width: 100%;
+  padding: var(--row-height) 0;
+  font-family: var(--font-family);
+  min-height: 50vh;
+  opacity: 1;
+  z-index: 10;
+}
+
+main .section {
+  margin: 0 0 var(--half-row-height) 0;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Intro section */
+section.intro {
+  padding: 0;
+  margin: var(--row-height) 0;
+  position: relative;
+  z-index: 10;
+  opacity: 1;
+  visibility: visible;
+}
+
+.intro-text {
+  font-size: var(--font-size-intro);
+  text-align: center;
+  letter-spacing: var(--letter-spacing-normal);
+}
+
+/* About section */
+section.about {
+  padding: var(--row-height) 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr); /* 12 columns for content area (14 - 2 margin columns) */
+  column-gap: 0;
+  grid-column: 2 / 14; /* Start at column 2, end at column 13 (1 column gap on each side) */
+  align-content: start;
+}
+
+/* Allow sections and nested elements to use grid utility classes */
+section.about > *,
+section.about .section > * {
   box-sizing: border-box;
 }
 
-#info-panel {
-  position: relative;
-  width: 100%;
-  background: #ffffff;
-  color: #000000;
-  padding: 60px 40px;
-  font-family: "Inter Tight", sans-serif;
-  min-height: 50vh;
-  opacity: 0;
-  transition: opacity 0.5s ease-in;
-}
-
-#info-panel.loaded {
-  opacity: 1;
-}
-
-#info-panel .content-wrapper {
-  column-count: 1;
-  column-gap: 40px;
-  column-fill: balance;
-}
-
-#info-panel .section {
-  margin: 0 0 40px 0;
+/* Make nested grids work with utility classes */
+section.about .section {
   break-inside: avoid;
   page-break-inside: avoid;
+  min-width: 0;
 }
 
-/* Hero */
-.hero {
-  max-width: 960px;
-  margin: 0 auto 60px auto;
-  text-align: center;
-  break-inside: avoid;
-  padding: 80px 20px 40px 20px;
+/* Responsive about section - adjust column spans for smaller screens */
+/* Medium screens: 2 columns per row */
+@media (max-width: 1024px) {
+  section.about {
+    grid-template-columns: repeat(12, 1fr);
+  }
+
+  section.about .section {
+    grid-column: span 6 !important; /* Each section spans 6 columns (2 per row) */
+    grid-column-start: auto !important;
+  }
+
+  /* Ensure proper flow: first section at col 1, second at col 7 */
+  section.about .section:nth-child(odd) {
+    grid-column-start: 1 !important;
+  }
+
+  section.about .section:nth-child(even) {
+    grid-column-start: 7 !important;
+  }
 }
 
-.hero-logo {
-  margin-bottom: 50px;
-}
-
-.hero-logo img {
-  width: 300px;
-  height: 300px;
-  margin: 0 auto;
-  display: block;
-  object-fit: contain;
-}
-
-.hero-text {
-  display: grid;
-  gap: 20px;
-  justify-items: center;
-}
-
-.hero .intro-text {
-  max-width: 720px;
-  font-size: 28px;
-  font-weight: 300;
-  line-height: 1.6;
-  margin: 0;
-}
-
-.hero .intro-text a {
-  color: #000000;
-  text-decoration: underline;
-}
-
-.hero .intro-text a:hover {
-  text-decoration: none;
-}
-
-/* Team intro text */
-.team-intro {
-  margin: 60px 0;
-  text-align: center;
-  break-inside: avoid;
-}
-
-.team-intro-text {
-  font-size: 32px;
-  font-weight: 300;
-  line-height: 1.6;
-  max-width: 800px;
-  margin: 0 auto;
-  color: #000000;
+/* Mobile: 1 column per row */
+@media (max-width: 768px) {
+  section.about .section {
+    grid-column: 1 / -1 !important; /* Full width (all 12 columns) */
+    grid-column-start: 1 !important;
+  }
 }
 
 /* Team section */
-.team-section {
-  margin: 60px 0;
-  break-inside: avoid;
+section.team {
+  padding: var(--row-height) 0;
+  margin: var(--row-height) 0;
+  grid-column: 2 / 14; /* Start at column 2, end at column 13 (1 column gap on each side) */
+  width: 100%;
+  clear: both;
 }
 
-.team-section h2 {
-  margin-bottom: 40px;
+/* Header styles */
+.fixed-header {
+  position: relative;
+  width: 100%;
+  padding: 0;
+  z-index: var(--z-header);
+  background: transparent;
 }
 
-.team-group {
-  margin-bottom: 50px;
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--row-height);
 }
 
-.team-group-title {
-  font-size: 18px;
-  font-weight: 400;
-  margin-bottom: 20px;
-  color: #666;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+.header-logo img {
+  max-width: 100%;
+  height: auto;
 }
 
-.team-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
+.header-text {
+  flex: 1;
 }
 
-.team-card {
+.header-subtitle {
+  font-size: var(--font-size-small);
+  letter-spacing: var(--letter-spacing-normal);
+  margin-bottom: var(--half-row-height);
+}
+
+.header-location {
+  font-size: var(--font-size-xs);
+  letter-spacing: var(--letter-spacing-normal);
+  opacity: var(--opacity-muted);
+}
+
+.menu-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--half-row-height);
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  padding: 16px;
-  background: #f9f9f9;
+  gap: calc(var(--row-height) / 8);
 }
 
-.team-card img {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.team-info .role {
-  font-size: 16px;
-  font-weight: 400;
-  margin: 4px 0 8px 0;
-  color: #333;
-}
-
-/* Partners */
-.partners-section {
-  margin: 60px 0 20px 0;
-  break-inside: avoid;
-}
-
-.partners-section h2 {
-  margin-bottom: 16px;
-}
-
-.partners-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.partner {
-  padding: 10px 16px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  background: #fafafa;
-  text-decoration: none;
-  color: #000;
-  transition: background 0.2s ease;
-}
-
-.partner:hover {
-  background: #f0f0f0;
-}
-
-/* Tablet and up - 2 columns */
-@media (min-width: 768px) {
-  #info-panel .content-wrapper {
-    column-count: 2;
-  }
-}
-
-/* Desktop - 3 columns */
-@media (min-width: 1024px) {
-  #info-panel .content-wrapper {
-    column-count: 3;
-  }
-}
-
-/* Large desktop - 4 columns */
-@media (min-width: 1440px) {
-  #info-panel .content-wrapper {
-    column-count: 4;
-  }
-}
-
-/* Prevent breaking inside headings and paragraphs */
-#info-panel h1,
-#info-panel h2,
-#info-panel h3,
-#info-panel p {
-  break-inside: avoid;
-  page-break-inside: avoid;
+.menu-toggle span {
+  width: 20px;
+  height: 2px;
+  background-color: #ffffff;
+  display: block;
 }

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { configureTexture, applyTextureToScreen, getMaterial } from "./utils.js";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
+import { screenSettings } from "./settings.js";
 
 let screenObject = null;
 let currentVideoTexture = null;
@@ -19,12 +20,12 @@ export function getCurrentVideo() {
   return currentVideo;
 }
 
-export function loadDefaultScreenTexture() {
+export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage || "assets/media/background.jpg") {
   if (!screenObject) return;
 
   const textureLoader = new THREE.TextureLoader();
   textureLoader.load(
-    "assets/media/background.jpg",
+    imagePath,
     (texture) => {
       configureTexture(texture);
       applyTextureToScreen(texture, screenObject);
@@ -200,4 +201,3 @@ export function setupDragAndDrop() {
     false
   );
 }
-

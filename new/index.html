@@ -27,44 +27,31 @@
       href="assets/css/main.css" />
   </head>
   <body>
-    <section class="hero">
-      <div class="hero-logo">
-        <img
-          src="Dome Dreaming Logo Invert.svg"
-          alt="Dome Dreaming symbol" />
+    <aside class="vertical-bars">
+      <div class="vertical-bar-left">
+        <div class="vertical-bar-content">
+          <p>DOME DREAMING</p>
+        </div>
       </div>
-      <div class="hero-text">
-        <p class="intro-text">
-          DOME DREAMING is an interdisciplinary festival celebrating fulldome art, sound, and performance across Wisdome Stockholm and
-          Malmö. It bridges research, technology, and culture to spark new collaborations in immersive media.
-        </p>
-        <p class="intro-text">
-          The event takes place 7–9th of May at Wisdome Stockholm, Tekniska museet, Stockholm. Tickets will be released soon on
-          <a
-            href="https://tekniska.se"
-            target="_blank"
-            rel="noreferrer"
-            >tekniska.se</a
-          >. Tentatively 12–13th of May at Wisdome Malmö.
-        </p>
-        <p class="intro-text">
-          This site also hosts a WebGL 3D visualisation tool where you can explore the dome environment, test visuals, and prototype ideas
-          for the festival’s screenings and performances.
-        </p>
+      <div class="vertical-bar-right">
+        <div class="vertical-bar-content">
+          <p>DOME DREAMING</p>
+        </div>
       </div>
-    </section>
-
-    <div id="canvas-container">
-      <div id="drop-zone"></div>
-      <div id="loading">
-        <div class="spinner"></div>
+    </aside>
+    <div class="canvas-wrapper">
+      <div id="canvas-container">
+        <div id="drop-zone"></div>
+        <div id="loading">
+          <div class="spinner"></div>
+        </div>
       </div>
     </div>
 
-    <div id="info-panel">
-      <div class="content-wrapper">
+    <main class="grid">
+      <section class="about">
         <div
-          class="section"
+          class="section col-1 span-4"
           id="wisdome">
           <h2>THE WISDOME PROJECT</h2>
           <p>
@@ -84,7 +71,7 @@
         </div>
 
         <div
-          class="section"
+          class="section col-5 span-4"
           id="ethos">
           <h2>THE DOME DREAMING ETHOS</h2>
           <p>
@@ -106,7 +93,7 @@
         </div>
 
         <div
-          class="section"
+          class="section col-9 span-4"
           id="beyond">
           <h2>BEYOND WISDOME</h2>
           <p>
@@ -129,7 +116,7 @@
         </div>
 
         <div
-          class="section"
+          class="section col-1 span-4"
           id="history">
           <h2>A HISTORY OF AUDIOVISUAL ART</h2>
           <p>
@@ -191,7 +178,7 @@
         </div>
 
         <div
-          class="section"
+          class="section col-5 span-4"
           id="state">
           <h2>STATE OF THE DOME</h2>
           <p>
@@ -271,177 +258,205 @@
             Nordic-Baltic region—where the fulldome is not a niche, but a new frontier. Read the fulldome report here.
           </p>
         </div>
-      </div>
-
-      <section class="team-intro">
-        <p class="team-intro-text">
-          DOME DREAMING is brought to life through collaboration between artists, curators, and technologists across the Nordic-Baltic
-          region.
-        </p>
       </section>
 
-      <section class="team-section">
-        <h2>People Involved</h2>
-
-        <div class="team-group">
-          <h3 class="team-group-title">Core Work Group</h3>
-          <div class="team-grid">
-            <article class="team-card">
-              <img
-                src="https://via.placeholder.com/300x300?text=Jonas+Johansson"
-                alt="Portrait of Jonas Johansson" />
-              <div class="team-info">
-                <h3>Jonas Johansson (NAVA)</h3>
-                <p class="role">Project / Technical Lead</p>
-                <p>
-                  Stockholm-based artist and educator working with motion graphics, immersive media, and audiovisual art. Leads DOME
-                  DREAMING with a focus on connecting artists, designers, and technologists.
-                </p>
-              </div>
-            </article>
-            <article class="team-card">
-              <img
-                src="https://via.placeholder.com/300x300?text=Fredrik+Edström"
-                alt="Portrait of Fredrik Edström" />
-              <div class="team-info">
-                <h3>Fredrik Edström (IVAR)</h3>
-                <p class="role">Project / Technical Co-lead</p>
-                <p>
-                  Producer and media creator specialising in narrative dome storytelling and ambisonic sound. Founder of IVAR Studios,
-                  pushing the boundaries of documentary formats for immersive venues.
-                </p>
-              </div>
-            </article>
-            <article class="team-card">
-              <img
-                src="https://via.placeholder.com/300x300?text=Sebastian+Häger"
-                alt="Portrait of Sebastian Häger" />
-              <div class="team-info">
-                <h3>Sebastian Häger (Nordic Film Days)</h3>
-                <p class="role">Curatorial Lead</p>
-                <p>
-                  Curator specialising in immersive media and digital art. Leads programming focused on narrative and experimental fulldome
-                  works across Nordic-Baltic contexts.
-                </p>
-              </div>
-            </article>
+      <section class="team grid">
+        <div class="col-2 span-12">
+          <div class="team-intro">
+            <p class="team-intro-text">
+              DOME DREAMING is brought to life through collaboration between artists, curators, and technologists across the Nordic-Baltic
+              region.
+            </p>
           </div>
         </div>
+        <div class="col-2 span-12">
+          <div class="team-section">
+            <div class="team-group">
+              <h3 class="team-group-title">Core Work Group</h3>
+              <div class="team-grid">
+                <article class="team-card">
+                  <img
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23ddd' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EJonas Johansson%3C/text%3E%3C/svg%3E"
+                    alt="Portrait of Jonas Johansson" />
+                  <div class="team-info">
+                    <h3>Jonas Johansson (NAVA)</h3>
+                    <p class="role">Project / Technical Lead</p>
+                    <p>
+                      Stockholm-based artist and educator working with motion graphics, immersive media, and audiovisual art. Leads DOME
+                      DREAMING with a focus on connecting artists, designers, and technologists.
+                    </p>
+                  </div>
+                </article>
+                <article class="team-card">
+                  <img
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23ddd' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EFredrik Edström%3C/text%3E%3C/svg%3E"
+                    alt="Portrait of Fredrik Edström" />
+                  <div class="team-info">
+                    <h3>Fredrik Edström (IVAR)</h3>
+                    <p class="role">Project / Technical Co-lead</p>
+                    <p>
+                      Producer and media creator specialising in narrative dome storytelling and ambisonic sound. Founder of IVAR Studios,
+                      pushing the boundaries of documentary formats for immersive venues.
+                    </p>
+                  </div>
+                </article>
+                <article class="team-card">
+                  <img
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23ddd' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3ESebastian Häger%3C/text%3E%3C/svg%3E"
+                    alt="Portrait of Sebastian Häger" />
+                  <div class="team-info">
+                    <h3>Sebastian Häger (Nordic Film Days)</h3>
+                    <p class="role">Curatorial Lead</p>
+                    <p>
+                      Curator specialising in immersive media and digital art. Leads programming focused on narrative and experimental
+                      fulldome works across Nordic-Baltic contexts.
+                    </p>
+                  </div>
+                </article>
+              </div>
+            </div>
 
-        <div class="team-group">
-          <h3 class="team-group-title">Nordic & Baltic Festival Partners</h3>
-          <div class="team-grid">
-            <article class="team-card">
-              <img
-                src="https://via.placeholder.com/300x300?text=Annie+Tådne"
-                alt="Portrait of Annie Tådne" />
-              <div class="team-info">
-                <h3>Annie Tådne</h3>
-                <p class="role">Advisor, Nordic & Baltic Festival Partners</p>
-                <p>
-                  Artist and designer working at the intersection of art and technology, creating immersive video scenographies and
-                  interactive installations for performance and exhibition.
-                </p>
+            <div class="team-group">
+              <h3 class="team-group-title">Nordic & Baltic Festival Partners</h3>
+              <div class="team-grid">
+                <article class="team-card">
+                  <img
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23ddd' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EAnnie Tådne%3C/text%3E%3C/svg%3E"
+                    alt="Portrait of Annie Tådne" />
+                  <div class="team-info">
+                    <h3>Annie Tådne</h3>
+                    <p class="role">Advisor, Nordic & Baltic Festival Partners</p>
+                    <p>
+                      Artist and designer working at the intersection of art and technology, creating immersive video scenographies and
+                      interactive installations for performance and exhibition.
+                    </p>
+                  </div>
+                </article>
+                <article class="team-card">
+                  <img
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23ddd' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EMerle Karu%3C/text%3E%3C/svg%3E"
+                    alt="Portrait of Merle Karu" />
+                  <div class="team-info">
+                    <h3>Merle Karu</h3>
+                    <p class="role">Advisor, Nordic & Baltic Festival Partners</p>
+                    <p>
+                      Visual designer, video artist, and VJ, co-founder of AVA/TEX in Helsinki. Works span visuals, installations, and
+                      experimental audiovisual pieces.
+                    </p>
+                  </div>
+                </article>
+                <article class="team-card">
+                  <img
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23ddd' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EIeva Balode%3C/text%3E%3C/svg%3E"
+                    alt="Portrait of Ieva Balode" />
+                  <div class="team-info">
+                    <h3>Ieva Balode</h3>
+                    <p class="role">Advisor, Nordic & Baltic Festival Partners</p>
+                    <p>
+                      Artist and film archivist exploring analog, photo-chemical film. Director of Process, an experimental film festival in
+                      Riga, promoting artistic exchange.
+                    </p>
+                  </div>
+                </article>
+                <article class="team-card">
+                  <img
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23ddd' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EAxel Jonsson%3C/text%3E%3C/svg%3E"
+                    alt="Portrait of Axel Jonsson" />
+                  <div class="team-info">
+                    <h3>Axel Jonsson</h3>
+                    <p class="role">Advisor, Nordic & Baltic Festival Partners</p>
+                    <p>
+                      Curator and co-founder of Koirangi, festival celebrating electronic ambient and dance music in Åland, featuring
+                      audiovisual performances and immersive soundscapes.
+                    </p>
+                  </div>
+                </article>
               </div>
-            </article>
-            <article class="team-card">
-              <img
-                src="https://via.placeholder.com/300x300?text=Merle+Karu"
-                alt="Portrait of Merle Karu" />
-              <div class="team-info">
-                <h3>Merle Karu</h3>
-                <p class="role">Advisor, Nordic & Baltic Festival Partners</p>
-                <p>
-                  Visual designer, video artist, and VJ, co-founder of AVA/TEX in Helsinki. Works span visuals, installations, and
-                  experimental audiovisual pieces.
-                </p>
-              </div>
-            </article>
-            <article class="team-card">
-              <img
-                src="https://via.placeholder.com/300x300?text=Ieva+Balode"
-                alt="Portrait of Ieva Balode" />
-              <div class="team-info">
-                <h3>Ieva Balode</h3>
-                <p class="role">Advisor, Nordic & Baltic Festival Partners</p>
-                <p>
-                  Artist and film archivist exploring analog, photo-chemical film. Director of Process, an experimental film festival in
-                  Riga, promoting artistic exchange.
-                </p>
-              </div>
-            </article>
-            <article class="team-card">
-              <img
-                src="https://via.placeholder.com/300x300?text=Axel+Jonsson"
-                alt="Portrait of Axel Jonsson" />
-              <div class="team-info">
-                <h3>Axel Jonsson</h3>
-                <p class="role">Advisor, Nordic & Baltic Festival Partners</p>
-                <p>
-                  Curator and co-founder of Koirangi, festival celebrating electronic ambient and dance music in Åland, featuring
-                  audiovisual performances and immersive soundscapes.
-                </p>
-              </div>
-            </article>
+            </div>
           </div>
         </div>
       </section>
 
-      <section class="partners-section">
-        <h2>Partners</h2>
-        <div class="partners-grid">
-          <a
-            class="partner"
-            href="https://www.tekniskamuseet.se/"
-            target="_blank"
-            rel="noreferrer"
-            >Tekniska Museet</a
-          >
-          <a
-            class="partner"
-            href="https://www.malmo.se/uppleva-och-gora/kultur/malmo-museer.html"
-            target="_blank"
-            rel="noreferrer"
-            >Malmö Museer</a
-          >
-          <a
-            class="partner"
-            href="https://wisdome.se/"
-            target="_blank"
-            rel="noreferrer"
-            >Wisdome Stockholm</a
-          >
-          <a
-            class="partner"
-            href="https://malmo.se/"
-            target="_blank"
-            rel="noreferrer"
-            >Wisdome Malmö</a
-          >
-          <a
-            class="partner"
-            href="https://www.nava.nu/"
-            target="_blank"
-            rel="noreferrer"
-            >NAVA</a
-          >
-          <a
-            class="partner"
-            href="https://ivars.io/"
-            target="_blank"
-            rel="noreferrer"
-            >IVAR Studios</a
-          >
-          <a
-            class="partner"
-            href="https://nordicfilmdays.com/"
-            target="_blank"
-            rel="noreferrer"
-            >Nordic Film Days</a
-          >
+      <footer class="grid">
+        <div class="col-2 span-12 footer-links">
+          <h2>Stay Connected</h2>
+          <div class="footer-actions">
+            <a
+              class="footer-link"
+              href="https://domedreaming.com/newsletter"
+              target="_blank"
+              rel="noreferrer"
+              >Newsletter</a
+            >
+            <a
+              class="footer-link"
+              href="mailto:info@domedreaming.com"
+              >info@domedreaming.com</a
+            >
+            <a
+              class="footer-link footer-link-disabled"
+              href="#"
+              aria-disabled="true"
+              >Open Call (coming soon)</a
+            >
+          </div>
         </div>
-      </section>
-    </div>
+        <div class="col-2 span-12">
+          <h2>Partners</h2>
+          <div class="partners-grid">
+            <a
+              class="partner"
+              href="https://www.tekniskamuseet.se/"
+              target="_blank"
+              rel="noreferrer"
+              >Tekniska Museet</a
+            >
+            <a
+              class="partner"
+              href="https://www.malmo.se/uppleva-och-gora/kultur/malmo-museer.html"
+              target="_blank"
+              rel="noreferrer"
+              >Malmö Museer</a
+            >
+            <a
+              class="partner"
+              href="https://wisdome.se/"
+              target="_blank"
+              rel="noreferrer"
+              >Wisdome Stockholm</a
+            >
+            <a
+              class="partner"
+              href="https://malmo.se/"
+              target="_blank"
+              rel="noreferrer"
+              >Wisdome Malmö</a
+            >
+            <a
+              class="partner"
+              href="https://www.nava.nu/"
+              target="_blank"
+              rel="noreferrer"
+              >NAVA</a
+            >
+            <a
+              class="partner"
+              href="https://ivars.io/"
+              target="_blank"
+              rel="noreferrer"
+              >IVAR Studios</a
+            >
+            <a
+              class="partner"
+              href="https://nordicfilmdays.com/"
+              target="_blank"
+              rel="noreferrer"
+              >Nordic Film Days</a
+            >
+          </div>
+        </div>
+      </footer>
+    </main>
 
     <script type="importmap">
       {

@@ -49,3 +49,8 @@ echo "1. Check EXTERNAL_SOURCES.md for instructions on updating import paths"
 echo "2. You may need to download additional WASM files for recast-navigation"
 echo "3. Test the site and check browser console for any missing dependencies"
 
+
+
+
+
+

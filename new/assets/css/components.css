@@ -3,24 +3,22 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 200;
+  z-index: var(--z-loading);
   opacity: 1;
-  transition: opacity 0.5s ease-out;
 }
 
 #loading.hidden {
-  opacity: 0;
-  pointer-events: none;
+  display: none;
 }
 
 .spinner {
-  border: 3px solid rgba(255, 255, 255, 0.3);
-  border-top: 3px solid white;
-  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, var(--opacity-light));
+  border-top: 3px solid #ffffff;
+  border-radius: var(--radius-full);
   width: 40px;
   height: 40px;
   animation: spin 1s linear infinite;
-  margin: 0 auto 10px;
+  margin: 0 auto var(--half-row-height);
 }
 
 @keyframes spin {
@@ -32,51 +30,92 @@
   }
 }
 
-#info-panel h1 {
-  font-size: 20px;
-  font-weight: 300;
-  margin-bottom: 20px;
-  letter-spacing: -0.5px;
-  color: #000000;
+main h1 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  margin-bottom: var(--half-row-height);
+  letter-spacing: var(--letter-spacing-tight);
 }
 
-#info-panel h2 {
-  font-size: 20px;
-  font-weight: 300;
+main h2 {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
   margin-top: 0;
-  margin-bottom: 15px;
-  letter-spacing: -0.3px;
-  color: #000000;
+  margin-bottom: var(--half-row-height);
+  letter-spacing: var(--letter-spacing-normal);
 }
 
-#info-panel p {
-  font-size: 20px;
-  line-height: 1.6;
-  font-weight: 300;
-  margin: 0 0 20px 0;
-  color: #000000;
+main p {
+  font-size: var(--font-size-base);
+  line-height: calc(var(--row-height) / 4);
+  font-weight: var(--font-weight-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  margin: 0 0 var(--half-row-height) 0;
 }
 
-#info-panel h3 {
-  font-size: 20px;
-  color: #000000;
+main p:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
 }
 
-#info-panel .challenge-title {
-  font-size: 20px;
-  font-weight: 300;
-  margin-top: 30px;
-  margin-bottom: 10px;
+/* Mobile/small screens: double line-height */
+@media (max-width: 768px) {
+  main p {
+    line-height: calc(var(--row-height) / 2);
+  }
 }
 
-#info-panel .section-footer {
-  margin-top: 30px;
+main h3 {
+  font-size: var(--font-size-base);
+  letter-spacing: var(--letter-spacing-normal);
 }
 
-#info-panel strong {
-  color: #000000;
-  font-weight: 500;
+main .challenge-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  margin-top: var(--half-row-height);
+  margin-bottom: var(--half-row-height);
 }
 
-/* GUI styles - using lil-gui's built-in autoPlace feature instead */
+main .section-footer {
+  margin-top: var(--half-row-height);
+}
 
+main strong {
+  font-weight: var(--font-weight-medium);
+}
+
+/* DOME DREAMING styling - use KovskijDisplay font */
+.dome-dreaming,
+.dome-dreaming-text {
+  font-family: "KovskijDisplay", serif;
+  font-weight: normal;
+}
+
+/* Team section styles */
+.team-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--row-height);
+}
+
+.team-card img {
+  width: 100%;
+  max-width: 600px;
+  min-width: 300px;
+  height: auto;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.team-info h3 {
+  margin-top: 0;
+  margin-bottom: var(--half-row-height);
+}
+
+.team-info .role {
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--half-row-height);
+  opacity: 0.8;
+}

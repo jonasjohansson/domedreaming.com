@@ -81,7 +81,9 @@ export function loadModel(createColorGUI) {
             const saved = window.savedLightSettings[lightName];
             if (saved) {
               light.color.setRGB(saved.r, saved.g, saved.b);
-              light.intensity = saved.intensity;
+              // Clamp intensity to a sane range to avoid blowouts from bad saved data
+              const clampedIntensity = Math.max(0, Math.min(saved.intensity ?? light.intensity, 10));
+              light.intensity = clampedIntensity;
             }
           });
         }

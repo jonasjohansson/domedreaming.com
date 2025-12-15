@@ -32,6 +32,10 @@ export function loadLEDStripSettings() {
   colorPalette.hueRange = settingsModule.ledStripSettings.hueRange;
   colorPalette.saturation = settingsModule.ledStripSettings.saturation;
   colorPalette.lightness = settingsModule.ledStripSettings.lightness;
+
+  // Apply rim visibility
+  const rimVisible = settingsModule.ledStripSettings.rimVisible !== false; // Default to true
+  setRimVisible(rimVisible);
 }
 
 export function setPulseSpeed(value) {
@@ -437,7 +441,7 @@ export function updateLEDAnimation(deltaTime) {
       // Normal animation: single wave traveling around continuously
       wavePosition = (normalizedIndex + animationTime) % 1.0;
     }
-    
+
     const distanceFromWave = Math.abs(wavePosition - 0.5) * 2; // 0 to 1
 
     // Calculate intensity based on distance from wave center
@@ -481,3 +485,24 @@ export function setLEDIntensity(intensity) {
 export function getLEDStrip() {
   return ledStripGroup;
 }
+
+export function getRimObject() {
+  return ledRimObject;
+}
+
+export function setRimVisible(visible) {
+  if (ledRimObject) {
+    ledRimObject.visible = visible;
+    // Also hide/show all mesh children
+    ledRimObject.traverse((child) => {
+      if (child.isMesh) {
+        child.visible = visible;
+      }
+    });
+  }
+}
+
+export function isRimVisible() {
+  return ledRimObject ? ledRimObject.visible : true;
+}
+
