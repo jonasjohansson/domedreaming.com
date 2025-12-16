@@ -20,6 +20,10 @@ export function getCurrentVideo() {
   return currentVideo;
 }
 
+export function getCurrentImageTexture() {
+  return currentImageTexture;
+}
+
 export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage || "assets/media/background.jpg") {
   if (!screenObject) return;
 
@@ -28,6 +32,7 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     imagePath,
     (texture) => {
       configureTexture(texture);
+      texture.rotation = 0; // Reset rotation when loading new texture
       applyTextureToScreen(texture, screenObject);
       currentImageTexture = texture;
     },
@@ -61,6 +66,7 @@ export function loadImage(file) {
         }
 
         configureTexture(texture);
+        texture.rotation = 0; // Reset rotation when loading new texture
         applyTextureToScreen(texture, screenObject);
         currentImageTexture = texture;
 
@@ -109,6 +115,7 @@ export function loadVideo(file) {
     configureTexture(videoTexture);
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.rotation = 0; // Reset rotation when loading new texture
 
     applyTextureToScreen(videoTexture, screenObject);
     currentVideoTexture = videoTexture;

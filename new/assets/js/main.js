@@ -7,14 +7,16 @@ import { loadModel } from "./model.js";
 import { createColorGUI } from "./gui.js";
 import { loadSettings, canvasSettings } from "./settings.js";
 import { updateLEDAnimation } from "./led-strip.js";
-import { initVerticalBars } from "./vertical-bars.js";
 import { initScrollIncrement } from "./scroll-increment.js";
 import { initAnimatedDotsSystem } from "./animated-dots.js";
+import { initDashboard } from "./dashboard.js";
+import { getCurrentImageTexture, getCurrentVideoTexture } from "./texture.js";
+import { textureRotationSettings } from "./settings.js";
 
 let animationFrameId = null;
 let lastTime = 0;
 
-// Set canvas container height to at least 80% of viewport, rounded to row height
+// Set canvas container to fill entire viewport using rows and columns
 function setCanvasHeight() {
   const canvasContainer = document.getElementById("canvas-container");
   const canvasWrapper = document.querySelector(".canvas-wrapper");
@@ -26,15 +28,10 @@ function setCanvasHeight() {
   const rowHeight = colWidth;
   const viewportHeight = window.innerHeight;
 
-  // Calculate 80% of viewport height
-  const targetHeight = viewportHeight * 0.8;
+  // Calculate maximum number of row-heights that fit in viewport
+  const rowsInViewport = Math.floor(viewportHeight / rowHeight);
+  const height = rowsInViewport * rowHeight;
 
-  // Calculate number of rows needed to reach at least 80% of viewport
-  // Round up to ensure we're at least 80%
-  const numberOfRows = Math.ceil(targetHeight / rowHeight);
-
-  // Set height to be multiple of row-height, based on page width
-  const height = numberOfRows * rowHeight;
   canvasContainer.style.height = `${height}px`;
   canvasContainer.style.padding = "0";
   canvasContainer.style.margin = "0";
@@ -43,6 +40,56 @@ function setCanvasHeight() {
   if (canvasWrapper) {
     canvasWrapper.style.height = `${height}px`;
   }
+
+  // No octagon mask - canvas fills viewport directly
+}
+
+// Set page sections to maximum row-heights that fit in viewport
+function setPageSectionHeights() {
+  const gridColumns = 14;
+  const colWidth = window.innerWidth / gridColumns;
+  const rowHeight = colWidth;
+  const viewportHeight = window.innerHeight;
+
+  // Calculate maximum number of row-heights that fit in viewport
+  const rowsInViewport = Math.floor(viewportHeight / rowHeight);
+  const height = rowsInViewport * rowHeight;
+
+  // Set only the first page section (canvas) to viewport height
+  // Page 2 is now free-flowing
+  const pageSections = document.querySelectorAll(".page-section");
+  if (pageSections.length > 0) {
+    // First section (canvas) gets fixed height
+    pageSections[0].style.height = `${height}px`;
+    pageSections[0].style.minHeight = `${height}px`;
+
+    // Other sections are free-flowing (no fixed height)
+    for (let i = 1; i < pageSections.length; i++) {
+      pageSections[i].style.height = "auto";
+      pageSections[i].style.minHeight = "auto";
+    }
+  }
+}
+
+/**
+ * Assign indices to all gridded elements (no animation)
+ */
+function initGridElementIndices() {
+  // Find all elements with col- and span- classes (including dashboard cells)
+  const gridElements = document.querySelectorAll("[class*='col-'], [class*='span-'], .dashboard-cell");
+
+  if (gridElements.length === 0) return;
+
+  gridElements.forEach((element, index) => {
+    // Skip if element already has an index
+    if (element.dataset.gridIndex !== undefined) return;
+
+    // Skip elements that are inside other indexed elements to avoid double indexing
+    if (element.closest("[data-grid-index]")) return;
+
+    // Assign index
+    element.dataset.gridIndex = index;
+  });
 }
 
 // Wrap "DOME DREAMING" text instances in about section with font class
@@ -101,14 +148,17 @@ async function init() {
   // Setup camera controls
   setupCameraControls();
 
-  // Initialize vertical bars
-  initVerticalBars();
-
   // Initialize scroll increment functionality
   initScrollIncrement();
 
   // Initialize animated dots
   initAnimatedDotsSystem();
+
+  // Initialize dashboard
+  initDashboard();
+
+  // Assign indices to all gridded elements (no animation)
+  initGridElementIndices();
 
   // Apply DOME DREAMING font styling
   applyDomeDreamingFont();
@@ -116,6 +166,10 @@ async function init() {
   // Set canvas height to match viewport in row-heights
   setCanvasHeight();
   window.addEventListener("resize", setCanvasHeight);
+
+  // Set page section heights to match viewport in row-heights
+  setPageSectionHeights();
+  window.addEventListener("resize", setPageSectionHeights);
 
   // Load the 3D model (this will also create the GUI)
   loadModel(createColorGUI);
@@ -137,8 +191,27 @@ function animate(currentTime) {
   // Update LED animation
   updateLEDAnimation(deltaTime);
 
+  // Update texture rotation
+  updateTextureRotation(deltaTime);
+
   // Update post-processing and render
   updatePostProcessing();
+}
+
+/**
+ * Update texture rotation if enabled
+ */
+function updateTextureRotation(deltaTime) {
+  if (!textureRotationSettings.enabled) return;
+
+  const imageTexture = getCurrentImageTexture();
+  const videoTexture = getCurrentVideoTexture();
+  const texture = imageTexture || videoTexture;
+
+  if (texture) {
+    const rotationSpeed = textureRotationSettings.speed * textureRotationSettings.direction;
+    texture.rotation += rotationSpeed * deltaTime;
+  }
 }
 
 function startRenderLoop() {
@@ -146,9 +219,97 @@ function startRenderLoop() {
   animate(lastTime);
 }
 
+// Dome mode functionality
+function initDomeMode() {
+  const enterDomeBtn = document.getElementById("enter-dome-btn");
+  const body = document.body;
+
+  function enterDomeMode(shouldRequestPointerLock = false) {
+    if (body.classList.contains("dome-mode")) return;
+
+    body.classList.add("dome-mode");
+    // Prevent scrolling when in dome mode
+    document.documentElement.style.overflow = "hidden";
+
+    // Set canvas to full viewport height in dome mode
+    const canvasContainer = document.getElementById("canvas-container");
+    if (canvasContainer) {
+      canvasContainer.style.height = "100vh";
+      canvasContainer.style.width = "100vw";
+    }
+
+    if (shouldRequestPointerLock && canvas) {
+      const requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
+      if (requestPointerLock) {
+        requestPointerLock.call(canvas);
+      }
+    }
+  }
+
+  function exitDomeMode() {
+    if (body.classList.contains("dome-mode")) {
+      body.classList.remove("dome-mode");
+      document.documentElement.style.overflow = "auto";
+
+      // Reset canvas height to row-height based size
+      const canvasContainer = document.getElementById("canvas-container");
+      if (canvasContainer) {
+        // Recalculate based on row-heights
+        setCanvasHeight();
+      }
+    }
+    // Exit pointer lock if active
+    if (
+      canvas &&
+      (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas)
+    ) {
+      document.exitPointerLock();
+    }
+  }
+
+  // Expose a global hook so canvas clicks can enter dome mode too
+  // This behaves exactly like clicking the "Enter the dome" button:
+  // fade out overlays, lock pointer, disable scrolling.
+  window.enterDomeModeFromCanvas = () => {
+    enterDomeMode(true);
+  };
+
+  if (enterDomeBtn && canvas) {
+    enterDomeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      enterDomeMode(true);
+    });
+  }
+
+  // Exit dome mode on Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      exitDomeMode();
+    }
+  });
+
+  // Exit dome mode when pointer lock is released
+  function onPointerLockChange() {
+    const isLocked =
+      canvas &&
+      (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas);
+    if (!isLocked && body.classList.contains("dome-mode")) {
+      exitDomeMode();
+    }
+  }
+
+  document.addEventListener("pointerlockchange", onPointerLockChange);
+  document.addEventListener("mozpointerlockchange", onPointerLockChange);
+  document.addEventListener("webkitpointerlockchange", onPointerLockChange);
+}
+
 // Initialize when DOM is ready
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => {
+    init();
+    initDomeMode();
+  });
 } else {
   init();
+  initDomeMode();
 }

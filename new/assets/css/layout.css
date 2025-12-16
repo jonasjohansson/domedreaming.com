@@ -1,82 +1,23 @@
-/* Vertical bars on sides */
-.vertical-bars {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 11;
-}
-
-.vertical-bars .vertical-bar-left,
-.vertical-bars .vertical-bar-right {
-  position: absolute;
-  top: 0;
-  width: calc(var(--col-width) / 2);
-  background-color: var(--color-bar);
-  height: 100%;
-  min-height: 100%;
-  overflow: visible;
-  padding: 0;
-  box-sizing: border-box;
-  z-index: 1;
-}
-
-.vertical-bars .vertical-bar-left {
-  left: 0;
-}
-
-.vertical-bars .vertical-bar-right {
-  right: 0;
-}
-
-.vertical-bar-content {
-  font-size: clamp(20px, calc(var(--row-height) * 0.25), 36px);
-  letter-spacing: 3px;
-  opacity: 1;
-  white-space: pre;
-  font-family: var(--font-family);
-  position: absolute;
-  z-index: 12;
-  padding: 0;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  min-height: 100vh;
-  overflow: visible;
-  box-sizing: border-box;
-  text-align: center;
-  visibility: visible;
-  display: block;
-  line-height: var(--half-row-height);
-}
-
-.vertical-bar-content span {
-  display: block;
-  text-align: center;
-  width: 100%;
-  line-height: var(--half-row-height);
-  visibility: visible;
-}
-
-/* Canvas wrapper */
+/* Canvas wrapper - first viewport */
 .canvas-wrapper {
   width: 100%;
-  margin: var(--row-height) 0 0 0;
+  height: 100vh;
+  margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(var(--grid-columns), 1fr);
   column-gap: var(--grid-gap);
   position: relative;
-  /* Height will be set by JavaScript to match row-heights */
+  /* First page - full viewport height */
+}
+
+/* Footer positioned relative to canvas wrapper */
+.canvas-wrapper footer.bottom-actions {
+  position: absolute;
 }
 
 #canvas-container {
-  grid-column: 2 / span 12; /* Start at column 2, span 12 columns (columns 2-13, 1 column gap on each side) */
+  grid-column: 1 / -1; /* Span all 14 columns to fill viewport */
   width: 100%;
   height: 100vh; /* Will be set dynamically by JavaScript to match row-heights */
   position: relative;
@@ -86,7 +27,9 @@
   display: block;
   padding: 0;
   margin: 0;
-  /* Vignette mask is now controlled via JavaScript in settings.js */
+  /* No mask - canvas fills viewport directly */
+  clip-path: none;
+  -webkit-clip-path: none;
 }
 
 #drop-zone {
@@ -95,13 +38,13 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: var(--z-dropzone);
-  pointer-events: none;
+  z-index: 50; /* High enough to receive drop events, above canvas and images */
+  pointer-events: none; /* Disabled by default, enabled on drag-over */
 }
 
 #drop-zone.drag-over {
   background: rgba(0, 150, 255, 0.05);
-  pointer-events: all;
+  pointer-events: all; /* Enable pointer events when dragging over */
 }
 
 canvas {
@@ -116,13 +59,210 @@ canvas {
 }
 
 main {
+  display: block !important; /* Show main content */
   position: relative;
   width: 100%;
-  padding: var(--row-height) 0;
+  padding: 0;
+  margin: 0;
   font-family: var(--font-family);
-  min-height: 50vh;
   opacity: 1;
   z-index: 10;
+}
+
+/* Hide old about/team sections that are nested in main (if any) */
+main section.about,
+main section.team,
+main section.intro {
+  display: none !important;
+}
+
+/* Bottom actions footer - absolute positioned on canvas */
+footer.bottom-actions {
+  display: grid !important;
+  grid-template-columns: repeat(var(--grid-columns), 1fr);
+  grid-template-rows: repeat(10, var(--row-height)); /* 10 rows for positioning */
+  column-gap: var(--grid-gap);
+  row-gap: 0;
+  width: 100%;
+  height: calc(10 * var(--row-height));
+  padding: 0;
+  margin: 0;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  z-index: 100; /* Higher z-index so text is above images */
+  pointer-events: none; /* Allow clicks through to canvas, buttons will override */
+}
+
+footer.bottom-actions > * {
+  pointer-events: auto; /* Re-enable pointer events for buttons and text */
+}
+
+.action-button {
+  display: inline-block;
+  height: var(--row-height);
+  padding: 0 calc(var(--row-height) / 4);
+  background-color: transparent;
+  border: 1px solid var(--color-text);
+  color: var(--color-text);
+  font-family: var(--font-family);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  text-decoration: none;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  width: 100%;
+  box-sizing: border-box;
+  line-height: var(--line-height-base);
+  vertical-align: middle;
+  letter-spacing: var(--letter-spacing-wide);
+}
+
+.action-button:hover:not(:disabled) {
+  background-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+.action-button:disabled,
+.action-button[aria-disabled="true"] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.festival-dates {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  grid-column: 1 / -1;
+  grid-row: 1 / -1; /* Span all rows to center vertically */
+  text-align: center;
+  pointer-events: none;
+  gap: var(--quarter-row-height);
+}
+
+/* Footer text elements - grid positioned */
+footer.bottom-actions p {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  margin: 0;
+  opacity: var(--opacity-muted);
+  line-height: var(--line-height-base);
+  text-align: center;
+}
+
+footer.bottom-actions p .action-link,
+footer.bottom-actions p .action-link-disabled {
+  color: var(--color-text);
+  text-decoration: underline;
+  transition: opacity var(--transition-normal);
+}
+
+footer.bottom-actions p .action-link:hover {
+  opacity: 0.7;
+}
+
+footer.bottom-actions p .action-link-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-link {
+  color: var(--color-text);
+  text-decoration: underline;
+  cursor: pointer;
+  transition: opacity var(--transition-normal);
+}
+
+.action-link:hover {
+  opacity: 0.7;
+}
+
+.action-link-disabled {
+  color: var(--color-text);
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dome-intro-text {
+  font-size: var(--font-size-base);
+  color: var(--color-text);
+  margin: 0;
+  line-height: var(--line-height-base);
+  transition: opacity var(--transition-normal);
+  text-align: center;
+}
+
+.enter-dome-button {
+  font-size: var(--font-size-base);
+  font-family: var(--font-family);
+  color: var(--color-text);
+  background-color: transparent;
+  border: 1px solid var(--color-text);
+  padding: 0;
+  height: var(--row-height);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  margin: 0;
+  line-height: var(--line-height-base);
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  grid-column: 5 / span 5; /* Centered: 4 cols on left, 5 cols button, 5 cols on right */
+  justify-self: center;
+}
+
+.enter-dome-button:hover {
+  background-color: var(--color-text);
+  color: var(--color-bg);
+}
+
+/* Dome mode - fade out dashboard overlay and footer text */
+body.dome-mode .dashboard-overlay {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+body.dome-mode footer.bottom-actions {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+body.dome-mode .canvas-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000;
+  transition: opacity var(--transition-normal);
+}
+
+body.dome-mode #canvas-container {
+  height: 100vh !important; /* Full viewport height in dome mode */
+  width: 100vw !important;
+}
+
+body:not(.dome-mode) .dashboard-overlay {
+  opacity: 1;
+  pointer-events: none; /* Keep pointer-events: none for overlay container */
+  transition: opacity var(--transition-normal);
+}
+
+body:not(.dome-mode) footer.bottom-actions {
+  opacity: 1;
+  pointer-events: none; /* Keep pointer-events: none for container, buttons override */
+  transition: opacity var(--transition-normal);
+}
+
+body:not(.dome-mode) .canvas-wrapper {
+  position: relative;
 }
 
 main .section {
@@ -142,7 +282,7 @@ section.intro {
 }
 
 .intro-text {
-  font-size: var(--font-size-intro);
+  font-size: var(--font-size-base);
   text-align: center;
   letter-spacing: var(--letter-spacing-normal);
 }
@@ -212,6 +352,7 @@ section.team {
 
 /* Header styles */
 .fixed-header {
+  display: none; /* Hide header for now */
   position: relative;
   width: 100%;
   padding: 0;
@@ -236,13 +377,13 @@ section.team {
 }
 
 .header-subtitle {
-  font-size: var(--font-size-small);
+  font-size: var(--font-size-base);
   letter-spacing: var(--letter-spacing-normal);
   margin-bottom: var(--half-row-height);
 }
 
 .header-location {
-  font-size: var(--font-size-xs);
+  font-size: var(--font-size-base);
   letter-spacing: var(--letter-spacing-normal);
   opacity: var(--opacity-muted);
 }

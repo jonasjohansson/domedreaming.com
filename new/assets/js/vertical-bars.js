@@ -36,16 +36,15 @@ function setupVerticalBarText() {
 
   if (leftContent) {
     leftContent.textContent = repeatedText;
-    // Update transform to account for centering
     const scrollY = window.scrollY || window.pageYOffset;
-    leftContent.style.transform = `translateX(-50%) translateY(${scrollY}px)`;
+    // Drive vertical position via CSS custom property so CSS can also skew
+    leftContent.style.setProperty("--vb-offset-y", `${scrollY}px`);
   }
 
   if (rightContent) {
     rightContent.textContent = repeatedText;
-    // Update transform to account for centering
     const scrollY = window.scrollY || window.pageYOffset;
-    rightContent.style.transform = `translateX(-50%) translateY(${scrollY}px)`;
+    rightContent.style.setProperty("--vb-offset-y", `${scrollY}px`);
   }
 }
 
@@ -61,7 +60,8 @@ function updateVerticalBarsHeight() {
     document.body.offsetHeight,
     document.documentElement.clientHeight,
     document.documentElement.scrollHeight,
-    document.documentElement.offsetHeight
+    document.documentElement.offsetHeight,
+    window.innerHeight // Ensure at least viewport height
   );
 
   verticalBars.style.height = `${documentHeight}px`;
@@ -71,12 +71,12 @@ function updateVerticalBarsHeight() {
 
   if (leftBar) {
     leftBar.style.height = `${documentHeight}px`;
-    leftBar.style.minHeight = `${documentHeight}px`;
+    leftBar.style.minHeight = `100vh`; // Always at least viewport height
   }
 
   if (rightBar) {
     rightBar.style.height = `${documentHeight}px`;
-    rightBar.style.minHeight = `${documentHeight}px`;
+    rightBar.style.minHeight = `100vh`; // Always at least viewport height
   }
 }
 
@@ -90,11 +90,11 @@ function updateVerticalBarScroll() {
   const scrollY = window.scrollY || window.pageYOffset;
 
   if (leftContent) {
-    leftContent.style.transform = `translateX(-50%) translateY(${scrollY}px)`;
+    leftContent.style.setProperty("--vb-offset-y", `${scrollY}px`);
   }
 
   if (rightContent) {
-    rightContent.style.transform = `translateX(-50%) translateY(${scrollY}px)`;
+    rightContent.style.setProperty("--vb-offset-y", `${scrollY}px`);
   }
 }
 
@@ -139,5 +139,4 @@ export function initVerticalBars() {
     attributeFilter: ["style", "class"],
   });
 }
-
 

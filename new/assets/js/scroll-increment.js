@@ -31,6 +31,12 @@ function roundToRowHeight(scrollY) {
 function handleScroll(event) {
   if (!settings.scrollSettings.enabled) return;
 
+  // If already scrolling, prevent further scroll events
+  if (isScrolling) {
+    event.preventDefault();
+    return;
+  }
+
   event.preventDefault(); // Prevent default smooth scrolling
 
   const now = Date.now();
@@ -64,13 +70,13 @@ function handleScroll(event) {
     isScrolling = true;
     lastScrollTime = now;
 
-    // Instant scroll - no smooth behavior
+    // Instant scroll - no smooth behavior for tactile feel
     window.scrollTo({
       top: targetScroll,
       behavior: "auto",
     });
 
-    // Reset scrolling flag after the timeout
+    // Reset scrolling flag after a shorter timeout for more responsive feel
     clearTimeout(scrollTimeout);
     scrollTimeout = setTimeout(() => {
       isScrolling = false;
@@ -99,6 +105,12 @@ function handleTouchMove(event) {
 function handleTouchEnd(event) {
   if (!settings.scrollSettings.enabled) return;
 
+  // If already scrolling, prevent further actions
+  if (isScrolling) {
+    event.preventDefault();
+    return;
+  }
+
   const touchEndY = event.changedTouches[0].clientY;
   const deltaY = touchStartY - touchEndY;
   const rowHeight = getRowHeight();
@@ -113,12 +125,12 @@ function handleTouchEnd(event) {
       return;
     }
 
-    // Significant touch movement
+    // Significant touch movement - snap immediately
     event.preventDefault();
     const currentScroll = window.scrollY || window.pageYOffset;
     const scrollDirection = deltaY > 0 ? 1 : -1;
 
-    // Calculate target scroll position - move by full row height
+    // Calculate target scroll position - move by full row height and snap
     let targetScroll = currentScroll + scrollDirection * scrollAmount;
     targetScroll = Math.round(targetScroll / scrollAmount) * scrollAmount;
 
@@ -129,6 +141,7 @@ function handleTouchEnd(event) {
       isScrolling = true;
       lastScrollTime = now;
 
+      // Immediate snap - no smooth scrolling for tactile feel
       window.scrollTo({
         top: targetScroll,
         behavior: "auto",

@@ -4,8 +4,7 @@ import { scene, camera } from "./scene.js";
 import { getMaterial, safeTraverse, pruneObjectChildren } from "./utils.js";
 import * as settings from "./settings.js";
 import { euler, setModelLoaded } from "./camera.js";
-import { setScreenObject } from "./texture.js";
-import { loadDefaultScreenTexture } from "./texture.js";
+import { setScreenObject, loadDefaultScreenTexture, setupDragAndDrop } from "./texture.js";
 import { verifyNavmeshAtStartPosition, initNavmesh, getNavMeshQuery } from "./navmesh.js";
 import { findLEDRim, createLEDStrip } from "./led-strip.js";
 
@@ -243,6 +242,7 @@ export function loadModel(createColorGUI) {
       initNavmesh();
       createColorGUI();
       loadDefaultScreenTexture();
+      setupDragAndDrop(); // Initialize drag and drop for texture updates
     },
     undefined,
     (error) => {

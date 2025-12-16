@@ -34,7 +34,7 @@ export function loadLEDStripSettings() {
   colorPalette.lightness = settingsModule.ledStripSettings.lightness;
 
   // Apply rim visibility
-  const rimVisible = settingsModule.ledStripSettings.rimVisible !== false; // Default to true
+  const rimVisible = settingsModule.ledStripSettings.rimVisible !== undefined ? settingsModule.ledStripSettings.rimVisible : false; // Default to false
   setRimVisible(rimVisible);
 }
 

@@ -7,6 +7,8 @@ import { fbxMeshes, glbLights } from "./model.js";
 import { loadDefaultScreenTexture } from "./texture.js";
 
 let gui = null;
+let guiVisible = false;
+let guiKeyListenerAttached = false;
 
 export function createColorGUI() {
   if (gui) gui.destroy();
@@ -14,6 +16,27 @@ export function createColorGUI() {
   if (fbxMeshes.length === 0) return;
 
   gui = new GUI({ title: "Controls", autoPlace: true });
+
+  // Hide GUI by default
+  guiVisible = false;
+  gui.domElement.style.display = "none";
+
+  // Global keyboard toggle: press "G" to show/hide GUI
+  if (!guiKeyListenerAttached) {
+    guiKeyListenerAttached = true;
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "g" || event.key === "G") {
+        // Prevent interfering with form inputs etc. only if no modifier keys
+        if (event.target && (event.target.tagName === "INPUT" || event.target.tagName === "TEXTAREA" || event.target.isContentEditable)) {
+          return;
+        }
+        guiVisible = !guiVisible;
+        if (gui) {
+          gui.domElement.style.display = guiVisible ? "" : "none";
+        }
+      }
+    });
+  }
 
   // Export settings button (at top level)
   const fileActions = {
@@ -57,11 +80,6 @@ export function createColorGUI() {
     backgroundColor: getComputedColor("--color-bg"),
     textColor: getComputedColor("--color-text"),
     dotColor: getComputedColor("--color-dot"),
-    sidebarColor: getComputedColor("--color-bar"),
-  };
-
-  const sidebarVisibleObj = {
-    visible: settings.pageColorSettings?.sidebarVisible !== false, // Default to true
   };
 
   const updateCSSVariable = (variable, hexColor) => {
@@ -89,42 +107,7 @@ export function createColorGUI() {
       pageColorsObj.dotColor = settings.pageColorSettings.dotColor;
       updateCSSVariable("--color-dot", settings.pageColorSettings.dotColor);
     }
-    if (settings.pageColorSettings.sidebarColor) {
-      pageColorsObj.sidebarColor = settings.pageColorSettings.sidebarColor;
-      updateCSSVariable("--color-bar", settings.pageColorSettings.sidebarColor);
-    }
-    if (settings.pageColorSettings.sidebarVisible !== undefined) {
-      sidebarVisibleObj.visible = settings.pageColorSettings.sidebarVisible;
-      const verticalBars = document.querySelector(".vertical-bars");
-      if (verticalBars) {
-        verticalBars.style.display = settings.pageColorSettings.sidebarVisible ? "block" : "none";
-      }
-    }
   }
-
-  const bgColorControl = pageColorsFolder.addColor(pageColorsObj, "backgroundColor");
-  bgColorControl.name("Background Color");
-  bgColorControl.onChange((value) => {
-    updateCSSVariable("--color-bg", value);
-    document.body.style.backgroundColor = value;
-    settings.pageColorSettings.backgroundColor = value;
-    settings.saveSettings(fbxMeshes, glbLights);
-  });
-
-  const textColorControl = pageColorsFolder.addColor(pageColorsObj, "textColor");
-  textColorControl.name("Text Color");
-  textColorControl.onChange((value) => {
-    updateCSSVariable("--color-text", value);
-    // Update all text elements
-    const main = document.querySelector("main");
-    if (main) main.style.color = value;
-    const intro = document.querySelector("section.intro");
-    if (intro) intro.style.color = value;
-    const introText = document.querySelector(".intro-text");
-    if (introText) introText.style.color = value;
-    settings.pageColorSettings.textColor = value;
-    settings.saveSettings(fbxMeshes, glbLights);
-  });
 
   const dotColorControl = pageColorsFolder.addColor(pageColorsObj, "dotColor");
   dotColorControl.name("Dot Color");
@@ -136,24 +119,7 @@ export function createColorGUI() {
     settings.saveSettings(fbxMeshes, glbLights);
   });
 
-  const sidebarColorControl = pageColorsFolder.addColor(pageColorsObj, "sidebarColor");
-  sidebarColorControl.name("Sidebar Color");
-  sidebarColorControl.onChange((value) => {
-    updateCSSVariable("--color-bar", value);
-    settings.pageColorSettings.sidebarColor = value;
-    settings.saveSettings(fbxMeshes, glbLights);
-  });
-
-  const sidebarVisibleControl = pageColorsFolder.add(sidebarVisibleObj, "visible");
-  sidebarVisibleControl.name("Sidebar Visible");
-  sidebarVisibleControl.onChange((value) => {
-    settings.pageColorSettings.sidebarVisible = value;
-    const verticalBars = document.querySelector(".vertical-bars");
-    if (verticalBars) {
-      verticalBars.style.display = value ? "block" : "none";
-    }
-    settings.saveSettings(fbxMeshes, glbLights);
-  });
+  // No sidebar or header island controls – layout simplified
 
   // Scroll increment settings
   const scrollFolder = websiteFolder.addFolder("Scroll Increment");
@@ -218,6 +184,36 @@ export function createColorGUI() {
     settings.saveSettings(fbxMeshes, glbLights);
   });
 
+  // Texture rotation controls
+  const textureRotationObj = {
+    enabled: settings.textureRotationSettings?.enabled || false,
+    speed: settings.textureRotationSettings?.speed || 0.1,
+    direction: settings.textureRotationSettings?.direction || 1,
+  };
+
+  const rotationEnabledControl = screenFolder.add(textureRotationObj, "enabled");
+  rotationEnabledControl.name("Texture Rotation Enabled");
+  rotationEnabledControl.onChange((value) => {
+    settings.textureRotationSettings.enabled = value;
+    settings.saveSettings(fbxMeshes, glbLights);
+  });
+
+  screenFolder
+    .add(textureRotationObj, "speed", 0, 2, 0.01)
+    .name("Rotation Speed (rad/s)")
+    .onChange((value) => {
+      settings.textureRotationSettings.speed = value;
+      settings.saveSettings(fbxMeshes, glbLights);
+    });
+
+  screenFolder
+    .add(textureRotationObj, "direction", { Clockwise: 1, "Counter-Clockwise": -1 })
+    .name("Rotation Direction")
+    .onChange((value) => {
+      settings.textureRotationSettings.direction = value;
+      settings.saveSettings(fbxMeshes, glbLights);
+    });
+
   // Canvas vignette settings
   // Ensure vignette settings exist
   if (!settings.pageColorSettings.vignette) {
@@ -271,6 +267,113 @@ export function createColorGUI() {
     settings.applyVignetteSettings();
     settings.saveSettings(fbxMeshes, glbLights);
   });
+  vignetteFolder.close();
+
+  // Page Backgrounds
+  const pageBackgroundsFolder = websiteFolder.addFolder("Page Backgrounds");
+
+  // Helper function to handle image upload
+  function handleImageUpload(pageName, file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      settings.pageBackgroundSettings[pageName].backgroundImage = dataUrl;
+      settings.applyPageBackgrounds();
+      settings.saveSettings(fbxMeshes, glbLights);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Canvas page background
+  const canvasPageFolder = pageBackgroundsFolder.addFolder("Canvas Page");
+  const canvasPageObj = {
+    backgroundColor: settings.pageBackgroundSettings?.canvas?.backgroundColor || "#000000",
+    uploadImage: () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) handleImageUpload("canvas", file);
+      };
+      input.click();
+    },
+    clearImage: () => {
+      settings.pageBackgroundSettings.canvas.backgroundImage = null;
+      settings.applyPageBackgrounds();
+      settings.saveSettings(fbxMeshes, glbLights);
+    },
+  };
+  const canvasBgColorControl = canvasPageFolder.addColor(canvasPageObj, "backgroundColor");
+  canvasBgColorControl.name("Background Color");
+  canvasBgColorControl.onChange((value) => {
+    settings.pageBackgroundSettings.canvas.backgroundColor = value;
+    settings.applyPageBackgrounds();
+    settings.saveSettings(fbxMeshes, glbLights);
+  });
+  canvasPageFolder.add(canvasPageObj, "uploadImage").name("Upload Image");
+  canvasPageFolder.add(canvasPageObj, "clearImage").name("Clear Image");
+
+  // About page background
+  const aboutPageFolder = pageBackgroundsFolder.addFolder("About Page");
+  const aboutPageObj = {
+    backgroundColor: settings.pageBackgroundSettings?.about?.backgroundColor || "#000000",
+    uploadImage: () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) handleImageUpload("about", file);
+      };
+      input.click();
+    },
+    clearImage: () => {
+      settings.pageBackgroundSettings.about.backgroundImage = null;
+      settings.applyPageBackgrounds();
+      settings.saveSettings(fbxMeshes, glbLights);
+    },
+  };
+  const aboutBgColorControl = aboutPageFolder.addColor(aboutPageObj, "backgroundColor");
+  aboutBgColorControl.name("Background Color");
+  aboutBgColorControl.onChange((value) => {
+    settings.pageBackgroundSettings.about.backgroundColor = value;
+    settings.applyPageBackgrounds();
+    settings.saveSettings(fbxMeshes, glbLights);
+  });
+  aboutPageFolder.add(aboutPageObj, "uploadImage").name("Upload Image");
+  aboutPageFolder.add(aboutPageObj, "clearImage").name("Clear Image");
+
+  // Team page background
+  const teamPageFolder = pageBackgroundsFolder.addFolder("Team Page");
+  const teamPageObj = {
+    backgroundColor: settings.pageBackgroundSettings?.team?.backgroundColor || "#000000",
+    uploadImage: () => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "image/*";
+      input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) handleImageUpload("team", file);
+      };
+      input.click();
+    },
+    clearImage: () => {
+      settings.pageBackgroundSettings.team.backgroundImage = null;
+      settings.applyPageBackgrounds();
+      settings.saveSettings(fbxMeshes, glbLights);
+    },
+  };
+  const teamBgColorControl = teamPageFolder.addColor(teamPageObj, "backgroundColor");
+  teamBgColorControl.name("Background Color");
+  teamBgColorControl.onChange((value) => {
+    settings.pageBackgroundSettings.team.backgroundColor = value;
+    settings.applyPageBackgrounds();
+    settings.saveSettings(fbxMeshes, glbLights);
+  });
+  teamPageFolder.add(teamPageObj, "uploadImage").name("Upload Image");
+  teamPageFolder.add(teamPageObj, "clearImage").name("Clear Image");
 
   // ===== 3D SCENE SECTION =====
   const sceneFolder = gui.addFolder("3D Scene");
@@ -467,6 +570,7 @@ export function createColorGUI() {
     const bloomPass = postProc.getBloomPass();
     if (bloomPass) {
       const bloomObj = {
+        enabled: settings.bloomSettings?.enabled !== false ? true : false,
         strength: bloomPass.strength,
         radius: bloomPass.radius,
         threshold: bloomPass.threshold,
@@ -474,13 +578,32 @@ export function createColorGUI() {
 
       const saveBloomSettings = () => {
         settings.saveSettings(fbxMeshes, glbLights);
+        // Apply bloom settings to scene
+        settings.applySettingsToScene();
       };
+
+      const enabledControl = postProcFolder.add(bloomObj, "enabled");
+      enabledControl.name("Bloom Enabled");
+      enabledControl.onChange((value) => {
+        settings.bloomSettings.enabled = value;
+        if (bloomPass) {
+          bloomPass.enabled = value;
+          if (!value) {
+            bloomPass.strength = 0;
+          } else {
+            bloomPass.strength = settings.bloomSettings.strength;
+          }
+        }
+        saveBloomSettings();
+      });
 
       postProcFolder
         .add(bloomObj, "strength", 0, 3, 0.1)
         .name("Bloom Strength")
         .onChange((value) => {
-          bloomPass.strength = value;
+          if (bloomPass && settings.bloomSettings.enabled) {
+            bloomPass.strength = value;
+          }
           settings.bloomSettings.strength = value;
           saveBloomSettings();
         });
@@ -488,7 +611,9 @@ export function createColorGUI() {
         .add(bloomObj, "radius", 0, 2, 0.1)
         .name("Bloom Radius")
         .onChange((value) => {
-          bloomPass.radius = value;
+          if (bloomPass) {
+            bloomPass.radius = value;
+          }
           settings.bloomSettings.radius = value;
           saveBloomSettings();
         });
@@ -496,7 +621,9 @@ export function createColorGUI() {
         .add(bloomObj, "threshold", 0, 2, 0.1)
         .name("Bloom Threshold")
         .onChange((value) => {
-          bloomPass.threshold = value;
+          if (bloomPass) {
+            bloomPass.threshold = value;
+          }
           settings.bloomSettings.threshold = value;
           saveBloomSettings();
         });
@@ -516,7 +643,7 @@ export function createColorGUI() {
       baseIntensity: ledStrip.baseIntensity,
       maxIntensity: ledStrip.maxIntensity,
       mirrored: ledStrip.mirrored,
-      rimVisible: settings.ledStripSettings.rimVisible !== false, // Default to true
+      rimVisible: settings.ledStripSettings.rimVisible !== undefined ? settings.ledStripSettings.rimVisible : false, // Default to false
       hueStart: ledStrip.colorPalette.hueStart,
       hueRange: ledStrip.colorPalette.hueRange,
       saturation: ledStrip.colorPalette.saturation,

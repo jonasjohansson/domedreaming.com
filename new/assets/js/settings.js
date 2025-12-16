@@ -27,6 +27,7 @@ export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
 export let bloomSettings = {
+  enabled: false, // Bloom disabled by default
   strength: 1.5,
   radius: 0.4,
   threshold: 0.85,
@@ -37,7 +38,7 @@ export let ledStripSettings = {
   baseIntensity: 0.0, // Off when not pulsing
   maxIntensity: 4.0,
   mirrored: false,
-  rimVisible: true,
+  rimVisible: false, // Hidden by default
   hueStart: 0.5,
   hueRange: 0.3,
   saturation: 1.0,
@@ -49,17 +50,18 @@ export let pageColorSettings = {
   dotColor: "#ffffff",
   sidebarColor: "#333333",
   sidebarVisible: true,
-  blendMode: "normal",
+  headerIslandVisible: false, // Hidden by default
+  blendMode: "normal", // Normal blending mode for better performance
   vignette: {
-    enabled: true,
+    enabled: false,
     size: 8, // percentage
     fadeWidth: 2, // percentage for the fade transition
   },
 };
 export let scrollSettings = {
-  enabled: true,
-  scrollTimeout: 80, // Delay in ms before allowing next scroll
-  touchThreshold: 20, // Minimum touch movement in pixels to trigger scroll
+  enabled: true, // Enabled for tactile row-height snapping
+  scrollTimeout: 150, // Delay in ms before allowing next scroll (reduced for more responsive feel)
+  touchThreshold: 30, // Minimum touch movement in pixels to trigger scroll
   snapThreshold: 0.5, // Minimum distance in pixels to trigger scroll
   initialSnapThreshold: 1, // Threshold for initial snap on page load
   gridColumns: 14, // Number of grid columns (should match CSS --grid-columns)
@@ -71,6 +73,27 @@ export let canvasSettings = {
 
 export let screenSettings = {
   defaultImage: "assets/img/background-text.jpg",
+};
+
+export let textureRotationSettings = {
+  enabled: false,
+  speed: 0.1, // radians per second
+  direction: 1, // 1 for clockwise, -1 for counter-clockwise
+};
+
+export let pageBackgroundSettings = {
+  canvas: {
+    backgroundColor: "#000000",
+    backgroundImage: null, // Data URL or path
+  },
+  about: {
+    backgroundColor: "#000000",
+    backgroundImage: null,
+  },
+  team: {
+    backgroundColor: "#000000",
+    backgroundImage: null,
+  },
 };
 
 export function setMoveSpeed(value) {
@@ -176,6 +199,54 @@ function applySettings(settings) {
   if (settings.screenSettings) {
     Object.assign(screenSettings, settings.screenSettings);
   }
+
+  if (settings.textureRotationSettings) {
+    Object.assign(textureRotationSettings, settings.textureRotationSettings);
+  }
+
+  if (settings.pageBackgroundSettings) {
+    Object.assign(pageBackgroundSettings, settings.pageBackgroundSettings);
+    applyPageBackgrounds();
+  }
+}
+
+/**
+ * Apply page background settings to DOM elements
+ */
+export function applyPageBackgrounds() {
+  // Canvas page (first viewport)
+  const canvasWrapper = document.querySelector(".canvas-wrapper");
+  if (canvasWrapper) {
+    if (pageBackgroundSettings.canvas.backgroundColor) {
+      canvasWrapper.style.backgroundColor = pageBackgroundSettings.canvas.backgroundColor;
+    }
+    if (pageBackgroundSettings.canvas.backgroundImage) {
+      canvasWrapper.style.backgroundImage = `url(${pageBackgroundSettings.canvas.backgroundImage})`;
+      canvasWrapper.style.backgroundSize = "cover";
+      canvasWrapper.style.backgroundPosition = "center";
+      canvasWrapper.style.backgroundRepeat = "no-repeat";
+    } else {
+      canvasWrapper.style.backgroundImage = "none";
+    }
+  }
+
+  // About page (second viewport)
+  const page2 = document.getElementById("page-2");
+  if (page2) {
+    if (pageBackgroundSettings.about.backgroundColor) {
+      page2.style.backgroundColor = pageBackgroundSettings.about.backgroundColor;
+    }
+    if (pageBackgroundSettings.about.backgroundImage) {
+      page2.style.backgroundImage = `url(${pageBackgroundSettings.about.backgroundImage})`;
+      page2.style.backgroundSize = "cover";
+      page2.style.backgroundPosition = "center";
+      page2.style.backgroundRepeat = "no-repeat";
+    } else {
+      page2.style.backgroundImage = "none";
+    }
+  }
+
+  // Page 2 now contains all content (no separate page 3)
 }
 
 // Apply vignette mask to canvas container
@@ -212,7 +283,6 @@ export function applyPageColors() {
   document.documentElement.style.setProperty("--color-bg", pageColorSettings.backgroundColor);
   document.documentElement.style.setProperty("--color-text", pageColorSettings.textColor);
   document.documentElement.style.setProperty("--color-dot", pageColorSettings.dotColor);
-  document.documentElement.style.setProperty("--color-bar", pageColorSettings.sidebarColor);
   document.body.style.backgroundColor = pageColorSettings.backgroundColor;
   const main = document.querySelector("main");
   if (main) main.style.color = pageColorSettings.textColor;
@@ -224,11 +294,6 @@ export function applyPageColors() {
   const canvasWrapper = document.querySelector(".canvas-wrapper");
   if (canvasWrapper && pageColorSettings.blendMode) {
     canvasWrapper.style.mixBlendMode = pageColorSettings.blendMode;
-  }
-  // Apply sidebar visibility
-  const verticalBars = document.querySelector(".vertical-bars");
-  if (verticalBars) {
-    verticalBars.style.display = pageColorSettings.sidebarVisible ? "block" : "none";
   }
   // Apply vignette
   applyVignette();
@@ -266,6 +331,9 @@ export async function loadSettings(forceFromJSON = false) {
     // Ensure page colors are applied after loading from JSON
     applyPageColors();
   }
+
+  // Apply page backgrounds after loading settings
+  applyPageBackgrounds();
 }
 
 // Apply settings to scene elements (colors, lights, etc.)
@@ -302,9 +370,16 @@ export async function applySettingsToScene() {
   import("./postprocessing.js").then((postProc) => {
     const bloomPass = postProc.getBloomPass();
     if (bloomPass) {
-      bloomPass.strength = bloomSettings.strength;
-      bloomPass.radius = bloomSettings.radius;
-      bloomPass.threshold = bloomSettings.threshold;
+      // Enable/disable bloom based on settings
+      bloomPass.enabled = bloomSettings.enabled !== false;
+      if (bloomSettings.enabled) {
+        bloomPass.strength = bloomSettings.strength;
+        bloomPass.radius = bloomSettings.radius;
+        bloomPass.threshold = bloomSettings.threshold;
+      } else {
+        // Set to 0 when disabled
+        bloomPass.strength = 0;
+      }
     }
   });
 
@@ -372,6 +447,8 @@ export function saveSettings(fbxMeshes, glbLights) {
       scrollSettings,
       canvasSettings,
       screenSettings,
+      textureRotationSettings,
+      pageBackgroundSettings,
     };
 
     localStorage.setItem("domeDreamingSettings", JSON.stringify(settings));
@@ -422,6 +499,9 @@ export function exportSettingsFile(fbxMeshes, glbLights) {
         ledStripSettings,
         colorSettings,
         lightSettings,
+        screenSettings,
+        textureRotationSettings,
+        pageBackgroundSettings,
       },
     };
 

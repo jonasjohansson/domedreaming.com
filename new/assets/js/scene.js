@@ -7,7 +7,7 @@ export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window
 camera.position.set(0, 5, 10);
 
 export const renderer = new THREE.WebGLRenderer({
-  antialias: true,
+  antialias: false, // Disable antialiasing for better performance
   powerPreference: "high-performance",
   stencil: false,
   depth: true,
@@ -27,11 +27,9 @@ function getContainerSize() {
 // Set initial size based on container
 const containerSize = getContainerSize();
 renderer.setSize(containerSize.width, containerSize.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Limit pixel ratio for performance
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Softer shadows
-renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.0; // Slightly brighter
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Further limit pixel ratio for performance
+renderer.shadowMap.enabled = false; // Disable shadows for better performance
+renderer.toneMapping = THREE.NoToneMapping; // Disable tone mapping for better performance
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 canvasContainer.appendChild(renderer.domElement);
@@ -43,7 +41,7 @@ let resizeHandler = () => {
   camera.aspect = size.width / size.height;
   camera.updateProjectionMatrix();
   renderer.setSize(size.width, size.height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 };
 
 window.addEventListener("resize", resizeHandler);
@@ -53,7 +51,3 @@ export function setResizeHandler(handler) {
   resizeHandler = handler;
   window.addEventListener("resize", resizeHandler);
 }
-
-
-
-

@@ -18,10 +18,10 @@ export function initPostProcessing() {
   const rect = canvasContainer.getBoundingClientRect();
   const resolution = new THREE.Vector2(rect.width, rect.height);
 
-  // Create render target with multisampling for better quality
+  // Create render target - reduced quality for performance
   const renderTarget = new THREE.WebGLRenderTarget(resolution.width, resolution.height, {
     type: THREE.HalfFloatType,
-    samples: 4, // Multisampling for anti-aliasing
+    samples: 0, // Disable multisampling for better performance
   });
 
   // Create effect composer
@@ -32,16 +32,18 @@ export function initPostProcessing() {
   composer.addPass(renderPass);
 
   // Create bloom pass for glowing effects (load from saved settings)
-  bloomPass = new UnrealBloomPass(resolution, bloomSettings.strength, bloomSettings.radius, bloomSettings.threshold);
+  const initialStrength = bloomSettings.enabled !== false ? bloomSettings.strength : 0;
+  bloomPass = new UnrealBloomPass(resolution, initialStrength, bloomSettings.radius, bloomSettings.threshold);
+  bloomPass.enabled = bloomSettings.enabled !== false;
   composer.addPass(bloomPass);
 
-  // Create FXAA pass for anti-aliasing
-  fxaaPass = new FXAAPass();
-  composer.addPass(fxaaPass);
+  // FXAA disabled for better performance
+  // fxaaPass = new FXAAPass();
+  // composer.addPass(fxaaPass);
 
-  // Create output pass for tone mapping
-  outputPass = new OutputPass();
-  composer.addPass(outputPass);
+  // Output pass disabled for better performance - use direct render instead
+  // outputPass = new OutputPass();
+  // composer.addPass(outputPass);
 
   // Update resize handler to include post-processing
   setResizeHandler(() => {
@@ -53,7 +55,7 @@ export function initPostProcessing() {
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
     renderer.setSize(width, height);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
     resizePostProcessing();
   });
 
@@ -89,7 +91,3 @@ export function resizePostProcessing() {
 export function getBloomPass() {
   return bloomPass;
 }
-
-
-
-

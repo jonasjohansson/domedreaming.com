@@ -32,6 +32,7 @@
 
 main h1 {
   font-size: var(--font-size-base);
+  color: var(--color-text);
   font-weight: var(--font-weight-normal);
   margin-bottom: var(--half-row-height);
   letter-spacing: var(--letter-spacing-tight);
@@ -39,6 +40,7 @@ main h1 {
 
 main h2 {
   font-size: var(--font-size-base);
+  color: var(--color-text);
   font-weight: var(--font-weight-normal);
   margin-top: 0;
   margin-bottom: var(--half-row-height);
@@ -47,6 +49,7 @@ main h2 {
 
 main p {
   font-size: var(--font-size-base);
+  color: var(--color-text);
   line-height: calc(var(--row-height) / 4);
   font-weight: var(--font-weight-normal);
   letter-spacing: var(--letter-spacing-normal);
@@ -67,11 +70,13 @@ main p:last-child {
 
 main h3 {
   font-size: var(--font-size-base);
+  color: var(--color-text);
   letter-spacing: var(--letter-spacing-normal);
 }
 
 main .challenge-title {
   font-size: var(--font-size-base);
+  color: var(--color-text);
   font-weight: var(--font-weight-normal);
   margin-top: var(--half-row-height);
   margin-bottom: var(--half-row-height);
@@ -110,11 +115,13 @@ main strong {
 }
 
 .team-info h3 {
+  color: var(--color-text);
   margin-top: 0;
   margin-bottom: var(--half-row-height);
 }
 
 .team-info .role {
+  color: var(--color-text);
   font-weight: var(--font-weight-medium);
   margin-bottom: var(--half-row-height);
   opacity: 0.8;
