@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { canvas, camera } from "./scene.js";
-import { cameraSettings } from "./settings.js";
+import { cameraSettings } from "../settings.js";
 
 // State variables
 export let isPointerLocked = false;

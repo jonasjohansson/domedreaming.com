@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { camera } from "./scene.js";
 import { CAMERA_HEIGHT, NAVMESH_SEARCH_BOX } from "./config.js";
-import * as settings from "./settings.js";
+import * as settings from "../settings.js";
 import { keys, qeRotationSpeed, euler, modelLoaded, setQeRotationSpeed } from "./camera.js";
 import { hotspots } from "./model.js";
 
@@ -134,11 +134,3 @@ export function checkHotspots() {
     }
   }
 }
-
-
-
-
-
-
-
-

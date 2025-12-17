@@ -9,18 +9,18 @@ let colWidth = 0;
 let rowHeight = 0;
 
 /**
- * Initialize animated dots
+ * Initialize grid dots
  */
-function initAnimatedDots() {
+function initGridDots() {
   // Remove existing container if any
-  const existingContainer = document.getElementById("animated-dots-container");
+  const existingContainer = document.getElementById("grid-dots-container");
   if (existingContainer) {
     existingContainer.remove();
   }
 
   // Create container
   dotsContainer = document.createElement("div");
-  dotsContainer.id = "animated-dots-container";
+  dotsContainer.id = "grid-dots-container";
   document.body.appendChild(dotsContainer);
 
   updateDotsSize();
@@ -85,8 +85,8 @@ function createDotElements() {
 /**
  * Initialize and export
  */
-export function initAnimatedDotsSystem() {
-  initAnimatedDots();
+export function initGridDotsSystem() {
+  initGridDots();
 
   // Update on resize to recreate dots for new viewport size
   window.addEventListener("resize", () => {

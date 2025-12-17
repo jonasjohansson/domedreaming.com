@@ -1,10 +1,10 @@
 import * as THREE from "three";
 import GUI from "./libs/lil-gui/lil-gui.esm.min.js";
-import { getMaterial, colorToHex } from "./utils.js";
+import { getMaterial, colorToHex } from "./3d/utils.js";
 import * as settings from "./settings.js";
-import { camera } from "./scene.js";
-import { fbxMeshes, glbLights } from "./model.js";
-import { loadDefaultScreenTexture } from "./texture.js";
+import { camera } from "./3d/scene.js";
+import { fbxMeshes, glbLights } from "./3d/model.js";
+import { loadDefaultScreenTexture } from "./3d/texture.js";
 
 let gui = null;
 let guiVisible = false;
@@ -566,7 +566,7 @@ export function createColorGUI() {
 
   // Post-processing settings
   const postProcFolder = sceneFolder.addFolder("Post-Processing");
-  import("./postprocessing.js").then((postProc) => {
+  import("./3d/postprocessing.js").then((postProc) => {
     const bloomPass = postProc.getBloomPass();
     if (bloomPass) {
       const bloomObj = {
@@ -633,7 +633,7 @@ export function createColorGUI() {
 
   // LED Strip animation settings
   const ledFolder = sceneFolder.addFolder("LED Strip Animation");
-  import("./led-strip.js").then((ledStrip) => {
+  import("./3d/led-strip.js").then((ledStrip) => {
     // Ensure settings are loaded
     ledStrip.loadLEDStripSettings();
 

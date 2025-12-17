@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { configureTexture, applyTextureToScreen, getMaterial } from "./utils.js";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
-import { screenSettings } from "./settings.js";
+import { screenSettings } from "../settings.js";
 
 let screenObject = null;
 let currentVideoTexture = null;

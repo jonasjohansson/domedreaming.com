@@ -51,8 +51,7 @@ function makeDraggable(block) {
 
     const containerRect = container.getBoundingClientRect();
     const colWidth = containerRect.width / 14; // 14 columns
-    const rowHeight =
-      parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
+    const rowHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
 
     const deltaX = e.clientX - startX;
     const deltaY = e.clientY - startY;
@@ -125,8 +124,7 @@ function startResize(event, block, direction) {
 
   const containerRect = container.getBoundingClientRect();
   const colWidth = containerRect.width / 14; // 14 columns
-  const rowHeight =
-    parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
+  const rowHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
 
   // Parse current grid position
   const gridCol = block.style.gridColumn;
@@ -197,9 +195,11 @@ function startResize(event, block, direction) {
  */
 export function initDashboard() {
   // Find any existing dashboard blocks marked as draggable
-  const blocks = document.querySelectorAll(".dashboard-cell.draggable, .dashboard-block.draggable");
+  const blocks = document.querySelectorAll(".dashboard-block.draggable");
   blocks.forEach((block) => {
     makeDraggable(block);
     makeResizable(block);
   });
 }
+
+

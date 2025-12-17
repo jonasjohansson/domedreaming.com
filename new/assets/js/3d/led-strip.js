@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as settingsModule from "./settings.js";
+import * as settingsModule from "../settings.js";
 
 let ledRimObject = null;
 let ledPixels = [];
@@ -505,4 +505,3 @@ export function setRimVisible(visible) {
 export function isRimVisible() {
   return ledRimObject ? ledRimObject.visible : true;
 }
-

@@ -133,15 +133,15 @@ body::before {
   opacity: 0; /* Hidden - animated dots replace them */
 }
 
-/* Animated dots - DOM elements */
-#animated-dots-container {
+/* Grid dots - DOM elements */
+#grid-dots-container {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 10002; /* Above all page content and GUI */
   overflow: visible;
   display: grid;
   grid-template-columns: repeat(14, 1fr);
@@ -169,18 +169,10 @@ body::before {
   display: block;
 }
 
-/* Lines connecting dots - removed static lines, only animated line visible */
-
-/* Animated line overlay - canvas will be inserted here */
-.animated-lines-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 9997;
-  overflow: hidden;
+/* Utility: force element to the top layer within the page */
+.top {
+  position: relative;
+  z-index: 1000; /* Above most content, below full-screen overlays */
 }
 
 /* Grid utility classes */

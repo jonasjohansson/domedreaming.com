@@ -1,16 +1,16 @@
-import { scene, camera, renderer, canvas } from "./scene.js";
-import { setupLighting } from "./lighting.js";
-import { initPostProcessing, updatePostProcessing } from "./postprocessing.js";
-import { setupCameraControls } from "./camera.js";
-import { updateMovement } from "./movement.js";
-import { loadModel } from "./model.js";
+import { scene, camera, renderer, canvas } from "./3d/scene.js";
+import { setupLighting } from "./3d/lighting.js";
+import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js";
+import { setupCameraControls } from "./3d/camera.js";
+import { updateMovement } from "./3d/movement.js";
+import { loadModel } from "./3d/model.js";
 import { createColorGUI } from "./gui.js";
 import { loadSettings, canvasSettings } from "./settings.js";
-import { updateLEDAnimation } from "./led-strip.js";
+import { updateLEDAnimation } from "./3d/led-strip.js";
 import { initScrollIncrement } from "./scroll-increment.js";
-import { initAnimatedDotsSystem } from "./animated-dots.js";
+import { initGridDotsSystem } from "./grid-dots.js";
 import { initDashboard } from "./dashboard.js";
-import { getCurrentImageTexture, getCurrentVideoTexture } from "./texture.js";
+import { getCurrentImageTexture, getCurrentVideoTexture } from "./3d/texture.js";
 import { textureRotationSettings } from "./settings.js";
 
 let animationFrameId = null;
@@ -20,21 +20,19 @@ let lastTime = 0;
 function setCanvasHeight() {
   const canvasContainer = document.getElementById("canvas-container");
   const canvasWrapper = document.querySelector(".canvas-wrapper");
-  if (!canvasContainer) return;
+  if (!canvasContainer || !canvasWrapper) return;
 
-  const viewportHeight = window.innerHeight;
+  // Use CSS row-height so canvas matches exactly 10 grid rows
+  const rootStyles = getComputedStyle(document.documentElement);
+  const cssRowHeight = parseFloat(rootStyles.getPropertyValue("--row-height"));
+  const rowHeight = !isNaN(cssRowHeight) && cssRowHeight > 0 ? cssRowHeight : window.innerHeight / 10;
+  const targetHeight = rowHeight * 10;
 
-  // Canvas and wrapper fill full viewport height
-  canvasContainer.style.height = `${viewportHeight}px`;
+  canvasContainer.style.height = `${targetHeight}px`;
   canvasContainer.style.padding = "0";
   canvasContainer.style.margin = "0";
 
-  // Also set wrapper height if it exists
-  if (canvasWrapper) {
-    canvasWrapper.style.height = `${viewportHeight}px`;
-  }
-
-  // No octagon mask - canvas fills viewport directly
+  canvasWrapper.style.height = `${targetHeight}px`;
 }
 
 // Set page sections to maximum row-heights that fit in viewport
@@ -58,42 +56,12 @@ function setPageSectionHeights() {
 }
 
 // Map logical row classes (row-*) and dashboard cells to physical grid rows based on viewport
+// Logical row remapping (previously used to rescale y-* classes) is disabled.
+// Grid placement is now controlled purely by the CSS utility classes (x-*, y-*, w-*, h-*).
 const BASE_ROWS = 8;
 
 function updateLogicalRows() {
-  const rootStyles = getComputedStyle(document.documentElement);
-  const cssRowHeight = parseFloat(rootStyles.getPropertyValue("--row-height"));
-  const rowHeight = !isNaN(cssRowHeight) && cssRowHeight > 0 ? cssRowHeight : window.innerHeight / BASE_ROWS;
-  const viewportHeight = window.innerHeight;
-
-  const actualRows = Math.max(1, Math.floor(viewportHeight / rowHeight));
-
-  // Any text / content cell that uses a y-* class will be mapped proportionally
-  const logicalCells = document.querySelectorAll(".cell[class*='y-']");
-
-  logicalCells.forEach((cell) => {
-    const rowClass = Array.from(cell.classList).find((cls) => cls.startsWith("y-"));
-    if (!rowClass) return;
-
-    const logicalRow = parseInt(rowClass.slice(2), 10);
-    if (!logicalRow || !BASE_ROWS) return;
-
-    const mappedRow = Math.max(1, Math.round((logicalRow / BASE_ROWS) * actualRows));
-    cell.style.gridRowStart = mappedRow;
-  });
-
-  // Dashboard image cells: use data-logical-row and data-row-span
-  const dashboardCells = document.querySelectorAll(".dashboard-cell[data-logical-row]");
-
-  dashboardCells.forEach((cell) => {
-    const logicalRow = parseInt(cell.dataset.logicalRow, 10);
-    if (!logicalRow || !BASE_ROWS) return;
-
-    const rowSpan = parseInt(cell.dataset.rowSpan || "1", 10);
-    const mappedRow = Math.max(1, Math.round((logicalRow / BASE_ROWS) * actualRows));
-
-    cell.style.gridRow = `${mappedRow} / span ${rowSpan}`;
-  });
+  // no-op
 }
 
 /**
@@ -176,8 +144,8 @@ async function init() {
   // Initialize scroll increment functionality
   initScrollIncrement();
 
-  // Initialize animated dots
-  initAnimatedDotsSystem();
+  // Initialize grid dots (static background)
+  initGridDotsSystem();
 
   // Initialize dashboard
   initDashboard();
@@ -195,10 +163,6 @@ async function init() {
   // Set page section heights to match viewport in row-heights
   setPageSectionHeights();
   window.addEventListener("resize", setPageSectionHeights);
-
-  // Map logical rows to current viewport rows
-  updateLogicalRows();
-  window.addEventListener("resize", updateLogicalRows);
 
   // Load the 3D model (this will also create the GUI)
   loadModel(createColorGUI);
