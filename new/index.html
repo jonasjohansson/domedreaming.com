@@ -29,7 +29,7 @@
   <body>
     <main class="grid">
       <!-- First viewport: WebGL Canvas -->
-      <div class="canvas-wrapper">
+      <div class="canvas-wrapper grid">
         <div id="canvas-container">
           <div id="drop-zone"></div>
           <div id="loading">
@@ -37,62 +37,47 @@
           </div>
         </div>
 
-        <!-- Dashboard cells overlay on first viewport -->
         <div
-          class="dashboard-overlay grid"
+          class="grid-overlay grid"
           id="dashboard-overlay">
-          <!-- Cells will be added here via JavaScript -->
+          <div class="block x-4 w-8 y-2 h-1">
+            <p>
+              Dome Dreaming fulldome film festival<br />
+              Stockholm 7–9th of May, Malmö 12–13th of May<br />
+              program and tickets announced in february<br />
+              <br />
+              Signup for the
+              <a
+                href="https://domedreaming.com/newsletter"
+                target="_blank"
+                rel="noreferrer"
+                >newsletter</a
+              >, join the
+              <a
+                href="#"
+                disabled
+                >open call</a
+              >
+              (opens end of january) and <a href="#">save the date</a>!
+            </p>
+          </div>
+          <div class="block x-2 w-12 y-7 h-1">
+            <p class="dome-intro-text">
+              Scroll down to read more about the project, or enter a dome simulator modeled after the dome at Tekniska. Before entering you
+              can drag and drop an image or video to have it displayed in the dome. Try it!
+            </p>
+          </div>
+          <div class="block x-5 w-6 y-8 h-1">
+            <button id="enter-dome-btn">Enter the dome</button>
+          </div>
         </div>
-
-        <!-- Bottom text and links - grid positioned on canvas -->
-        <footer class="bottom-actions grid">
-          <p
-            class="col-2 span-12"
-            style="grid-row: 2">
-            Dome Dreaming fulldome film festival<br />
-            Stockholm 7–9th of May, Malmö 12–13th of May<br />
-            program and tickets announced in february<br />
-            <br />
-            Signup for the
-            <a
-              href="https://domedreaming.com/newsletter"
-              target="_blank"
-              rel="noreferrer"
-              class="action-link"
-              >newsletter</a
-            ><br />
-            Join the
-            <span class="action-link-disabled">open call (opens end of january)</span>
-            and
-            <a
-              href="#"
-              class="action-link"
-              >save the date</a
-            >!
-          </p>
-          <p
-            class="dome-intro-text col-2 span-12"
-            style="grid-row: 5">
-            Scroll down to read more about the project, or enter a dome simulator modeled after the dome at Tekniska. Before entering you
-            can drag and drop an image or video to have it displayed in the dome.
-          </p>
-          <button
-            class="enter-dome-button"
-            id="enter-dome-btn"
-            style="grid-row: 6">
-            Enter the dome
-          </button>
-        </footer>
       </div>
 
-      <!-- Second viewport: Continuous flow of text, images, and content -->
       <section
         class="page-section page-2 grid"
         id="page-2">
-        <div class="col-2 span-12 page-content">
-          <div
-            class="section col-1 span-4"
-            style="grid-row: 3">
+        <div class="x-2 w-12 page-content">
+          <div class="block x-1 w-4 y-3 h-1">
             <h2>THE WISDOME PROJECT</h2>
             <p>
               Wisdome connects science centers, universities, and research institutions to explore new ways of engaging audiences through
@@ -105,9 +90,7 @@
             </p>
           </div>
 
-          <div
-            class="section col-5 span-4"
-            style="grid-row: 4">
+          <div class="block x-5 w-4 y-4 h-1">
             <h2>THE DOME DREAMING ETHOS</h2>
             <p>
               DOME DREAMING draws from Expanded Cinema, Visions of the Present, and Black Mountain College—three movements that redefined
@@ -120,9 +103,7 @@
             </p>
           </div>
 
-          <div
-            class="section col-9 span-4"
-            style="grid-row: 5">
+          <div class="block x-9 w-4 y-5 h-1">
             <h2>BEYOND WISDOME</h2>
             <p>
               Domes have long served as a canvas for artistic exploration. In the 1960s, Steve VanDerBeek created Movie-Drome—a pioneering
@@ -134,35 +115,48 @@
             </p>
           </div>
 
-          <!-- Full-width image after the 3 text blocks (placed clearly below the last about column) -->
-          <div
-            class="section col-1 span-12"
-            style="grid-row: 10 / span 6">
+          <div class="block x-1 w-12 y-12 h-6 cell-hero-image">
             <img
               src="assets/img/Links/WisdomeStockholm-topaz-upscale-1.9x.jpg"
-              alt="Wisdome Stockholm"
-              style="width: 100%; height: auto; object-fit: cover; display: block" />
+              alt="Wisdome Stockholm" />
           </div>
 
-          <!-- Support and collaboration text - positioned below the big image -->
-          <div
-            class="section col-2 span-12"
-            style="grid-row: 16">
+          <div class="block x-4 w-8 y-18 h-1">
+            <p>
+              Dome Dreaming fulldome film festival<br />
+              Stockholm 7–9th of May, Malmö 12–13th of May<br />
+              program and tickets announced in february<br />
+              <br />
+              Signup for the
+              <a
+                href="https://domedreaming.com/newsletter"
+                target="_blank"
+                rel="noreferrer"
+                >newsletter</a
+              >, join the
+              <a
+                href="#"
+                disabled
+                >open call</a
+              >
+              (opens end of january) and <a href="#">save the date</a>!
+            </p>
+          </div>
+
+          <
+
+          <div class="block x-2 w-12 y-22 h-1">
             <p class="centered-text">
               Dome Dreaming is supported by Tekniska museet, Malmö stad, Region Stockholm and produced by Jonas Johansson, Fredrik Edström
               and Sebastian Häger.
             </p>
           </div>
 
-          <div
-            class="section col-2 span-12"
-            style="grid-row: 17">
+          <div class="block x-2 w-12 y-23 h-1">
             <p class="centered-text">Dome Dreaming is produced in collaboration with Nonagon, Aavistus, Kokong and Baltic Analog Lab.</p>
           </div>
 
-          <div
-            class="section col-2 span-12"
-            style="grid-row: 18">
+          <div class="block x-2 w-12 y-24 h-1">
             <p class="centered-text">
               Dome Dreaming is a
               <a
@@ -176,9 +170,7 @@
             </p>
           </div>
 
-          <div
-            class="section col-2 span-12"
-            style="grid-row: 19">
+          <div class="block x-2 w-12 y-25 h-1">
             <p class="centered-text contact-note">
               For questions or collaboration, please write to
               <a
@@ -190,221 +182,8 @@
           </div>
         </div>
         <div
-          class="dashboard-overlay grid"
-          id="page-2-cells">
-          <!-- Draggable image cells will be added here -->
-        </div>
-      </section>
-
-      <section class="about">
-        <div
-          class="section col-1 span-4"
-          id="wisdome">
-          <h2>THE WISDOME PROJECT</h2>
-          <p>
-            Wisdome connects science centers, universities, and research institutions to explore new ways of engaging audiences through
-            audiovisual production. Rooted in research from Linköping University and Visualiseringscenter C, it focuses on sparking
-            curiosity in science and technology.
-          </p>
-          <p>
-            In 2022–2023, as part of the Wisdome project, Tekniska Museet and Malmö Museer introduced cutting-edge dome theaters with
-            180-degree visuals and ambisonic sound. These domes host everything from complex simulations to experimental performances.
-          </p>
-          <p>
-            While Wisdome centers on scientific visualisation, its potential goes further. Dome theaters, explored by artists and filmmakers
-            worldwide, are now a platform for artistic expression in Sweden. This opens the door for cross-disciplinary collaboration and a
-            creative community waiting to be let in.
-          </p>
-        </div>
-
-        <div
-          class="section col-5 span-4"
-          id="ethos">
-          <h2>THE DOME DREAMING ETHOS</h2>
-          <p>
-            DOME DREAMING draws from Expanded Cinema, Visions of the Present, and Black Mountain College—three movements that redefined
-            artistic and technological boundaries. Expanded Cinema (1960s) moved film beyond the screen, adopting non-linear narratives and
-            experimental formats. Visions of the Present (1966, Stockholm) combined art, technology, and media to challenge audience
-            engagement. Black Mountain College integrated art, science, and performance, influencing works like Stan VanDerBeek's
-            Movie-Drome and Billy Klüver's Experiments in Art and Technology (E.A.T.), which connected artists with engineers.
-          </p>
-          <p>
-            DOME DREAMING adapts these radical ideas to the dome format. It transforms cinema from a passive experience into an immersive
-            180-degree space where storytelling, sound, and visuals converge. Hosted at Wisdome Stockholm and Wisdome Malmö, the festival
-            encourages collaboration, experimentation, and cross-disciplinary innovation.
-          </p>
-          <p>
-            Despite Sweden's five Wisdome domes, funding and recognition for experimental film and dome content remain scarce—especially
-            beyond science and education. DOME DREAMING aims at changing that.
-          </p>
-        </div>
-
-        <div
-          class="section col-9 span-4"
-          id="beyond">
-          <h2>BEYOND WISDOME</h2>
-          <p>
-            Domes have long served as a canvas for artistic exploration and collaboration. In the 1960s, Steve VanDerBeek created
-            Movie-Drome—a pioneering prototype for networked image communication ("CULTURE: Intercom"), made as a collaborative tool long
-            before the Internet. Buckminster Fuller, too, reimagined the potential of domes, using them as structures to unite artistic
-            disciplines and push the boundaries of architecture.
-          </p>
-          <p>
-            Since 1996, La SAT in Montreal has been a beacon for dome innovation, fostering a vibrant creative community that has grown in
-            part due to the success of Cirque du Soleil. Each week they invite musicians and visual artists, opening up the dome. Other
-            notable initiatives, such as Visions of the Now (2015–2017) by Anna Lundh, The New Infinity in Berlin (2018–2021), and the Lumen
-            Project (2019–2024) in Eric Ericssonhallen, have further expanded the scope of immersive experiences.
-          </p>
-          <p>
-            DOME DREAMING draws inspiration from these pioneering efforts, but with an eye toward forging new paths. By pushing the limits
-            of immersive media, we aim to explore the unique, transformative potential of the dome while creating our own distinct
-            contributions to this evolving field.
-          </p>
-        </div>
-
-        <div
-          class="section col-1 span-4"
-          id="history">
-          <h2>A HISTORY OF AUDIOVISUAL ART</h2>
-          <p>
-            The history of audiovisual art is driven by a desire to break down the barriers between seeing and hearing—to give sound a
-            visual form and let images carry sound. From early experiments in visual music to today's dome-based media, artists have tried
-            to create multisensory experiences that go beyond the limits of each sense.
-          </p>
-          <p>
-            This began strongly in the 1920s with artists like Viking Eggeling and Hans Richter. They created abstract films based on rhythm
-            and visual structure. Eggeling's Symphonie Diagonale (1924) moved like a musical score, with shapes unfolding over time. These
-            works were built on the idea that visual elements—lines, shapes, and contrasts—could be arranged like music to show patterns of
-            movement and emotion.
-          </p>
-          <p>
-            Artists Walter Ruttmann and Oskar Fischinger, took these ideas further. Fischinger's animations came before electronic
-            synthesisers, but still gave a strong sense of musical structure. In An Optical Poem (1938), he used cut-paper animation set to
-            music by Franz Liszt, creating floating shapes that felt both abstract and emotional. In the US, Mary Ellen Bute helped bring
-            these experiments to a wider audience. She used both hand-drawn techniques and early electronic tools to explore rhythm and
-            image. She was among the first to describe her work as "seeing sound," and helped shape the growing field of visual music.
-          </p>
-          <p>
-            The idea of turning music into colour—or colour into music—has fascinated artists for centuries. In the 18th century, inventors
-            built "colour organs" to project light in response to sound. In 1896, Swedish inventor Martin Wiberg created the Spektralpiano,
-            which used coloured glass and light to replace sound with colour. He imagined full performances of "colour symphonies" that
-            aimed to stir emotions through light alone. His invention came before the better-known colour pianos of Alexander Scriabin and
-            others, and paved the way for later instruments.
-          </p>
-          <p>
-            No one captured this mix of image and sound more clearly than John Whitney. With training in both music and design, he used
-            analogue computers, originally built for missile guidance—to create animations driven by maths and music. His film Catalog
-            (1961) showed how programming could become a kind of composition, where colour, movement, and pattern worked like musical
-            elements.
-          </p>
-          <p>
-            In the UK, Daphne Oram developed the Oramics system in the 1950s. She drew shapes directly onto film to produce sound, turning
-            gesture into sound waves. Like Whitney, she believed in a combined language of sound and image.
-          </p>
-          <p>
-            By the 1960s and '70s, artists began exploring how these ideas could shape physical space. Nam June Paik, using custom-built
-            video tools, created live performances and multi-screen setups that broke the rules of passive media. His work was lively,
-            strange, and full of energy—bringing together sound, image, and body. At the same time, Stan VanDerBeek built the Movie-Drome, a
-            dome-shaped theatre for immersive film. Visitors lay beneath a flow of moving images from news, art, and science. It was not
-            just about watching, but about stepping into a new kind of space and experience.
-          </p>
-          <p>
-            These projects were part of a wider movement called expanded cinema—a term by Gene Youngblood for artworks that moved beyond
-            film into performance, installation, and mixed media. Paik was a key figure in this shift. Others, like Anthony McCall and the
-            USCO collective, used light and sound to shape space. At Bell Labs, Lillian Schwartz worked with scientists to make images using
-            early computers, bringing coding into art for the first time. Later, artists like Steina and Woody Vasulka used video signals,
-            noise, and feedback as creative tools, exploring new ways of working with electronic images and sound.
-          </p>
-          <p>
-            What links all these artists is their interest in the senses. They didn't just want to make films or music—they wanted to create
-            full, physical experiences. Their work explored how we see, hear, and move inside a space. Today, artists continue this path in
-            domes, multi-projector spaces, and algorithmic environments. They search for new ways to bring vision and sound together—not
-            just side by side, but as one shared experience. DOME DREAMING aims at being a modern focal point for this development and
-            shared dreaming within the extended nordic region. Onwards and upwards.
-          </p>
-        </div>
-
-        <div
-          class="section col-5 span-4"
-          id="state">
-          <h2>STATE OF THE DOME</h2>
-          <p>
-            Over the past two decades, the dome has transformed from a tool of celestial education to a platform for artistic exploration.
-            Originally built to simulate the night sky, fulldome spaces have become canvases for experimental visuals, immersive
-            storytelling, and multi-sensory performance. Yet, despite the medium's evolution and global momentum, the cultural potential of
-            domes remains vastly underexplored. Particularly outside of science programming and within the Nordic-Baltic region.
-          </p>
-          <p>
-            In 2023, Fulldome in the UK, a comprehensive sector report produced by Live Cinema UK and funded by Creative UK, outlined a
-            landscape of possibility tempered by structural challenges. The report affirmed what many fulldome artists and curators have
-            long known: that fulldome is a rich, unique medium, but one that remains fragmented and under-resourced. In particular, it
-            highlighted an urgent need for funding mechanisms, standardised production templates, cross-venue programming, curated archives,
-            and accessible production pipelines.
-          </p>
-          <p>
-            DOME DREAMING responds directly to these calls. As an ambitious festival unfolding across Wisdome Stockholm and Wisdome Malmö,
-            DOME DREAMING was designed as a timely intervention: an answer to the sector's gaps, and a model for what a sustainable,
-            artist-centred fulldome ecosystem might look like.
-          </p>
-          <p>
-            This report begins with the "State of the Dome" to reflect on the findings from the UK study and reframe them through our local
-            context. We use its key observations as a structure to illuminate what is missing—and how DOME DREAMING proposes to address it.
-          </p>
-
-          <h3 class="challenge-title">1. Challenge: A lack of cultural fulldome content visibility and programming routes</h3>
-          <p>
-            The UK report notes that while artistic fulldome content exists, much of it remains "invisible"—either scattered across small
-            festivals or unpublished due to a lack of confidence, context, or support. There is no shared platform or archive where work is
-            properly documented or discoverable.
-          </p>
-          <p>
-            <strong>Response:</strong> DOME DREAMING features an open call (and hopefully in the future, artist residencies) and curated
-            programme, accompanied by the creation of a digital replica of the dome for online viewing. This not only extends access but
-            also builds a de facto archive of contemporary fulldome works from across the Nordic and Baltic regions. Our inclusion of
-            student works also ensures that emerging voices are given the space to be seen.
-          </p>
-
-          <h3 class="challenge-title">2. Challenge: Fragmented technical standards and difficult production workflows</h3>
-          <p>
-            Every dome is different—size, projection system, audio setup, seating arrangement. These variations impose costly barriers on
-            artists, who must often reformat content for each venue, discouraging experimentation.
-          </p>
-          <p>
-            <strong>Response:</strong> DOME DREAMING provides an open-source "Creators Toolkit," developed during Wisdome hackathons, to
-            support streamlined dome production across tools like Blender, TouchDesigner, Cinema4D and AfterEffects. The toolkit includes
-            templates, projection guides, best practices, and workflow documentation aimed at future-proofing content and lowering entry
-            thresholds.
-          </p>
-
-          <h3 class="challenge-title">3. Challenge: The absence of curated experiences for short-form works</h3>
-          <p>
-            While planetariums often rely on long-format science films, the majority of cultural dome work is created by individual artists,
-            often as short-form or experimental pieces. Without curation, these works struggle to find audiences or funding.
-          </p>
-          <p>
-            <strong>Response:</strong> Our curated programme brings together short works—animated, live-action, and experimental—into
-            thematically resonant screenings. This model mirrors the approach of film festivals and arthouse cinemas, making the dome an
-            accessible venue for complex and varied experiences.
-          </p>
-
-          <h3 class="challenge-title">4. Challenge: Fulldome work is often siloed from other creative disciplines</h3>
-          <p>
-            The report notes that while many XR, music, and performance artists are interested in fulldome, there are few structures in
-            place to bring them in. Fulldome remains a "walled garden," inaccessible without significant technical or institutional support.
-          </p>
-          <p>
-            <strong>Response:</strong> Inspired by the cross-disciplinary legacy of Expanded Cinema and Experiments in Art and Technology,
-            DOME DREAMING brings together visual artists, composers, XR developers, filmmakers, designers, and performers. Our advisors and
-            collaborators span multiple disciplines, ensuring that the dome is not only a canvas, but a site of convergence.
-          </p>
-
-          <p class="section-footer">
-            In short, DOME DREAMING is both an artistic statement and a sectoral prototype. It draws on the findings of the UK report not
-            just to describe what is missing, but to demonstrate what is possible. Through strategic collaborations, curated programming,
-            infrastructure development, and community building, it aims to catalyse a vibrant and sustainable dome culture across the
-            Nordic-Baltic region—where the fulldome is not a niche, but a new frontier. Read the fulldome report here.
-          </p>
-        </div>
+          class="grid-overlay grid"
+          id="page-2-cells"></div>
       </section>
     </main>
 

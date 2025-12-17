@@ -31,15 +31,20 @@ function initAnimatedDots() {
  * Update dots size and grid calculations
  */
 function updateDotsSize() {
-  // Use CSS variable for col-width to match the grid system
-  const colWidthCSS = getComputedStyle(document.documentElement).getPropertyValue("--col-width");
+  const rootStyles = getComputedStyle(document.documentElement);
+
+  // Column width from CSS var (falls back to viewport width / columns)
+  const colWidthCSS = rootStyles.getPropertyValue("--col-width");
   if (colWidthCSS) {
-    // Extract numeric value from CSS (e.g., "calc(100vw / 12)" or "83.33px")
     colWidth = parseFloat(colWidthCSS) || window.innerWidth / gridColumns;
   } else {
     colWidth = window.innerWidth / gridColumns;
   }
-  rowHeight = colWidth;
+
+  // Row height from CSS var (falls back to colWidth)
+  const rowHeightCSS = rootStyles.getPropertyValue("--row-height");
+  const parsedRowHeight = parseFloat(rowHeightCSS);
+  rowHeight = !isNaN(parsedRowHeight) && parsedRowHeight > 0 ? parsedRowHeight : colWidth;
 }
 
 /**
@@ -89,5 +94,3 @@ export function initAnimatedDotsSystem() {
     createDotElements();
   });
 }
-
-

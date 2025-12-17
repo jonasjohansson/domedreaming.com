@@ -13,8 +13,15 @@ let lastScrollTime = 0;
  * Get the row height in pixels
  */
 function getRowHeight() {
-  const colWidth = window.innerWidth / settings.scrollSettings.gridColumns;
-  return colWidth;
+  const rootStyles = getComputedStyle(document.documentElement);
+  const cssRowHeight = parseFloat(rootStyles.getPropertyValue("--row-height"));
+  if (!isNaN(cssRowHeight) && cssRowHeight > 0) {
+    return cssRowHeight;
+  }
+
+  const gridColumns = settings.scrollSettings.gridColumns || 14;
+  const fallback = window.innerWidth / gridColumns;
+  return fallback;
 }
 
 /**

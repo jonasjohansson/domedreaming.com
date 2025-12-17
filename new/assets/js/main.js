@@ -22,23 +22,16 @@ function setCanvasHeight() {
   const canvasWrapper = document.querySelector(".canvas-wrapper");
   if (!canvasContainer) return;
 
-  // Use CSS variable for grid columns to match the grid system
-  const gridColumns = 14;
-  const colWidth = window.innerWidth / gridColumns;
-  const rowHeight = colWidth;
   const viewportHeight = window.innerHeight;
 
-  // Calculate maximum number of row-heights that fit in viewport
-  const rowsInViewport = Math.floor(viewportHeight / rowHeight);
-  const height = rowsInViewport * rowHeight;
-
-  canvasContainer.style.height = `${height}px`;
+  // Canvas and wrapper fill full viewport height
+  canvasContainer.style.height = `${viewportHeight}px`;
   canvasContainer.style.padding = "0";
   canvasContainer.style.margin = "0";
 
   // Also set wrapper height if it exists
   if (canvasWrapper) {
-    canvasWrapper.style.height = `${height}px`;
+    canvasWrapper.style.height = `${viewportHeight}px`;
   }
 
   // No octagon mask - canvas fills viewport directly
@@ -46,22 +39,15 @@ function setCanvasHeight() {
 
 // Set page sections to maximum row-heights that fit in viewport
 function setPageSectionHeights() {
-  const gridColumns = 14;
-  const colWidth = window.innerWidth / gridColumns;
-  const rowHeight = colWidth;
   const viewportHeight = window.innerHeight;
 
-  // Calculate maximum number of row-heights that fit in viewport
-  const rowsInViewport = Math.floor(viewportHeight / rowHeight);
-  const height = rowsInViewport * rowHeight;
-
-  // Set only the first page section (canvas) to viewport height
-  // Page 2 is now free-flowing
-  const pageSections = document.querySelectorAll(".page-section");
+  // Set only the first section in main (canvas) to viewport height
+  // Later sections are free-flowing
+  const pageSections = document.querySelectorAll("main > section");
   if (pageSections.length > 0) {
     // First section (canvas) gets fixed height
-    pageSections[0].style.height = `${height}px`;
-    pageSections[0].style.minHeight = `${height}px`;
+    pageSections[0].style.height = `${viewportHeight}px`;
+    pageSections[0].style.minHeight = `${viewportHeight}px`;
 
     // Other sections are free-flowing (no fixed height)
     for (let i = 1; i < pageSections.length; i++) {
@@ -69,6 +55,45 @@ function setPageSectionHeights() {
       pageSections[i].style.minHeight = "auto";
     }
   }
+}
+
+// Map logical row classes (row-*) and dashboard cells to physical grid rows based on viewport
+const BASE_ROWS = 8;
+
+function updateLogicalRows() {
+  const rootStyles = getComputedStyle(document.documentElement);
+  const cssRowHeight = parseFloat(rootStyles.getPropertyValue("--row-height"));
+  const rowHeight = !isNaN(cssRowHeight) && cssRowHeight > 0 ? cssRowHeight : window.innerHeight / BASE_ROWS;
+  const viewportHeight = window.innerHeight;
+
+  const actualRows = Math.max(1, Math.floor(viewportHeight / rowHeight));
+
+  // Any text / content cell that uses a y-* class will be mapped proportionally
+  const logicalCells = document.querySelectorAll(".cell[class*='y-']");
+
+  logicalCells.forEach((cell) => {
+    const rowClass = Array.from(cell.classList).find((cls) => cls.startsWith("y-"));
+    if (!rowClass) return;
+
+    const logicalRow = parseInt(rowClass.slice(2), 10);
+    if (!logicalRow || !BASE_ROWS) return;
+
+    const mappedRow = Math.max(1, Math.round((logicalRow / BASE_ROWS) * actualRows));
+    cell.style.gridRowStart = mappedRow;
+  });
+
+  // Dashboard image cells: use data-logical-row and data-row-span
+  const dashboardCells = document.querySelectorAll(".dashboard-cell[data-logical-row]");
+
+  dashboardCells.forEach((cell) => {
+    const logicalRow = parseInt(cell.dataset.logicalRow, 10);
+    if (!logicalRow || !BASE_ROWS) return;
+
+    const rowSpan = parseInt(cell.dataset.rowSpan || "1", 10);
+    const mappedRow = Math.max(1, Math.round((logicalRow / BASE_ROWS) * actualRows));
+
+    cell.style.gridRow = `${mappedRow} / span ${rowSpan}`;
+  });
 }
 
 /**
@@ -170,6 +195,10 @@ async function init() {
   // Set page section heights to match viewport in row-heights
   setPageSectionHeights();
   window.addEventListener("resize", setPageSectionHeights);
+
+  // Map logical rows to current viewport rows
+  updateLogicalRows();
+  window.addEventListener("resize", updateLogicalRows);
 
   // Load the 3D model (this will also create the GUI)
   loadModel(createColorGUI);

@@ -1,141 +1,44 @@
 /**
  * Dashboard functionality
- * Manages dashboard cells, parallax scrolling, and draggable cells
+ * Uses existing dashboard blocks in the HTML and
+ * makes them draggable and resizable.
  */
-
-// Dashboard cell configurations for first page (WebGL canvas) - fixed positions
-const dashboardCells = [
-  { col: 3, row: 3, size: "3x2", image: "assets/img/Links/WisdomeStockholm-topaz-upscale-1.9x.jpg", draggable: true, dismissable: true },
-  { col: 9, row: 3, size: "3x2", image: "assets/img/Links/Wisdome-Malmo-topaz-upscale-3.5x.png", draggable: true, dismissable: true },
-  { col: 2, row: 6, size: "2x3", image: "assets/img/Links/Movie-Drome-topaz-upscale-2.6x.jpeg", draggable: true, dismissable: true },
-  { col: 6, row: 6, size: "4x2", image: "assets/img/Links/ArcticLights.png", draggable: true, dismissable: true },
-  { col: 11, row: 7, size: "2x2", image: "assets/img/Links/TheNewInfinity.jpg", draggable: true, dismissable: true },
-];
-
-// Page 2 cell configurations - fixed positions (spread out more)
-const page2Cells = [
-  { col: 2, row: 2, size: "2x2", image: "assets/img/Links/Movie-Drome-topaz-upscale-2.6x.jpeg", draggable: true, dismissable: true },
-  { col: 6, row: 2, size: "3x3", image: "assets/img/Links/WisdomeStockholm-topaz-upscale-1.9x.jpg", draggable: true, dismissable: true },
-  {
-    col: 11,
-    row: 2,
-    size: "2x1",
-    image: "assets/img/Links/RhythmInLightMaryEllenBute-topaz-upscale-4x.jpeg",
-    draggable: true,
-    dismissable: true,
-  },
-  { col: 1, row: 5, size: "1x2", image: "assets/img/Links/DomeDreamingLogo.svg", draggable: true, dismissable: true },
-  { col: 4, row: 5, size: "3x1", image: "assets/img/Links/LaSatMontreal-topaz-upscale-2.4x.jpg", draggable: true, dismissable: true },
-  { col: 9, row: 5, size: "2x2", image: "assets/img/Links/NamJunePaikMagnetTV-topaz-upscale-4x.jpeg", draggable: true, dismissable: true },
-  { col: 12, row: 5, size: "1x1", image: "assets/img/Links/TheNewInfinity.jpg", draggable: true, dismissable: true },
-  { col: 2, row: 8, size: "2x1", image: "assets/img/Links/Visualia.jpg", draggable: true, dismissable: true },
-  { col: 6, row: 8, size: "2x2", image: "assets/img/Links/Wisdome-Malmo-topaz-upscale-3.5x.png", draggable: true, dismissable: true },
-  { col: 10, row: 8, size: "3x2", image: "assets/img/Links/ArcticLights.png", draggable: true, dismissable: true },
-  { col: 1, row: 11, size: "1x1", image: "assets/img/Links/NonagonFestival.jpg", draggable: true, dismissable: true },
-  { col: 4, row: 11, size: "2x1", image: "assets/img/Links/KokongFestival.jpg", draggable: true, dismissable: true },
-];
-
-// Page 3 cell configurations - positions adjusted to follow the big image and support text
-const page3Cells = [
-  { col: 4, row: 21, size: "3x2", image: "assets/img/Links/WisdomeStockholm-topaz-upscale-1.9x.jpg", draggable: true, dismissable: true },
-  { col: 9, row: 23, size: "3x2", image: "assets/img/Links/Wisdome-Malmo-topaz-upscale-3.5x.png", draggable: true, dismissable: true },
-];
 
 /**
- * Create a dashboard cell
+ * Make a dashboard block draggable with grid snapping
  */
-function createDashboardCell(config, container, index = 0) {
-  const cell = document.createElement("div");
-  cell.className = `dashboard-cell size-${config.size}`;
-
-  // Store index for reference
-  cell.dataset.cellIndex = index;
-
-  // Parse size to get column and row spans (e.g., "2x2" -> cols: 2, rows: 2)
-  const [cols, rows] = config.size.split("x").map(Number);
-
-  // Set grid position with span to ensure size classes work correctly
-  cell.style.gridColumn = `${config.col} / span ${cols}`;
-  cell.style.gridRow = `${config.row} / span ${rows}`;
-
-  // Append cell to container
-  container.appendChild(cell);
-
-  if (config.draggable) {
-    cell.classList.add("draggable");
-    makeDraggable(cell);
-
-    // All draggable cells are dismissable by default (unless explicitly set to false)
-    if (config.dismissable !== false) {
-      cell.addEventListener("click", (e) => {
-        // Only dismiss if the cell hasn't been moved and mouse didn't move significantly (was a click, not drag)
-        if (cell.dataset.hasMoved !== "true" && cell.dataset.mouseMoved !== "true") {
-          cell.style.opacity = "0";
-          cell.style.transition = "opacity 0.3s ease";
-          setTimeout(() => {
-            cell.remove();
-          }, 300);
-        }
-      });
-    }
-  }
-
-  if (config.image) {
-    const img = document.createElement("img");
-    // Use actual image path if provided, otherwise use placeholder
-    img.src =
-      typeof config.image === "string"
-        ? config.image
-        : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23333' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3EImage%3C/text%3E%3C/svg%3E";
-    img.alt = config.content || "Image";
-    cell.appendChild(img);
-  } else {
-    const text = document.createElement("div");
-    text.textContent = config.content || "";
-    text.style.fontSize = "var(--font-size-small)";
-    text.style.textAlign = "center";
-    cell.appendChild(text);
-  }
-
-  return cell;
-}
-
-/**
- * Make a cell draggable with grid snapping
- */
-function makeDraggable(cell) {
+function makeDraggable(block) {
   let isDragging = false;
   let startX, startY, startCol, startRow;
-  let hasMoved = false; // Track if cell has been moved
+  let hasMoved = false; // Track if block has been moved
   let mouseMoved = false; // Track if mouse moved significantly (indicates drag)
 
-  cell.addEventListener("mousedown", (e) => {
+  block.addEventListener("mousedown", (e) => {
     isDragging = true;
     mouseMoved = false;
-    cell.classList.add("dragging");
+    block.classList.add("dragging");
 
-    const rect = cell.getBoundingClientRect();
-    const container = cell.parentElement;
-    const containerRect = container.getBoundingClientRect();
+    const container = block.parentElement;
+    if (!container) return;
 
     startX = e.clientX;
     startY = e.clientY;
 
     // Parse gridColumn and gridRow to get start position and span
-    const gridCol = cell.style.gridColumn;
-    const gridRow = cell.style.gridRow;
+    const gridCol = block.style.gridColumn;
+    const gridRow = block.style.gridRow;
 
     // Extract start position (before "/ span" or just the number)
-    startCol = gridCol.includes("/") ? parseInt(gridCol.split("/")[0].trim()) : parseInt(gridCol);
-    startRow = gridRow.includes("/") ? parseInt(gridRow.split("/")[0].trim()) : parseInt(gridRow);
+    startCol = gridCol.includes("/") ? parseInt(gridCol.split("/")[0].trim(), 10) : parseInt(gridCol, 10);
+    startRow = gridRow.includes("/") ? parseInt(gridRow.split("/")[0].trim(), 10) : parseInt(gridRow, 10);
 
     // Extract span values
-    const colSpan = gridCol.includes("span") ? parseInt(gridCol.split("span")[1].trim()) : 1;
-    const rowSpan = gridRow.includes("span") ? parseInt(gridRow.split("span")[1].trim()) : 1;
+    const colSpan = gridCol.includes("span") ? parseInt(gridCol.split("span")[1].trim(), 10) : 1;
+    const rowSpan = gridRow.includes("span") ? parseInt(gridRow.split("span")[1].trim(), 10) : 1;
 
     // Store spans for later use
-    cell.dataset.colSpan = colSpan;
-    cell.dataset.rowSpan = rowSpan;
+    block.dataset.colSpan = String(colSpan);
+    block.dataset.rowSpan = String(rowSpan);
 
     e.preventDefault();
   });
@@ -143,10 +46,13 @@ function makeDraggable(cell) {
   document.addEventListener("mousemove", (e) => {
     if (!isDragging) return;
 
-    const container = cell.parentElement;
+    const container = block.parentElement;
+    if (!container) return;
+
     const containerRect = container.getBoundingClientRect();
     const colWidth = containerRect.width / 14; // 14 columns
-    const rowHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
+    const rowHeight =
+      parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
 
     const deltaX = e.clientX - startX;
     const deltaY = e.clientY - startY;
@@ -159,108 +65,141 @@ function makeDraggable(cell) {
     const colOffset = Math.round(deltaX / colWidth);
     const rowOffset = Math.round(deltaY / rowHeight);
 
-    const newCol = Math.max(1, Math.min(14 - (parseInt(cell.dataset.colSpan) || 1) + 1, startCol + colOffset));
+    const currentColSpan = parseInt(block.dataset.colSpan || "1", 10);
+    const newCol = Math.max(1, Math.min(14 - currentColSpan + 1, startCol + colOffset));
     const newRow = Math.max(1, startRow + rowOffset);
 
     // Check if position actually changed
     if (newCol !== startCol || newRow !== startRow) {
       hasMoved = true;
-      cell.dataset.hasMoved = "true";
+      block.dataset.hasMoved = "true";
     }
 
     // Preserve the span when updating position
-    const colSpan = cell.dataset.colSpan || "1";
-    const rowSpan = cell.dataset.rowSpan || "1";
+    const colSpan = block.dataset.colSpan || "1";
+    const rowSpan = block.dataset.rowSpan || "1";
 
-    cell.style.gridColumn = `${newCol} / span ${colSpan}`;
-    cell.style.gridRow = `${newRow} / span ${rowSpan}`;
+    block.style.gridColumn = `${newCol} / span ${colSpan}`;
+    block.style.gridRow = `${newRow} / span ${rowSpan}`;
   });
 
   document.addEventListener("mouseup", () => {
     if (isDragging) {
       isDragging = false;
-      cell.classList.remove("dragging");
+      block.classList.remove("dragging");
       // Store mouse movement state for click handler
-      cell.dataset.mouseMoved = mouseMoved ? "true" : "false";
+      block.dataset.mouseMoved = mouseMoved ? "true" : "false";
       // Reset after a short delay to allow click handler to check
       setTimeout(() => {
-        cell.dataset.mouseMoved = "false";
+        block.dataset.mouseMoved = "false";
       }, 100);
     }
   });
 }
 
 /**
- * Create team grid
+ * Make a dashboard block resizable with grid snapping
+ * Resize handles adjust width (cols) and height (rows) from edges/corners.
  */
-function createTeamGrid() {
-  const teamContainer = document.querySelector(".team-grid-container");
-  if (!teamContainer) return;
+function makeResizable(block) {
+  const directions = ["e", "w", "n", "s", "ne", "nw", "se", "sw"];
 
-  // Team member data with matched images
-  const teamMembers = [
-    { name: "Jonas Johansson", role: "Project Lead", image: "assets/img/Links/DomeDreamingLogo.svg" },
-    { name: "Fredrik Edström", role: "Technical Co-lead", image: "assets/img/Links/FredrikEdström-topaz-lighting-upscale-2x.jpeg" },
-    { name: "Sebastian Häger", role: "Curatorial Lead", image: "assets/img/Links/SebastianHäger-topaz-upscale-4x.jpeg" },
-    { name: "Annie Tådne", role: "Advisor", image: "assets/img/Links/AnnieTådne-topaz-face-upscale-2.1x.jpeg" },
-    { name: "Merle Karu", role: "Advisor", image: "assets/img/Links/MerleKarp-topaz-face-upscale-4x.jpeg" },
-    { name: "Ieva Balode", role: "Advisor", image: "assets/img/Links/IevaBalode-topaz-upscale-3.5x.jpeg" },
-    { name: "Axel Jonsson", role: "Advisor", image: "assets/img/Links/AxelJonsson-topaz-face-upscale-4x.jpeg" },
-    { name: "Anna Lundh", role: "Advisor", image: "assets/img/Links/AnnaLundh.png" },
-    { name: "Lina Selander", role: "Advisor", image: "assets/img/Links/LinaSelander-topaz-face-upscale-2.3x.jpeg" },
-  ];
+  directions.forEach((dir) => {
+    const handle = document.createElement("div");
+    handle.className = `resize-handle resize-handle-${dir}`;
+    handle.addEventListener("mousedown", (e) => startResize(e, block, dir));
+    block.appendChild(handle);
+  });
+}
 
-  teamMembers.forEach((member) => {
-    const memberDiv = document.createElement("div");
-    memberDiv.className = "team-member";
+function startResize(event, block, direction) {
+  event.preventDefault();
+  event.stopPropagation(); // Prevent dragging from starting
 
-    if (member.image) {
-      const img = document.createElement("img");
-      // Use actual image path if provided, otherwise use placeholder
-      img.src =
-        typeof member.image === "string"
-          ? member.image
-          : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect fill='%23333' width='300' height='300'/%3E%3Ctext fill='%23999' font-family='sans-serif' font-size='18' x='50%25' y='50%25' text-anchor='middle' dy='.3em'%3E" +
-            encodeURIComponent(member.name) +
-            "%3C/text%3E%3C/svg%3E";
-      img.alt = member.name;
-      memberDiv.appendChild(img);
+  let isResizing = true;
+  const startX = event.clientX;
+  const startY = event.clientY;
+
+  const container = block.parentElement;
+  if (!container) return;
+
+  const containerRect = container.getBoundingClientRect();
+  const colWidth = containerRect.width / 14; // 14 columns
+  const rowHeight =
+    parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
+
+  // Parse current grid position
+  const gridCol = block.style.gridColumn;
+  const gridRow = block.style.gridRow;
+
+  let startCol = gridCol.includes("/") ? parseInt(gridCol.split("/")[0].trim(), 10) : parseInt(gridCol, 10);
+  let startRow = gridRow.includes("/") ? parseInt(gridRow.split("/")[0].trim(), 10) : parseInt(gridRow, 10);
+  let startColSpan = gridCol.includes("span") ? parseInt(gridCol.split("span")[1].trim(), 10) : 1;
+  let startRowSpan = gridRow.includes("span") ? parseInt(gridRow.split("span")[1].trim(), 10) : 1;
+
+  function onMouseMove(e) {
+    if (!isResizing) return;
+
+    const deltaX = e.clientX - startX;
+    const deltaY = e.clientY - startY;
+
+    let newCol = startCol;
+    let newRow = startRow;
+    let newColSpan = startColSpan;
+    let newRowSpan = startRowSpan;
+
+    // Horizontal resize
+    if (direction.includes("e")) {
+      const deltaCols = Math.round(deltaX / colWidth);
+      newColSpan = Math.max(1, startColSpan + deltaCols);
+      newColSpan = Math.min(14 - startCol - 1 + 1, newColSpan);
+    }
+    if (direction.includes("w")) {
+      const deltaCols = Math.round(deltaX / colWidth);
+      newCol = Math.max(1, Math.min(startCol + deltaCols, startCol + startColSpan - 1));
+      const diff = startCol - newCol;
+      newColSpan = Math.max(1, startColSpan + diff);
     }
 
-    const h3 = document.createElement("h3");
-    h3.textContent = member.name;
-    memberDiv.appendChild(h3);
+    // Vertical resize
+    if (direction.includes("s")) {
+      const deltaRows = Math.round(deltaY / rowHeight);
+      newRowSpan = Math.max(1, startRowSpan + deltaRows);
+    }
+    if (direction.includes("n")) {
+      const deltaRows = Math.round(deltaY / rowHeight);
+      newRow = Math.max(1, Math.min(startRow + deltaRows, startRow + startRowSpan - 1));
+      const diff = startRow - newRow;
+      newRowSpan = Math.max(1, startRowSpan + diff);
+    }
 
-    const p = document.createElement("p");
-    p.textContent = member.role;
-    memberDiv.appendChild(p);
+    block.style.gridColumn = `${newCol} / span ${newColSpan}`;
+    block.style.gridRow = `${newRow} / span ${newRowSpan}`;
 
-    teamContainer.appendChild(memberDiv);
-  });
+    block.dataset.colSpan = String(newColSpan);
+    block.dataset.rowSpan = String(newRowSpan);
+    block.dataset.logicalRow = String(newRow);
+  }
+
+  function onMouseUp() {
+    if (!isResizing) return;
+    isResizing = false;
+    document.removeEventListener("mousemove", onMouseMove);
+    document.removeEventListener("mouseup", onMouseUp);
+  }
+
+  document.addEventListener("mousemove", onMouseMove);
+  document.addEventListener("mouseup", onMouseUp);
 }
 
 /**
  * Initialize dashboard
  */
 export function initDashboard() {
-  // Create cells for first viewport with fixed positions
-  const dashboardOverlay = document.getElementById("dashboard-overlay");
-  if (dashboardOverlay) {
-    dashboardCells.forEach((config, index) => {
-      createDashboardCell(config, dashboardOverlay, index);
-    });
-  }
-
-  // Create cells for second page with fixed positions (combining page 2 and 3 cells)
-  const page2CellsContainer = document.getElementById("page-2-cells");
-  if (page2CellsContainer) {
-    // Add page 2 cells
-    page2Cells.forEach((config, index) => {
-      createDashboardCell(config, page2CellsContainer, index);
-    });
-    // Add page 3 cells to the same container
-    page3Cells.forEach((config, index) => {
-      createDashboardCell(config, page2CellsContainer, page2Cells.length + index);
-    });
-  }
+  // Find any existing dashboard blocks marked as draggable
+  const blocks = document.querySelectorAll(".dashboard-cell.draggable, .dashboard-block.draggable");
+  blocks.forEach((block) => {
+    makeDraggable(block);
+    makeResizable(block);
+  });
 }
