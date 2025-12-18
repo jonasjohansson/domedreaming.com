@@ -280,10 +280,6 @@
   margin-bottom: var(--half-row-height);
 }
 
-.page-content .contact-note {
-  margin-top: var(--row-height);
-}
-
 /* Team Grid */
 .team-grid-container {
   display: grid;

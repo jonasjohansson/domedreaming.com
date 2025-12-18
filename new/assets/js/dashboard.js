@@ -2,7 +2,51 @@
  * Dashboard functionality
  * Uses existing dashboard blocks in the HTML and
  * makes them draggable and resizable.
+ * Works with utility classes (x-, w-, y-, h-) instead of inline styles.
  */
+
+/**
+ * Get current position from utility classes
+ */
+function getPositionFromClasses(block) {
+  let col = 1;
+  let row = 1;
+  let colSpan = 1;
+  let rowSpan = 1;
+
+  // Find x- class (column start)
+  const xMatch = block.className.match(/x-(\d+)/);
+  if (xMatch) col = parseInt(xMatch[1], 10);
+
+  // Find w- class (column span)
+  const wMatch = block.className.match(/w-(\d+)/);
+  if (wMatch) colSpan = parseInt(wMatch[1], 10);
+
+  // Find y- class (row start)
+  const yMatch = block.className.match(/y-(\d+)/);
+  if (yMatch) row = parseInt(yMatch[1], 10);
+
+  // Find h- class (row span)
+  const hMatch = block.className.match(/h-(\d+)/);
+  if (hMatch) rowSpan = parseInt(hMatch[1], 10);
+
+  return { col, row, colSpan, rowSpan };
+}
+
+/**
+ * Update utility classes based on position
+ */
+function updatePositionClasses(block, col, row, colSpan, rowSpan) {
+  // Remove old position classes
+  block.className = block.className
+    .replace(/\bx-\d+\b/g, "")
+    .replace(/\bw-\d+\b/g, "")
+    .replace(/\by-\d+\b/g, "")
+    .replace(/\bh-\d+\b/g, "");
+
+  // Add new position classes
+  block.classList.add(`x-${col}`, `w-${colSpan}`, `y-${row}`, `h-${rowSpan}`);
+}
 
 /**
  * Make a dashboard block draggable with grid snapping
@@ -24,21 +68,14 @@ function makeDraggable(block) {
     startX = e.clientX;
     startY = e.clientY;
 
-    // Parse gridColumn and gridRow to get start position and span
-    const gridCol = block.style.gridColumn;
-    const gridRow = block.style.gridRow;
-
-    // Extract start position (before "/ span" or just the number)
-    startCol = gridCol.includes("/") ? parseInt(gridCol.split("/")[0].trim(), 10) : parseInt(gridCol, 10);
-    startRow = gridRow.includes("/") ? parseInt(gridRow.split("/")[0].trim(), 10) : parseInt(gridRow, 10);
-
-    // Extract span values
-    const colSpan = gridCol.includes("span") ? parseInt(gridCol.split("span")[1].trim(), 10) : 1;
-    const rowSpan = gridRow.includes("span") ? parseInt(gridRow.split("span")[1].trim(), 10) : 1;
+    // Get position from utility classes
+    const pos = getPositionFromClasses(block);
+    startCol = pos.col;
+    startRow = pos.row;
 
     // Store spans for later use
-    block.dataset.colSpan = String(colSpan);
-    block.dataset.rowSpan = String(rowSpan);
+    block.dataset.colSpan = String(pos.colSpan);
+    block.dataset.rowSpan = String(pos.rowSpan);
 
     e.preventDefault();
   });
@@ -50,7 +87,8 @@ function makeDraggable(block) {
     if (!container) return;
 
     const containerRect = container.getBoundingClientRect();
-    const colWidth = containerRect.width / 14; // 14 columns
+    const gridColumns = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--grid-columns")) || 12;
+    const colWidth = containerRect.width / gridColumns;
     const rowHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
 
     const deltaX = e.clientX - startX;
@@ -65,7 +103,7 @@ function makeDraggable(block) {
     const rowOffset = Math.round(deltaY / rowHeight);
 
     const currentColSpan = parseInt(block.dataset.colSpan || "1", 10);
-    const newCol = Math.max(1, Math.min(14 - currentColSpan + 1, startCol + colOffset));
+    const newCol = Math.max(1, Math.min(gridColumns - currentColSpan + 1, startCol + colOffset));
     const newRow = Math.max(1, startRow + rowOffset);
 
     // Check if position actually changed
@@ -78,8 +116,8 @@ function makeDraggable(block) {
     const colSpan = block.dataset.colSpan || "1";
     const rowSpan = block.dataset.rowSpan || "1";
 
-    block.style.gridColumn = `${newCol} / span ${colSpan}`;
-    block.style.gridRow = `${newRow} / span ${rowSpan}`;
+    // Update utility classes instead of inline styles
+    updatePositionClasses(block, newCol, newRow, parseInt(colSpan, 10), parseInt(rowSpan, 10));
   });
 
   document.addEventListener("mouseup", () => {
@@ -123,17 +161,16 @@ function startResize(event, block, direction) {
   if (!container) return;
 
   const containerRect = container.getBoundingClientRect();
-  const colWidth = containerRect.width / 14; // 14 columns
+  const gridColumns = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--grid-columns")) || 12;
+  const colWidth = containerRect.width / gridColumns;
   const rowHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
 
-  // Parse current grid position
-  const gridCol = block.style.gridColumn;
-  const gridRow = block.style.gridRow;
-
-  let startCol = gridCol.includes("/") ? parseInt(gridCol.split("/")[0].trim(), 10) : parseInt(gridCol, 10);
-  let startRow = gridRow.includes("/") ? parseInt(gridRow.split("/")[0].trim(), 10) : parseInt(gridRow, 10);
-  let startColSpan = gridCol.includes("span") ? parseInt(gridCol.split("span")[1].trim(), 10) : 1;
-  let startRowSpan = gridRow.includes("span") ? parseInt(gridRow.split("span")[1].trim(), 10) : 1;
+  // Get current position from utility classes
+  const pos = getPositionFromClasses(block);
+  let startCol = pos.col;
+  let startRow = pos.row;
+  let startColSpan = pos.colSpan;
+  let startRowSpan = pos.rowSpan;
 
   function onMouseMove(e) {
     if (!isResizing) return;
@@ -150,7 +187,7 @@ function startResize(event, block, direction) {
     if (direction.includes("e")) {
       const deltaCols = Math.round(deltaX / colWidth);
       newColSpan = Math.max(1, startColSpan + deltaCols);
-      newColSpan = Math.min(14 - startCol - 1 + 1, newColSpan);
+      newColSpan = Math.min(gridColumns - startCol + 1, newColSpan);
     }
     if (direction.includes("w")) {
       const deltaCols = Math.round(deltaX / colWidth);
@@ -171,8 +208,8 @@ function startResize(event, block, direction) {
       newRowSpan = Math.max(1, startRowSpan + diff);
     }
 
-    block.style.gridColumn = `${newCol} / span ${newColSpan}`;
-    block.style.gridRow = `${newRow} / span ${newRowSpan}`;
+    // Update utility classes instead of inline styles
+    updatePositionClasses(block, newCol, newRow, newColSpan, newRowSpan);
 
     block.dataset.colSpan = String(newColSpan);
     block.dataset.rowSpan = String(newRowSpan);

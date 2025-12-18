@@ -44,11 +44,12 @@
     },
     "scrollSettings": {
       "enabled": true,
-      "scrollTimeout": 80,
+      "scrollTimeout": 100,
       "touchThreshold": 20,
       "snapThreshold": 0.5,
       "initialSnapThreshold": 1,
-      "gridColumns": 14
+      "gridColumns": 14,
+      "gridRows": 10
     },
     "canvasSettings": {
       "rows": 8

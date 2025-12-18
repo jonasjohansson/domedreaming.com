@@ -63,6 +63,26 @@
   --transition-slow: 0.5s ease;
 }
 
+/* Mobile: reduce font sizes */
+@media (max-width: 768px) {
+  :root {
+    --font-size-base: 14px;
+    --font-size-small: 14px;
+    --font-size-xs: 12px;
+    --font-size-intro: 14px;
+  }
+}
+
+/* Large displays: increase font sizes significantly */
+@media (min-width: 1200px) {
+  :root {
+    --font-size-base: 24px;
+    --font-size-small: 22px;
+    --font-size-xs: 20px;
+    --font-size-intro: 24px;
+  }
+}
+
 /* Font faces */
 @font-face {
   font-family: "KovskijDisplay";
@@ -179,6 +199,8 @@ body::before {
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns), 1fr);
+  grid-auto-rows: var(--row-height); /* Enable auto-placement with row-height sizing */
+  grid-auto-flow: row; /* Flow items row by row in document order */
   column-gap: var(--grid-gap);
   width: 100%;
   padding: 0;
@@ -272,6 +294,7 @@ body::before {
   grid-column-end: span 14;
 }
 
+/* Height classes: set row span */
 .h-1 {
   grid-row-end: span 1;
 }
@@ -304,6 +327,7 @@ body::before {
 }
 
 /* Row utility classes (vertical grid placement) */
+/* If y- class is omitted, items will auto-place (flow naturally) */
 .y-1 {
   grid-row-start: 1;
 }
@@ -334,6 +358,10 @@ body::before {
 .y-10 {
   grid-row-start: 10;
 }
+
+/* Auto-placement: items without y- class will flow naturally */
+/* By default, CSS Grid will auto-place items in the next available row */
+/* If you want an item to flow naturally, simply omit the y- class */
 
 .rowspan-2 {
   grid-row-end: span 2;

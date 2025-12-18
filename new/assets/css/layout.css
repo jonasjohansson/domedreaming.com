@@ -64,9 +64,13 @@ main {
   z-index: 10;
 }
 
-/* Utility: center text within a block */
+/* Utility: center text within a block (horizontally and vertically) */
 .center {
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 /* Hide old about/team sections that are nested in main (if any) */

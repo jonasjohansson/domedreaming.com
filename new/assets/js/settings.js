@@ -60,11 +60,12 @@ export let pageColorSettings = {
 };
 export let scrollSettings = {
   enabled: true, // Enabled for tactile row-height snapping
-  scrollTimeout: 150, // Delay in ms before allowing next scroll (reduced for more responsive feel)
+  scrollTimeout: 100, // Delay in ms before allowing next scroll
   touchThreshold: 30, // Minimum touch movement in pixels to trigger scroll
   snapThreshold: 0.5, // Minimum distance in pixels to trigger scroll
   initialSnapThreshold: 1, // Threshold for initial snap on page load
   gridColumns: 14, // Number of grid columns (should match CSS --grid-columns)
+  gridRows: 10, // Number of grid rows (should match CSS --grid-rows)
 };
 
 export let canvasSettings = {

@@ -35,24 +35,18 @@ function setCanvasHeight() {
   canvasWrapper.style.height = `${targetHeight}px`;
 }
 
-// Set page sections to maximum row-heights that fit in viewport
+// Set page sections to 10 rows height (viewport height)
 function setPageSectionHeights() {
   const viewportHeight = window.innerHeight;
+  const rowHeight = viewportHeight / 10;
+  const sectionHeight = rowHeight * 10; // 10 rows = viewport height
 
-  // Set only the first section in main (canvas) to viewport height
-  // Later sections are free-flowing
+  // Set all page sections to 10 rows height
   const pageSections = document.querySelectorAll("main > section");
-  if (pageSections.length > 0) {
-    // First section (canvas) gets fixed height
-    pageSections[0].style.height = `${viewportHeight}px`;
-    pageSections[0].style.minHeight = `${viewportHeight}px`;
-
-    // Other sections are free-flowing (no fixed height)
-    for (let i = 1; i < pageSections.length; i++) {
-      pageSections[i].style.height = "auto";
-      pageSections[i].style.minHeight = "auto";
-    }
-  }
+  pageSections.forEach((section) => {
+    section.style.height = `${sectionHeight}px`;
+    section.style.minHeight = `${sectionHeight}px`;
+  });
 }
 
 // Map logical row classes (row-*) and dashboard cells to physical grid rows based on viewport
@@ -85,18 +79,24 @@ function initGridElementIndices() {
   });
 }
 
-// Wrap "DOME DREAMING" text instances in about section with font class
+// Wrap "dome dreaming" text instances (case-insensitive) throughout the page with font class
 function applyDomeDreamingFont() {
-  const aboutSection = document.querySelector("section.about");
-  if (!aboutSection) return;
+  // Search in the entire main element
+  const mainElement = document.querySelector("main");
+  if (!mainElement) return;
 
-  // Find all text nodes containing "DOME DREAMING"
-  const walker = document.createTreeWalker(aboutSection, NodeFilter.SHOW_TEXT, null, false);
+  // Find all text nodes containing "dome dreaming" (case-insensitive)
+  const walker = document.createTreeWalker(mainElement, NodeFilter.SHOW_TEXT, null, false);
 
   const textNodes = [];
   let node;
   while ((node = walker.nextNode())) {
-    if (node.textContent.includes("DOME DREAMING")) {
+    // Skip if already inside a dome-dreaming-text span
+    if (node.parentElement?.classList.contains("dome-dreaming-text")) continue;
+    
+    const text = node.textContent;
+    // Case-insensitive match for "dome dreaming"
+    if (/dome\s+dreaming/i.test(text)) {
       textNodes.push(node);
     }
   }
@@ -107,12 +107,15 @@ function applyDomeDreamingFont() {
     if (!parent) return;
 
     const text = textNode.textContent;
-    const parts = text.split(/(DOME DREAMING)/g);
+    // Case-insensitive split that preserves the original case
+    const regex = /(dome\s+dreaming)/gi;
+    const parts = text.split(regex);
 
     // Create document fragment with wrapped text
     const fragment = document.createDocumentFragment();
     parts.forEach((part) => {
-      if (part === "DOME DREAMING") {
+      // Check if this part matches "dome dreaming" (case-insensitive)
+      if (part && /^dome\s+dreaming$/i.test(part)) {
         const span = document.createElement("span");
         span.className = "dome-dreaming-text";
         span.textContent = part;

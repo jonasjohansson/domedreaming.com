@@ -1,3 +1,12 @@
+/* Block base styles - allows content to grow while aligning to grid */
+.block {
+  align-self: start; /* Align to grid row start */
+  /* Content can grow beyond min-height, spanning multiple grid rows */
+  overflow: visible; /* Allow text to flow outside block boundaries */
+  height: 100%; /* Ensure block fills its grid area */
+  min-height: 0; /* Allow grid to control height */
+}
+
 #loading {
   position: absolute;
   top: 50%;
