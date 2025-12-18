@@ -83,57 +83,14 @@ main h3 {
   letter-spacing: var(--letter-spacing-normal);
 }
 
-main .challenge-title {
-  font-size: var(--font-size-base);
-  color: var(--color-text);
-  font-weight: var(--font-weight-normal);
-  margin-top: var(--quarter-row-height);
-  margin-bottom: var(--quarter-row-height);
-}
-
-main .section-footer {
-  margin-top: var(--quarter-row-height);
-}
-
 main strong {
   font-weight: var(--font-weight-medium);
 }
 
 /* DOME DREAMING styling - use KovskijDisplay font */
-.dome-dreaming,
 .dome-dreaming-text {
   font-family: "KovskijDisplay", serif;
   font-weight: normal;
-}
-
-/* Team section styles */
-.team-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--row-height);
-}
-
-.team-card img {
-  width: 100%;
-  max-width: 600px;
-  min-width: 300px;
-  height: auto;
-  aspect-ratio: 1;
-  object-fit: cover;
-  border-radius: var(--radius-sm);
-}
-
-.team-info h3 {
-  color: var(--color-text);
-  margin-top: 0;
-  margin-bottom: var(--quarter-row-height);
-}
-
-.team-info .role {
-  color: var(--color-text);
-  font-weight: var(--font-weight-medium);
-  margin-bottom: var(--quarter-row-height);
-  opacity: 0.8;
 }
 
 /* Image captions - shown for images with width > 8 and height > 4 */
