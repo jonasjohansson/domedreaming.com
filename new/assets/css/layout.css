@@ -73,14 +73,12 @@ main {
   align-items: center;
 }
 
-
 /* Canvas overlay blocks (text + button over canvas) */
 .grid-overlay .block {
   position: relative;
   z-index: 100;
   pointer-events: auto;
 }
-
 
 /* Footer-style text over canvas */
 .grid-overlay .block p {
@@ -105,7 +103,6 @@ a[disabled] {
   cursor: not-allowed;
   pointer-events: none;
 }
-
 
 main button {
   font-size: var(--font-size-base);
@@ -186,4 +183,3 @@ main .block {
   height: calc(var(--row-height) * 10); /* 10 rows */
   min-height: calc(var(--row-height) * 10);
 }
-

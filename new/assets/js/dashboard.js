@@ -6,6 +6,19 @@
  */
 
 /**
+ * Handle image click to bring to front
+ */
+function handleImageClick(block) {
+  // Remove active class from all images
+  document.querySelectorAll(".dashboard-block.active, .page-content .block.active").forEach((el) => {
+    el.classList.remove("active");
+  });
+  
+  // Add active class to clicked image
+  block.classList.add("active");
+}
+
+/**
  * Get current position from utility classes
  */
 function getPositionFromClasses(block) {
@@ -126,6 +139,12 @@ function makeDraggable(block) {
       block.classList.remove("dragging");
       // Store mouse movement state for click handler
       block.dataset.mouseMoved = mouseMoved ? "true" : "false";
+      // If mouse didn't move significantly, trigger click for z-index
+      if (!mouseMoved && !hasMoved) {
+        setTimeout(() => {
+          handleImageClick(block);
+        }, 10);
+      }
       // Reset after a short delay to allow click handler to check
       setTimeout(() => {
         block.dataset.mouseMoved = "false";
@@ -236,6 +255,19 @@ export function initDashboard() {
   blocks.forEach((block) => {
     makeDraggable(block);
     makeResizable(block);
+    
+    // Click handler is handled in mouseup if no drag occurred
+  });
+  
+  // Also handle page-content images (non-draggable images)
+  const pageContentImages = document.querySelectorAll(".page-content .block img");
+  pageContentImages.forEach((img) => {
+    const block = img.closest(".block");
+    if (block) {
+      block.addEventListener("click", () => {
+        handleImageClick(block);
+      });
+    }
   });
 }
 

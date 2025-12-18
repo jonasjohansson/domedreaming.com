@@ -89,8 +89,9 @@ main strong {
 
 /* DOME DREAMING styling - use KovskijDisplay font */
 .dome-dreaming-text {
-  font-family: "KovskijDisplay", serif;
-  font-weight: normal;
+  /* font-family: "KovskijDisplay", serif; */
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
 /* Image captions - shown for images with width > 8 and height > 4 */
