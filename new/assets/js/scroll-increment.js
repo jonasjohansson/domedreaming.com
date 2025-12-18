@@ -11,6 +11,7 @@ let lastScrollTime = 0;
 
 /**
  * Get the row height in pixels
+ * Row height is 1/10th of viewport height (100vh / 10)
  */
 function getRowHeight() {
   const rootStyles = getComputedStyle(document.documentElement);
@@ -19,8 +20,9 @@ function getRowHeight() {
     return cssRowHeight;
   }
 
-  const gridColumns = settings.scrollSettings.gridColumns || 14;
-  const fallback = window.innerWidth / gridColumns;
+  // Fallback: calculate from viewport height divided by grid rows
+  const gridRows = settings.scrollSettings.gridRows || 10;
+  const fallback = window.innerHeight / gridRows;
   return fallback;
 }
 
@@ -227,18 +229,25 @@ function handleKeyDown(event) {
 }
 
 /**
+ * Check if device is a touch device
+ */
+function isTouchDevice() {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+}
+
+/**
  * Initialize scroll increment functionality
  */
 export function initScrollIncrement() {
-  // Wheel event (mouse wheel)
+  // On touch devices, use normal scrolling behavior
+  if (isTouchDevice()) {
+    return; // Don't initialize custom scroll behavior on touch devices
+  }
+
+  // Wheel event (mouse wheel) - desktop only
   window.addEventListener("wheel", handleScroll, { passive: false });
 
-  // Touch events
-  window.addEventListener("touchstart", handleTouchStart, { passive: true });
-  window.addEventListener("touchmove", handleTouchMove, { passive: false });
-  window.addEventListener("touchend", handleTouchEnd, { passive: false });
-
-  // Keyboard events
+  // Keyboard events - desktop only
   window.addEventListener("keydown", handleKeyDown);
 
   // Snap to row height on initial load if needed

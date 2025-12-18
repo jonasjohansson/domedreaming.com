@@ -240,6 +240,20 @@ main .block {
   page-break-inside: avoid;
 }
 
+/* Page sections - use row-height calculations */
+.page-section {
+  height: calc(var(--row-height) * 10); /* 10 rows on desktop */
+  min-height: calc(var(--row-height) * 10);
+}
+
+/* Mobile: expand to 14 rows */
+@media (max-width: 768px) {
+  .page-section {
+    height: calc(var(--row-height) * 14);
+    min-height: calc(var(--row-height) * 14);
+  }
+}
+
 /* Intro section */
 section.intro {
   padding: 0;

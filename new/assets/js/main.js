@@ -37,21 +37,8 @@ function setCanvasHeight() {
   canvasWrapper.style.height = `${targetHeight}px`;
 }
 
-// Set page sections to 10 rows height (viewport height), 15 rows on mobile
-function setPageSectionHeights() {
-  const viewportHeight = window.innerHeight;
-  const isMobile = window.innerWidth <= 768;
-  const rowHeight = viewportHeight / 10;
-  const rowsPerSection = isMobile ? 15 : 10; // 15 rows on mobile, 10 rows on desktop
-  const sectionHeight = rowHeight * rowsPerSection;
-
-  // Set all page sections to appropriate height
-  const pageSections = document.querySelectorAll("main > section");
-  pageSections.forEach((section) => {
-    section.style.height = `${sectionHeight}px`;
-    section.style.minHeight = `${sectionHeight}px`;
-  });
-}
+// Page section heights are now handled by CSS using row-height calculations
+// No JavaScript needed - CSS handles: 10 rows on desktop, 14 rows on mobile
 
 // Map logical row classes (row-*) and dashboard cells to physical grid rows based on viewport
 // Logical row remapping (previously used to rescale y-* classes) is disabled.
@@ -167,9 +154,7 @@ async function init() {
   setCanvasHeight();
   window.addEventListener("resize", setCanvasHeight);
 
-  // Set page section heights to match viewport in row-heights
-  setPageSectionHeights();
-  window.addEventListener("resize", setPageSectionHeights);
+  // Page section heights are handled by CSS (no JavaScript needed)
 
   // Load the 3D model (this will also create the GUI)
   loadModel(createColorGUI);
