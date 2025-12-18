@@ -60,7 +60,7 @@ export let pageColorSettings = {
 };
 export let scrollSettings = {
   enabled: true, // Enabled for tactile row-height snapping
-  scrollTimeout: 100, // Delay in ms before allowing next scroll
+  scrollTimeout: 25, // Delay in ms before allowing next scroll
   touchThreshold: 30, // Minimum touch movement in pixels to trigger scroll
   snapThreshold: 0.5, // Minimum distance in pixels to trigger scroll
   initialSnapThreshold: 1, // Threshold for initial snap on page load

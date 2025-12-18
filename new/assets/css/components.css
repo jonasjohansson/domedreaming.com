@@ -135,3 +135,29 @@ main strong {
   margin-bottom: var(--quarter-row-height);
   opacity: 0.8;
 }
+
+/* Image captions - shown for images with width > 8 and height > 4 */
+/* Make blocks with captions use flexbox column layout */
+.block:has(.image-caption) {
+  display: flex;
+  flex-direction: column;
+}
+
+.block:has(.image-caption) img {
+  flex: 1;
+  min-height: 0;
+  object-fit: cover;
+}
+
+.image-caption {
+  font-size: 12px;
+  color: var(--color-text);
+  font-weight: var(--font-weight-normal);
+  letter-spacing: var(--letter-spacing-normal);
+  margin: 0;
+  padding: 0;
+  opacity: var(--opacity-muted);
+  text-align: left;
+  text-transform: lowercase;
+  flex-shrink: 0;
+}
