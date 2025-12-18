@@ -62,11 +62,12 @@ export function setupCameraControls() {
 
   canvas.addEventListener("mousemove", onMouseMove);
 
-  // Touch controls
+  // Touch controls - only active when in dome mode
   canvas.addEventListener(
     "touchstart",
     (event) => {
-      if (!modelLoaded) return;
+      // Only allow touch camera controls if in dome mode
+      if (!document.body.classList.contains("dome-mode") || !modelLoaded) return;
       event.preventDefault();
       const touch = event.touches[0];
       touchStartX = touch.clientX;
@@ -80,7 +81,8 @@ export function setupCameraControls() {
   canvas.addEventListener(
     "touchmove",
     (event) => {
-      if (!isTouching || !modelLoaded) return;
+      // Only allow touch camera controls if in dome mode
+      if (!document.body.classList.contains("dome-mode") || !isTouching || !modelLoaded) return;
       event.preventDefault();
       const touch = event.touches[0];
       const deltaX = touch.clientX - touchStartX;
@@ -100,6 +102,8 @@ export function setupCameraControls() {
   canvas.addEventListener(
     "touchend",
     (event) => {
+      // Only handle if in dome mode
+      if (!document.body.classList.contains("dome-mode")) return;
       event.preventDefault();
       isTouching = false;
     },
@@ -109,6 +113,8 @@ export function setupCameraControls() {
   canvas.addEventListener(
     "touchcancel",
     (event) => {
+      // Only handle if in dome mode
+      if (!document.body.classList.contains("dome-mode")) return;
       event.preventDefault();
       isTouching = false;
     },

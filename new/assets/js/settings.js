@@ -27,7 +27,7 @@ export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
 export let bloomSettings = {
-  enabled: false, // Bloom disabled by default
+  enabled: true, // Bloom enabled by default
   strength: 1.5,
   radius: 0.4,
   threshold: 0.85,
@@ -64,7 +64,7 @@ export let scrollSettings = {
   touchThreshold: 30, // Minimum touch movement in pixels to trigger scroll
   snapThreshold: 0.5, // Minimum distance in pixels to trigger scroll
   initialSnapThreshold: 1, // Threshold for initial snap on page load
-  gridColumns: 14, // Number of grid columns (should match CSS --grid-columns)
+  gridColumns: 15, // Number of grid columns (should match CSS --grid-columns)
   gridRows: 10, // Number of grid rows (should match CSS --grid-rows)
 };
 

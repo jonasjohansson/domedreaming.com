@@ -23,6 +23,18 @@
       href="https://fonts.gstatic.com"
       crossorigin />
     <link
+      rel="preload"
+      href="assets/fonts/OffBit-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous" />
+    <link
+      rel="preload"
+      href="assets/fonts/OffBit-101Bold.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin="anonymous" />
+    <link
       rel="stylesheet"
       href="assets/css/main.css" />
   </head>
@@ -38,7 +50,13 @@
         <div
           class="grid-overlay grid"
           id="dashboard-overlay">
-          <div class="block x-4 w-8 y-3 h-1">
+          <div class="block x-8 w-1 h-1 y-2">
+            <img
+              src="../favicon/favicon.svg"
+              alt="dome dreaming logo"
+              style="width: 100%; height: 100%; object-fit: contain" />
+          </div>
+          <div class="block x-2 w-13 y-3 h-1">
             <p>
               <span class="dome-dreaming-text">dome dreaming</span> fulldome flm festival<br />
               <a
@@ -56,18 +74,18 @@
               >.<br />program and tickets announced in february<br />
             </p>
           </div>
-          <div class="block x-3 w-10 y-7 h-1">
+          <div class="block x-3 w-11 y-7 h-1">
             <p>
-              scroll down to learn more about <span class="dome-dreaming-text">dome dreaming</span>, and enter a dome simulator modeled
-              after the dome at tekniska. before entering, you can drag and drop an image or video to display it inside the dome, or
+              scroll to learn about <span class="dome-dreaming-text">dome dreaming</span>, or enter our dome simulator. before entering, you
+              can drag and drop an image or video, or
               <a
                 href="#"
                 id="connect-webcam-link"
                 >connect your webcam</a
-              >. use WASD keys to move around and ESC to exit.
+              >. use WASD keys to move and ESC to exit.
             </p>
           </div>
-          <div class="block x-5 w-6 y-9 h-1">
+          <div class="block x-6 w-5 y-9 h-1">
             <button id="enter-dome-btn">enter the dome</button>
           </div>
         </div>
@@ -75,7 +93,7 @@
 
       <!-- Page 1: About section -->
       <section class="page-section grid">
-        <div class="x-2 w-12 page-content">
+        <div class="x-2 w-13 page-content">
           <div class="block x-1 w-4 h-1 y-2">
             <h2>THE WISDOME PROJECT</h2>
             <p>
@@ -147,6 +165,46 @@
           <div class="block x-2 w-12 h-8 y-2">
             <img
               src="assets/img/Links/WisdomeMalmo-topaz-upscale-3.5x.jpeg"
+              alt="Wisdome Stockholm" />
+            <figcaption class="image-caption">Wisdome Stockholm</figcaption>
+          </div>
+        </div>
+      </section>
+
+      <!-- Text section after hero image -->
+      <section class="page-section grid">
+        <div class="x-2 w-12 page-content">
+          <div class="block x-1 w-4 h-1 y-2">
+            <h2>EXPLORING NEW POSSIBILITIES</h2>
+            <p>
+              the dome format offers unique opportunities for storytelling and artistic expression. by combining immersive visuals with
+              spatial audio, creators can craft experiences that transcend traditional media boundaries.
+            </p>
+          </div>
+          <div class="block x-5 w-4 h-1 y-2">
+            <h2>COMMUNITY & COLLABORATION</h2>
+            <p>
+              <span class="dome-dreaming-text">dome dreaming</span> brings together artists, filmmakers, and technologists to explore the
+              creative potential of fulldome media. through workshops, screenings, and collaborative projects, we aim to build a vibrant
+              community around dome content creation.
+            </p>
+          </div>
+          <div class="block x-9 w-4 h-1 y-2">
+            <h2>THE FUTURE OF IMMERSIVE MEDIA</h2>
+            <p>
+              as technology continues to evolve, the possibilities for dome-based experiences expand. from scientific visualization to
+              experimental art, the dome represents a canvas for innovation and exploration.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Hero image section before supported by -->
+      <section class="page-section grid">
+        <div class="x-2 w-12 y-2 page-content">
+          <div class="block x-1 w-11 h-8 y-1">
+            <img
+              src="assets/img/Links/WisdomeStockholm-topaz-upscale-1.9x.jpg"
               alt="Wisdome Stockholm" />
             <figcaption class="image-caption">Wisdome Stockholm</figcaption>
           </div>

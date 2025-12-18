@@ -4,7 +4,7 @@
  */
 
 let dotsContainer = null;
-let gridColumns = 14;
+let gridColumns = 15;
 let colWidth = 0;
 let rowHeight = 0;
 

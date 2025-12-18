@@ -48,7 +48,7 @@
       "touchThreshold": 20,
       "snapThreshold": 0.5,
       "initialSnapThreshold": 1,
-      "gridColumns": 14,
+      "gridColumns": 15,
       "gridRows": 10
     },
     "canvasSettings": {
@@ -69,7 +69,7 @@
       "z": 3.121154018741333
     },
     "bloomSettings": {
-      "enabled": false,
+      "enabled": true,
       "strength": 0.9,
       "radius": 0.4,
       "threshold": 0.8

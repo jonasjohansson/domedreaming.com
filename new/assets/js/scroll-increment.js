@@ -100,11 +100,15 @@ let touchStartY = 0;
 let touchStartScroll = 0;
 
 function handleTouchStart(event) {
+  // Don't handle page scrolling if in dome mode
+  if (document.body.classList.contains("dome-mode")) return;
   touchStartY = event.touches[0].clientY;
   touchStartScroll = window.scrollY || window.pageYOffset;
 }
 
 function handleTouchMove(event) {
+  // Don't handle page scrolling if in dome mode
+  if (document.body.classList.contains("dome-mode")) return;
   if (isScrolling) {
     event.preventDefault();
     return;
@@ -112,6 +116,8 @@ function handleTouchMove(event) {
 }
 
 function handleTouchEnd(event) {
+  // Don't handle page scrolling if in dome mode
+  if (document.body.classList.contains("dome-mode")) return;
   if (!settings.scrollSettings.enabled) return;
 
   // If already scrolling, prevent further actions
@@ -239,16 +245,18 @@ function isTouchDevice() {
  * Initialize scroll increment functionality
  */
 export function initScrollIncrement() {
-  // On touch devices, use normal scrolling behavior
-  if (isTouchDevice()) {
-    return; // Don't initialize custom scroll behavior on touch devices
-  }
-
-  // Wheel event (mouse wheel) - desktop only
+  // Wheel event (mouse wheel) - desktop
   window.addEventListener("wheel", handleScroll, { passive: false });
 
-  // Keyboard events - desktop only
+  // Keyboard events - desktop
   window.addEventListener("keydown", handleKeyDown);
+
+  // Touch events for mobile - enable staggered scrolling on mobile too
+  if (isTouchDevice()) {
+    window.addEventListener("touchstart", handleTouchStart, { passive: true });
+    window.addEventListener("touchmove", handleTouchMove, { passive: false });
+    window.addEventListener("touchend", handleTouchEnd, { passive: false });
+  }
 
   // Snap to row height on initial load if needed
   const currentScroll = window.scrollY || window.pageYOffset;

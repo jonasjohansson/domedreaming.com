@@ -90,7 +90,7 @@ main strong {
 /* DOME DREAMING styling - use KovskijDisplay font */
 .dome-dreaming-text {
   /* font-family: "KovskijDisplay", serif; */
-  font-weight: bold;
+  font-weight: normal;
   text-transform: uppercase;
 }
 
