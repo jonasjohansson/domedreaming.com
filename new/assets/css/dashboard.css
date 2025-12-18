@@ -293,3 +293,17 @@
   line-height: var(--line-height-base);
   margin-bottom: var(--quarter-row-height);
 }
+
+/* Mobile: Stack responsive blocks with different widths */
+@media (max-width: 768px) {
+  .page-content.responsive {
+    grid-auto-rows: min-content; /* Allow rows to grow based on content */
+  }
+  
+  .page-content.responsive .block.responsive {
+    grid-row: auto; /* Let it take as many rows as needed, ignore y- class */
+    grid-row-start: auto; /* Override y- class */
+    height: auto; /* Allow height to grow with content */
+    min-height: 0; /* Remove min-height constraint */
+  }
+}

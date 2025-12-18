@@ -184,6 +184,20 @@ body::before {
   grid-auto-rows: var(--row-height);
   column-gap: var(--grid-gap);
   row-gap: 0;
+  mix-blend-mode: difference; /* Different blend mode for dots */
+  --cursor-x: 50%;
+  --cursor-y: 50%;
+  --fade-radius: 50px;
+  mask-image: radial-gradient(
+    circle at var(--cursor-x) var(--cursor-y),
+    transparent var(--fade-radius),
+    black calc(var(--fade-radius) + 50px)
+  );
+  -webkit-mask-image: radial-gradient(
+    circle at var(--cursor-x) var(--cursor-y),
+    transparent var(--fade-radius),
+    black calc(var(--fade-radius) + 50px)
+  );
 }
 
 .dot-row {
