@@ -67,6 +67,7 @@ function updatePositionClasses(block, col, row, colSpan, rowSpan) {
 function makeDraggable(block) {
   let isDragging = false;
   let startX, startY, startCol, startRow;
+  let offsetX, offsetY; // Offset from mouse to block's top-left corner
   let hasMoved = false; // Track if block has been moved
   let mouseMoved = false; // Track if mouse moved significantly (indicates drag)
 
@@ -77,6 +78,13 @@ function makeDraggable(block) {
 
     const container = block.parentElement;
     if (!container) return;
+
+    const blockRect = block.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    
+    // Calculate offset from mouse position to block's top-left corner
+    offsetX = e.clientX - blockRect.left;
+    offsetY = e.clientY - blockRect.top;
 
     startX = e.clientX;
     startY = e.clientY;
@@ -112,12 +120,22 @@ function makeDraggable(block) {
       mouseMoved = true;
     }
 
-    const colOffset = Math.round(deltaX / colWidth);
-    const rowOffset = Math.round(deltaY / rowHeight);
+    // Calculate which grid cell the clicked point (mouse position - offset) is over
+    // This ensures the block follows the cursor from where it was clicked
+    const mouseX = e.clientX - containerRect.left;
+    const mouseY = e.clientY - containerRect.top;
+    
+    // The clicked point in the block should stay under the cursor
+    // So we calculate which grid cell that point should be in
+    const clickedPointX = mouseX - offsetX;
+    const clickedPointY = mouseY - offsetY;
+    
+    const targetCol = Math.floor(clickedPointX / colWidth) + 1;
+    const targetRow = Math.floor(clickedPointY / rowHeight) + 1;
 
     const currentColSpan = parseInt(block.dataset.colSpan || "1", 10);
-    const newCol = Math.max(1, Math.min(gridColumns - currentColSpan + 1, startCol + colOffset));
-    const newRow = Math.max(1, startRow + rowOffset);
+    const newCol = Math.max(1, Math.min(gridColumns - currentColSpan + 1, targetCol));
+    const newRow = Math.max(1, targetRow);
 
     // Check if position actually changed
     if (newCol !== startCol || newRow !== startRow) {
