@@ -22,7 +22,7 @@ export let cameraSettings = {
   sensitivity: 0.002,
   rotationSpeed: 120,
 };
-export let startCameraPosition = { x: 0, y: 4.698056077957153, z: -3 };
+export let startCameraPosition = { x: 0, y: 5.4, z: -4.3 };
 export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
@@ -412,28 +412,32 @@ export async function reloadFromJSON() {
 export function saveSettings(fbxMeshes, glbLights) {
   try {
     const colorSettings = {};
-    fbxMeshes.forEach((item, index) => {
-      const material = getMaterial(item.mesh);
-      if (material?.color) {
-        const meshName = item.name || `mesh_${index}`;
-        colorSettings[meshName] = {
-          r: material.color.r,
-          g: material.color.g,
-          b: material.color.b,
-        };
-      }
-    });
+    if (fbxMeshes && Array.isArray(fbxMeshes)) {
+      fbxMeshes.forEach((item, index) => {
+        const material = getMaterial(item.mesh);
+        if (material?.color) {
+          const meshName = item.name || `mesh_${index}`;
+          colorSettings[meshName] = {
+            r: material.color.r,
+            g: material.color.g,
+            b: material.color.b,
+          };
+        }
+      });
+    }
 
     const lightSettings = {};
-    glbLights.forEach((light, index) => {
-      const lightName = light.name || `light_${index}`;
-      lightSettings[lightName] = {
-        r: light.color.r,
-        g: light.color.g,
-        b: light.color.b,
-        intensity: light.intensity,
-      };
-    });
+    if (glbLights && Array.isArray(glbLights)) {
+      glbLights.forEach((light, index) => {
+        const lightName = light.name || `light_${index}`;
+        lightSettings[lightName] = {
+          r: light.color.r,
+          g: light.color.g,
+          b: light.color.b,
+          intensity: light.intensity,
+        };
+      });
+    }
 
     const settings = {
       moveSpeed,

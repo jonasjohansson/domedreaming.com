@@ -11,7 +11,6 @@ let lastScrollTime = 0;
 
 /**
  * Get the row height in pixels
- * Row height is 1/10th of viewport height (100vh / 10)
  */
 function getRowHeight() {
   const rootStyles = getComputedStyle(document.documentElement);
@@ -20,9 +19,8 @@ function getRowHeight() {
     return cssRowHeight;
   }
 
-  // Fallback: calculate from viewport height divided by grid rows
-  const gridRows = settings.scrollSettings.gridRows || 10;
-  const fallback = window.innerHeight / gridRows;
+  const gridColumns = settings.scrollSettings.gridColumns || 14;
+  const fallback = window.innerWidth / gridColumns;
   return fallback;
 }
 
@@ -64,11 +62,11 @@ function handleScroll(event) {
   // Determine scroll direction
   const scrollDirection = delta > 0 ? 1 : -1;
 
-  // First snap current position to nearest row boundary
-  const snappedCurrent = Math.round(currentScroll / rowHeight) * rowHeight;
+  // Calculate target scroll position - move by full row height
+  let targetScroll = currentScroll + scrollDirection * scrollAmount;
 
-  // Then move exactly one full row height from the snapped position
-  let targetScroll = snappedCurrent + scrollDirection * scrollAmount;
+  // Snap to nearest row
+  targetScroll = Math.round(targetScroll / scrollAmount) * scrollAmount;
 
   // Clamp to valid scroll range
   const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
@@ -139,11 +137,9 @@ function handleTouchEnd(event) {
     const currentScroll = window.scrollY || window.pageYOffset;
     const scrollDirection = deltaY > 0 ? 1 : -1;
 
-    // First snap current position to nearest row boundary
-    const snappedCurrent = Math.round(currentScroll / rowHeight) * rowHeight;
-
-    // Then move exactly one full row height from the snapped position
-    let targetScroll = snappedCurrent + scrollDirection * scrollAmount;
+    // Calculate target scroll position - move by full row height and snap
+    let targetScroll = currentScroll + scrollDirection * scrollAmount;
+    targetScroll = Math.round(targetScroll / scrollAmount) * scrollAmount;
 
     const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
     targetScroll = Math.max(0, Math.min(targetScroll, maxScroll));
@@ -183,23 +179,20 @@ function handleKeyDown(event) {
   const rowHeight = getRowHeight();
   const scrollAmount = rowHeight; // Full row height
   const currentScroll = window.scrollY || window.pageYOffset;
-
-  // First snap current position to nearest row boundary
-  const snappedCurrent = Math.round(currentScroll / rowHeight) * rowHeight;
-  let targetScroll = snappedCurrent;
+  let targetScroll = currentScroll;
 
   switch (event.key) {
     case "ArrowDown":
     case "PageDown":
       event.preventDefault();
-      // Move exactly one full row height down from snapped position
-      targetScroll = snappedCurrent + scrollAmount;
+      targetScroll = currentScroll + scrollAmount;
+      targetScroll = Math.round(targetScroll / scrollAmount) * scrollAmount;
       break;
     case "ArrowUp":
     case "PageUp":
       event.preventDefault();
-      // Move exactly one full row height up from snapped position
-      targetScroll = snappedCurrent - scrollAmount;
+      targetScroll = currentScroll - scrollAmount;
+      targetScroll = Math.round(targetScroll / scrollAmount) * scrollAmount;
       break;
     case "Home":
       event.preventDefault();
@@ -207,9 +200,8 @@ function handleKeyDown(event) {
       break;
     case "End":
       event.preventDefault();
-      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
-      // Snap to nearest row from the bottom
-      targetScroll = Math.round(maxScroll / scrollAmount) * scrollAmount;
+      targetScroll = document.documentElement.scrollHeight - window.innerHeight;
+      targetScroll = Math.round(targetScroll / scrollAmount) * scrollAmount;
       break;
     default:
       return; // Don't handle other keys

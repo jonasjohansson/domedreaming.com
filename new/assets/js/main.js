@@ -3,9 +3,9 @@ import { setupLighting } from "./3d/lighting.js";
 import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js";
 import { setupCameraControls } from "./3d/camera.js";
 import { updateMovement } from "./3d/movement.js";
-import { loadModel } from "./3d/model.js";
+import { loadModel, fbxMeshes, glbLights } from "./3d/model.js";
 import { createColorGUI } from "./gui.js";
-import { loadSettings, canvasSettings } from "./settings.js";
+import { loadSettings, canvasSettings, currentCameraPosition, currentCameraRotation, startCameraPosition, startCameraRotation, saveSettings } from "./settings.js";
 import { updateLEDAnimation } from "./3d/led-strip.js";
 import { initScrollIncrement } from "./scroll-increment.js";
 import { initGridDotsSystem } from "./grid-dots.js";
@@ -15,6 +15,8 @@ import { textureRotationSettings } from "./settings.js";
 
 let animationFrameId = null;
 let lastTime = 0;
+let lastCameraSaveTime = 0;
+const CAMERA_SAVE_INTERVAL = 2000; // Save camera position every 2 seconds
 
 // Set canvas container to fill entire viewport using rows and columns
 function setCanvasHeight() {
@@ -35,13 +37,15 @@ function setCanvasHeight() {
   canvasWrapper.style.height = `${targetHeight}px`;
 }
 
-// Set page sections to 10 rows height (viewport height)
+// Set page sections to 10 rows height (viewport height), 15 rows on mobile
 function setPageSectionHeights() {
   const viewportHeight = window.innerHeight;
+  const isMobile = window.innerWidth <= 768;
   const rowHeight = viewportHeight / 10;
-  const sectionHeight = rowHeight * 10; // 10 rows = viewport height
+  const rowsPerSection = isMobile ? 15 : 10; // 15 rows on mobile, 10 rows on desktop
+  const sectionHeight = rowHeight * rowsPerSection;
 
-  // Set all page sections to 10 rows height
+  // Set all page sections to appropriate height
   const pageSections = document.querySelectorAll("main > section");
   pageSections.forEach((section) => {
     section.style.height = `${sectionHeight}px`;
@@ -183,6 +187,23 @@ function animate(currentTime) {
 
   // Update movement
   updateMovement();
+
+  // Update current camera position and rotation from Three.js camera
+  currentCameraPosition.x = camera.position.x;
+  currentCameraPosition.y = camera.position.y;
+  currentCameraPosition.z = camera.position.z;
+  currentCameraRotation.x = camera.rotation.x;
+  currentCameraRotation.y = camera.rotation.y;
+  currentCameraRotation.z = camera.rotation.z;
+
+  // Auto-save camera position/rotation to start settings periodically
+  const timeSinceLastSave = currentTime - lastCameraSaveTime;
+  if (timeSinceLastSave >= CAMERA_SAVE_INTERVAL) {
+    Object.assign(startCameraPosition, currentCameraPosition);
+    Object.assign(startCameraRotation, currentCameraRotation);
+    saveSettings(fbxMeshes, glbLights); // Save settings including camera position/rotation
+    lastCameraSaveTime = currentTime;
+  }
 
   // Update LED animation
   updateLEDAnimation(deltaTime);
