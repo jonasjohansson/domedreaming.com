@@ -242,16 +242,8 @@ main .block {
 
 /* Page sections - use row-height calculations */
 .page-section {
-  height: calc(var(--row-height) * 10); /* 10 rows on desktop */
+  height: calc(var(--row-height) * 10); /* 10 rows */
   min-height: calc(var(--row-height) * 10);
-}
-
-/* Mobile: expand to 14 rows */
-@media (max-width: 768px) {
-  .page-section {
-    height: calc(var(--row-height) * 14);
-    min-height: calc(var(--row-height) * 14);
-  }
 }
 
 /* Intro section */
