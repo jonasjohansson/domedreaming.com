@@ -269,7 +269,7 @@
 .page-content h2 {
   font-size: var(--font-size-base);
   color: var(--color-text);
-  margin-bottom: var(--half-row-height);
+  margin-bottom: var(--quarter-row-height);
   font-weight: var(--font-weight-normal);
 }
 
@@ -277,7 +277,7 @@
   font-size: var(--font-size-base);
   color: var(--color-text);
   line-height: var(--line-height-base);
-  margin-bottom: var(--half-row-height);
+  margin-bottom: var(--quarter-row-height);
 }
 
 /* Team Grid */
@@ -317,13 +317,13 @@
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: 12px;
-  margin-bottom: calc(var(--row-height) / 4);
+  margin-bottom: var(--quarter-row-height);
 }
 
 .team-member h3 {
   font-size: var(--font-size-base);
   color: var(--color-text);
-  margin: calc(var(--row-height) / 4) 0;
+  margin: var(--quarter-row-height) 0;
 }
 
 .team-member p {
@@ -332,5 +332,3 @@
   opacity: var(--opacity-muted);
   margin: 0;
 }
-
-

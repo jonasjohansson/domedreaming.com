@@ -7,6 +7,7 @@ let screenObject = null;
 let currentVideoTexture = null;
 let currentVideo = null;
 let currentImageTexture = null;
+let currentWebcamStream = null;
 
 export function setScreenObject(obj) {
   screenObject = obj;
@@ -132,6 +133,97 @@ export function loadVideo(file) {
   });
 
   video.addEventListener("error", () => {});
+}
+
+export function connectWebcam() {
+  if (!screenObject) return;
+
+  // Check if getUserMedia is available
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    alert("Webcam access is not available in your browser.");
+    return;
+  }
+
+  // Request webcam access
+  navigator.mediaDevices
+    .getUserMedia({ video: true, audio: false })
+    .then((stream) => {
+      // Cleanup previous sources
+      if (currentVideoTexture) {
+        currentVideoTexture.dispose();
+        currentVideoTexture = null;
+      }
+      if (currentVideo) {
+        currentVideo.pause();
+        currentVideo.srcObject = null;
+        currentVideo = null;
+      }
+      if (currentImageTexture) {
+        currentImageTexture.dispose();
+        currentImageTexture = null;
+      }
+      if (currentWebcamStream) {
+        currentWebcamStream.getTracks().forEach((track) => track.stop());
+        currentWebcamStream = null;
+      }
+
+      // Create video element for webcam stream
+      const video = document.createElement("video");
+      video.srcObject = stream;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.muted = true;
+
+      video.addEventListener("loadedmetadata", () => {
+        video.play();
+
+        const videoTexture = new THREE.VideoTexture(video);
+        configureTexture(videoTexture);
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.rotation = 0;
+
+        applyTextureToScreen(videoTexture, screenObject);
+        currentVideoTexture = videoTexture;
+        currentVideo = video;
+        currentWebcamStream = stream;
+
+        // Brief flash effect
+        const material = getMaterial(screenObject);
+        if (material) {
+          setTimeout(() => {
+            Object.assign(material, SCREEN_MATERIAL_SETTINGS);
+            material.needsUpdate = true;
+          }, 200);
+        }
+      });
+
+      video.addEventListener("error", () => {
+        alert("Error accessing webcam.");
+      });
+    })
+    .catch((error) => {
+      console.error("Error accessing webcam:", error);
+      alert("Could not access webcam. Please check permissions.");
+    });
+}
+
+export function disconnectWebcam() {
+  if (currentWebcamStream) {
+    currentWebcamStream.getTracks().forEach((track) => track.stop());
+    currentWebcamStream = null;
+  }
+  if (currentVideoTexture) {
+    currentVideoTexture.dispose();
+    currentVideoTexture = null;
+  }
+  if (currentVideo) {
+    currentVideo.pause();
+    currentVideo.srcObject = null;
+    currentVideo = null;
+  }
+  // Optionally load default texture when disconnecting
+  // loadDefaultScreenTexture();
 }
 
 export function setupDragAndDrop() {

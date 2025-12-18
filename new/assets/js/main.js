@@ -5,12 +5,20 @@ import { setupCameraControls } from "./3d/camera.js";
 import { updateMovement } from "./3d/movement.js";
 import { loadModel, fbxMeshes, glbLights } from "./3d/model.js";
 import { createColorGUI } from "./gui.js";
-import { loadSettings, canvasSettings, currentCameraPosition, currentCameraRotation, startCameraPosition, startCameraRotation, saveSettings } from "./settings.js";
+import {
+  loadSettings,
+  canvasSettings,
+  currentCameraPosition,
+  currentCameraRotation,
+  startCameraPosition,
+  startCameraRotation,
+  saveSettings,
+} from "./settings.js";
 import { updateLEDAnimation } from "./3d/led-strip.js";
 import { initScrollIncrement } from "./scroll-increment.js";
 import { initGridDotsSystem } from "./grid-dots.js";
 import { initDashboard } from "./dashboard.js";
-import { getCurrentImageTexture, getCurrentVideoTexture } from "./3d/texture.js";
+import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam } from "./3d/texture.js";
 import { textureRotationSettings } from "./settings.js";
 
 let animationFrameId = null;
@@ -84,7 +92,7 @@ function applyDomeDreamingFont() {
   while ((node = walker.nextNode())) {
     // Skip if already inside a dome-dreaming-text span
     if (node.parentElement?.classList.contains("dome-dreaming-text")) continue;
-    
+
     const text = node.textContent;
     // Case-insensitive match for "dome dreaming"
     if (/dome\s+dreaming/i.test(text)) {
@@ -149,6 +157,15 @@ async function init() {
 
   // Apply DOME DREAMING font styling
   applyDomeDreamingFont();
+
+  // Setup webcam link
+  const webcamLink = document.getElementById("connect-webcam-link");
+  if (webcamLink) {
+    webcamLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      connectWebcam();
+    });
+  }
 
   // Set canvas height to match viewport in row-heights
   setCanvasHeight();

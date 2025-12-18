@@ -27,7 +27,7 @@
   width: 40px;
   height: 40px;
   animation: spin 1s linear infinite;
-  margin: 0 auto var(--half-row-height);
+  margin: 0 auto var(--quarter-row-height);
 }
 
 @keyframes spin {
@@ -43,7 +43,7 @@ main h1 {
   font-size: var(--font-size-base);
   color: var(--color-text);
   font-weight: var(--font-weight-normal);
-  margin-bottom: var(--half-row-height);
+  margin-bottom: var(--quarter-row-height);
   letter-spacing: var(--letter-spacing-tight);
 }
 
@@ -52,7 +52,7 @@ main h2 {
   color: var(--color-text);
   font-weight: var(--font-weight-normal);
   margin-top: 0;
-  margin-bottom: var(--half-row-height);
+  margin-bottom: var(--quarter-row-height);
   letter-spacing: var(--letter-spacing-normal);
 }
 
@@ -62,7 +62,7 @@ main p {
   line-height: calc(var(--row-height) / 4);
   font-weight: var(--font-weight-normal);
   letter-spacing: var(--letter-spacing-normal);
-  margin: 0 0 var(--half-row-height) 0;
+  margin: 0 0 var(--quarter-row-height) 0;
 }
 
 main p:last-child {
@@ -87,12 +87,12 @@ main .challenge-title {
   font-size: var(--font-size-base);
   color: var(--color-text);
   font-weight: var(--font-weight-normal);
-  margin-top: var(--half-row-height);
-  margin-bottom: var(--half-row-height);
+  margin-top: var(--quarter-row-height);
+  margin-bottom: var(--quarter-row-height);
 }
 
 main .section-footer {
-  margin-top: var(--half-row-height);
+  margin-top: var(--quarter-row-height);
 }
 
 main strong {
@@ -126,12 +126,12 @@ main strong {
 .team-info h3 {
   color: var(--color-text);
   margin-top: 0;
-  margin-bottom: var(--half-row-height);
+  margin-bottom: var(--quarter-row-height);
 }
 
 .team-info .role {
   color: var(--color-text);
   font-weight: var(--font-weight-medium);
-  margin-bottom: var(--half-row-height);
+  margin-bottom: var(--quarter-row-height);
   opacity: 0.8;
 }

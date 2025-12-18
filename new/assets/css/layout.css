@@ -362,7 +362,7 @@ section.team {
 .header-subtitle {
   font-size: var(--font-size-base);
   letter-spacing: var(--letter-spacing-normal);
-  margin-bottom: var(--half-row-height);
+  margin-bottom: var(--quarter-row-height);
 }
 
 .header-location {
@@ -375,7 +375,7 @@ section.team {
   background: none;
   border: none;
   cursor: pointer;
-  padding: var(--half-row-height);
+  padding: var(--quarter-row-height);
   display: flex;
   flex-direction: column;
   gap: calc(var(--row-height) / 8);
