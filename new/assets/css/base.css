@@ -99,7 +99,7 @@
 }
 
 html {
-  scroll-behavior: auto; /* Changed to auto for instant snapping */
+  scroll-behavior: smooth; /* Smooth scrolling */
   overflow-y: auto; /* Enable scroll */
   overflow-x: hidden;
   scrollbar-width: none; /* Firefox */
