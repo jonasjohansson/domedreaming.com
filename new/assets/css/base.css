@@ -1,6 +1,6 @@
 :root {
   /* Grid system */
-  --grid-columns: 15;
+  --grid-columns: 14;
   --grid-rows: 10; /* Fixed vertical grid divisions */
   --grid-gap: 0;
   --col-width: calc(100vw / var(--grid-columns));
@@ -66,10 +66,10 @@
 /* Mobile: reduce font sizes */
 @media (max-width: 768px) {
   :root {
-    --font-size-base: 12px;
-    --font-size-small: 12px;
-    --font-size-xs: 10px;
-    --font-size-intro: 12px;
+    --font-size-base: 14px;
+    --font-size-small: 14px;
+    --font-size-xs: 12px;
+    --font-size-intro: 14px;
   }
 }
 
@@ -88,22 +88,6 @@
   font-family: "KovskijDisplay";
   src: url("../fonts/KovskijDisplay_Trial-Regular.woff2") format("woff2"), url("../fonts/KovskijDisplay_Trial-Regular.woff") format("woff");
   font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "OffBit";
-  src: url("../fonts/OffBit-Regular.woff2") format("woff2");
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "OffBit";
-  src: url("../fonts/OffBit-101Bold.woff2") format("woff2");
-  font-weight: bold;
   font-style: normal;
   font-display: swap;
 }
@@ -180,24 +164,10 @@ body::before {
   z-index: 10002; /* Above all page content and GUI */
   overflow: visible;
   display: grid;
-  grid-template-columns: repeat(15, 1fr);
+  grid-template-columns: repeat(14, 1fr);
   grid-auto-rows: var(--row-height);
   column-gap: var(--grid-gap);
   row-gap: 0;
-  mix-blend-mode: difference; /* Different blend mode for dots */
-  --cursor-x: 50%;
-  --cursor-y: 50%;
-  --fade-radius: 50px;
-  mask-image: radial-gradient(
-    circle at var(--cursor-x) var(--cursor-y),
-    transparent var(--fade-radius),
-    black calc(var(--fade-radius) + 50px)
-  );
-  -webkit-mask-image: radial-gradient(
-    circle at var(--cursor-x) var(--cursor-y),
-    transparent var(--fade-radius),
-    black calc(var(--fade-radius) + 50px)
-  );
 }
 
 .dot-row {
@@ -279,9 +249,6 @@ body::before {
 .x-14 {
   grid-column-start: 14;
 }
-.x-15 {
-  grid-column-start: 15;
-}
 
 /* Width / height utilities for grid spans */
 .w-1 {
@@ -325,9 +292,6 @@ body::before {
 }
 .w-14 {
   grid-column-end: span 14;
-}
-.w-15 {
-  grid-column-end: span 15;
 }
 
 /* Height classes: set row span */

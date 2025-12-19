@@ -147,6 +147,22 @@ main strong {
   flex-shrink: 0;
 }
 
+/* Large text utility class - higher specificity to override page-content p */
+.page-content p.large,
+p.large,
+.large {
+  font-size: calc(var(--font-size-base) * 1.5) !important;
+}
+
+/* Large text on mobile */
+@media (max-width: 768px) {
+  .page-content p.large,
+  p.large,
+  .large {
+    font-size: calc(var(--font-size-base) * 1.25) !important;
+  }
+}
+
 /* Padding-right utility classes - x/10th of a column width */
 .pad-r-1 {
   padding-right: calc(var(--col-width) / 10);
