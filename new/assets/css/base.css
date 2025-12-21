@@ -99,13 +99,11 @@
 }
 
 html {
-  scroll-behavior: smooth; /* Smooth scrolling */
-  overflow-y: auto; /* Enable scroll */
+  scroll-behavior: auto; /* Use auto for better scroll-snap compatibility */
   overflow-x: hidden;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
-  height: auto;
-  min-height: 100%;
+  height: 100%;
 }
 
 html::-webkit-scrollbar {
@@ -117,7 +115,7 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
   letter-spacing: var(--letter-spacing-normal);
-  overflow-y: auto; /* Enable scroll for multi-page layout */
+  overflow-y: auto; /* Enable scroll */
   overflow-x: hidden;
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -127,6 +125,7 @@ body {
   margin: 0;
   padding: 0;
   min-height: 300vh; /* 3 pages × 100vh */
+  scroll-behavior: smooth; /* Smooth scrolling for snap animation */
 }
 
 body::-webkit-scrollbar {

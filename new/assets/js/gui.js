@@ -109,6 +109,29 @@ export function createColorGUI() {
     }
   }
 
+  const backgroundColorControl = pageColorsFolder.addColor(pageColorsObj, "backgroundColor");
+  backgroundColorControl.name("Background Color");
+  backgroundColorControl.onChange((value) => {
+    updateCSSVariable("--color-bg", value);
+    document.body.style.backgroundColor = value;
+    settings.pageColorSettings.backgroundColor = value;
+    settings.saveSettings(fbxMeshes, glbLights);
+  });
+
+  const textColorControl = pageColorsFolder.addColor(pageColorsObj, "textColor");
+  textColorControl.name("Text Color");
+  textColorControl.onChange((value) => {
+    updateCSSVariable("--color-text", value);
+    const main = document.querySelector("main");
+    if (main) main.style.color = value;
+    const intro = document.querySelector("section.intro");
+    if (intro) intro.style.color = value;
+    const introText = document.querySelector(".intro-text");
+    if (introText) introText.style.color = value;
+    settings.pageColorSettings.textColor = value;
+    settings.saveSettings(fbxMeshes, glbLights);
+  });
+
   const dotColorControl = pageColorsFolder.addColor(pageColorsObj, "dotColor");
   dotColorControl.name("Dot Color");
   dotColorControl.onChange((value) => {

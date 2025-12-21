@@ -1,94 +1,157 @@
 /**
- * Scroll snap functionality
- * Allows smooth scrolling but snaps to nearest row-height when scrolling stops
+ * Scroll snap functionality - JavaScript-based snapping to section boundaries
  */
 
-import * as settings from "./settings.js";
+import { scrollSettings } from "./settings.js";
 
-let scrollTimeout = null;
 let isScrolling = false;
+let scrollTimeout = null;
+let lastScrollTop = 0;
 
 /**
- * Get the row height in pixels
- * Row height is 1/10th of viewport height (100vh / 10)
+ * Get the row height from CSS
  */
 function getRowHeight() {
   const rootStyles = getComputedStyle(document.documentElement);
   const cssRowHeight = parseFloat(rootStyles.getPropertyValue("--row-height"));
-  if (!isNaN(cssRowHeight) && cssRowHeight > 0) {
-    return cssRowHeight;
-  }
-
-  // Fallback: calculate from viewport height divided by grid rows
-  const gridRows = settings.scrollSettings.gridRows || 10;
-  const fallback = window.innerHeight / gridRows;
-  return fallback;
+  return !isNaN(cssRowHeight) && cssRowHeight > 0 ? cssRowHeight : window.innerHeight / 10;
 }
 
 /**
- * Round scroll position to nearest row height
+ * Get all snap points at row-height intervals
  */
-function roundToRowHeight(scrollY) {
+function getSnapPoints() {
   const rowHeight = getRowHeight();
-  return Math.round(scrollY / rowHeight) * rowHeight;
-}
+  const documentHeight = Math.max(
+    document.body.scrollHeight,
+    document.body.offsetHeight,
+    document.documentElement.clientHeight,
+    document.documentElement.scrollHeight,
+    document.documentElement.offsetHeight
+  );
 
-/**
- * Snap to nearest row height
- */
-function snapToRowHeight() {
-  if (!settings.scrollSettings.enabled) return;
-  if (document.body.classList.contains("dome-mode")) return;
+  const snapPoints = [];
+  const numSnapPoints = Math.ceil(documentHeight / rowHeight);
 
-  const currentScroll = window.scrollY || window.pageYOffset;
-  const rowHeight = getRowHeight();
-  const snappedScroll = roundToRowHeight(currentScroll);
-
-  // Only snap if we're not already at a snap point
-  if (Math.abs(snappedScroll - currentScroll) > 1) {
-    window.scrollTo({
-      top: snappedScroll,
-      behavior: "smooth",
+  // Generate snap points at every row-height increment
+  for (let i = 0; i <= numSnapPoints; i++) {
+    const snapTop = i * rowHeight;
+    snapPoints.push({
+      top: snapTop,
     });
   }
+
+  return snapPoints;
 }
 
 /**
- * Handle scroll events - detect when scrolling stops and snap
+ * Find the nearest snap point to the current scroll position
  */
-function handleScroll() {
-  if (!settings.scrollSettings.enabled) return;
-  if (document.body.classList.contains("dome-mode")) return;
+function findNearestSnapPoint(scrollTop, snapPoints) {
+  if (snapPoints.length === 0) return null;
 
-  isScrolling = true;
+  let nearest = snapPoints[0];
+  let minDistance = Math.abs(scrollTop - nearest.top);
 
-  // Clear existing timeout
-  clearTimeout(scrollTimeout);
-
-  // Set a new timeout to snap when scrolling stops
-  scrollTimeout = setTimeout(() => {
-    isScrolling = false;
-    snapToRowHeight();
-  }, 150); // Wait 150ms after scrolling stops before snapping
-}
-
-/**
- * Initialize scroll snap functionality
- */
-export function initScrollIncrement() {
-  // Listen for scroll events (works for both mouse wheel and touch)
-  window.addEventListener("scroll", handleScroll, { passive: true });
-
-  // Snap to row height on initial load if needed
-  const currentScroll = window.scrollY || window.pageYOffset;
-  if (currentScroll > 0) {
-    const rowHeight = getRowHeight();
-    const snappedScroll = roundToRowHeight(currentScroll);
-    if (Math.abs(snappedScroll - currentScroll) > settings.scrollSettings.initialSnapThreshold) {
-      window.scrollTo({
-        top: snappedScroll,
-        behavior: "auto",
-      });
+  for (let i = 1; i < snapPoints.length; i++) {
+    const distance = Math.abs(scrollTop - snapPoints[i].top);
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearest = snapPoints[i];
     }
   }
+
+  return nearest;
+}
+
+/**
+ * Snap to the nearest section
+ */
+function snapToNearest() {
+  if (isScrolling) return;
+
+  const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+  const snapPoints = getSnapPoints();
+
+  if (snapPoints.length === 0) return;
+
+  const nearest = findNearestSnapPoint(scrollTop, snapPoints);
+  if (!nearest) return;
+
+  // Only snap if we're not already at the snap point (within 1px tolerance)
+  const distance = Math.abs(scrollTop - nearest.top);
+  if (distance > 1) {
+    isScrolling = true;
+    window.scrollTo({
+      top: nearest.top,
+      behavior: "smooth",
+    });
+
+    // Reset scrolling flag after animation
+    setTimeout(() => {
+      isScrolling = false;
+    }, 500);
+  }
+}
+
+/**
+ * Handle scroll events
+ */
+function handleScroll() {
+  if (isScrolling) return;
+
+  // Clear existing timeout
+  if (scrollTimeout) {
+    clearTimeout(scrollTimeout);
+  }
+
+  // Set a timeout to snap after scrolling stops
+  scrollTimeout = setTimeout(() => {
+    snapToNearest();
+    scrollTimeout = null;
+  }, 100); // Wait 100ms after scrolling stops
+}
+
+/**
+ * Initialize scroll snapping
+ */
+export function initScrollIncrement() {
+  if (!scrollSettings.enabled) return;
+
+  // Don't interfere with dome mode
+  if (document.body.classList.contains("dome-mode")) return;
+
+  // Initial snap on load
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      snapToNearest();
+    }, 100);
+  });
+
+  // Handle scroll events
+  let ticking = false;
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    },
+    { passive: true }
+  );
+
+  // Handle window resize to recalculate snap points
+  window.addEventListener("resize", () => {
+    if (scrollTimeout) {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = null;
+    }
+    setTimeout(() => {
+      snapToNearest();
+    }, 100);
+  });
 }

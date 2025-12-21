@@ -88,7 +88,7 @@ export let pageBackgroundSettings = {
     backgroundImage: null, // Data URL or path
   },
   about: {
-    backgroundColor: "#000000",
+    backgroundColor: "#463434",
     backgroundImage: null,
   },
   team: {
@@ -219,35 +219,61 @@ export function applyPageBackgrounds() {
   const canvasWrapper = document.querySelector(".canvas-wrapper");
   if (canvasWrapper) {
     if (pageBackgroundSettings.canvas.backgroundColor) {
-      canvasWrapper.style.backgroundColor = pageBackgroundSettings.canvas.backgroundColor;
+      canvasWrapper.style.setProperty("background-color", pageBackgroundSettings.canvas.backgroundColor, "important");
+    } else {
+      canvasWrapper.style.removeProperty("background-color");
     }
     if (pageBackgroundSettings.canvas.backgroundImage) {
-      canvasWrapper.style.backgroundImage = `url(${pageBackgroundSettings.canvas.backgroundImage})`;
-      canvasWrapper.style.backgroundSize = "cover";
-      canvasWrapper.style.backgroundPosition = "center";
-      canvasWrapper.style.backgroundRepeat = "no-repeat";
+      canvasWrapper.style.setProperty("background-image", `url(${pageBackgroundSettings.canvas.backgroundImage})`, "important");
+      canvasWrapper.style.setProperty("background-size", "cover", "important");
+      canvasWrapper.style.setProperty("background-position", "center", "important");
+      canvasWrapper.style.setProperty("background-repeat", "no-repeat", "important");
     } else {
-      canvasWrapper.style.backgroundImage = "none";
+      canvasWrapper.style.setProperty("background-image", "none", "important");
     }
   }
 
-  // About page (second viewport)
-  const page2 = document.getElementById("page-2");
-  if (page2) {
-    if (pageBackgroundSettings.about.backgroundColor) {
-      page2.style.backgroundColor = pageBackgroundSettings.about.backgroundColor;
+  // About page (first page-section after canvas)
+  const pageSections = document.querySelectorAll(".page-section");
+  if (pageSections.length > 0) {
+    // Apply about background to first page-section
+    const aboutSection = pageSections[0];
+    if (aboutSection) {
+      if (pageBackgroundSettings.about.backgroundColor) {
+        aboutSection.style.setProperty("background-color", pageBackgroundSettings.about.backgroundColor, "important");
+      } else {
+        aboutSection.style.removeProperty("background-color");
+      }
+      if (pageBackgroundSettings.about.backgroundImage) {
+        aboutSection.style.setProperty("background-image", `url(${pageBackgroundSettings.about.backgroundImage})`, "important");
+        aboutSection.style.setProperty("background-size", "cover", "important");
+        aboutSection.style.setProperty("background-position", "center", "important");
+        aboutSection.style.setProperty("background-repeat", "no-repeat", "important");
+      } else {
+        aboutSection.style.setProperty("background-image", "none", "important");
+      }
     }
-    if (pageBackgroundSettings.about.backgroundImage) {
-      page2.style.backgroundImage = `url(${pageBackgroundSettings.about.backgroundImage})`;
-      page2.style.backgroundSize = "cover";
-      page2.style.backgroundPosition = "center";
-      page2.style.backgroundRepeat = "no-repeat";
-    } else {
-      page2.style.backgroundImage = "none";
+
+    // Apply team background to remaining sections if needed
+    if (pageSections.length > 1 && pageBackgroundSettings.team) {
+      for (let i = 1; i < pageSections.length; i++) {
+        const section = pageSections[i];
+        if (pageBackgroundSettings.team.backgroundColor) {
+          section.style.setProperty("background-color", pageBackgroundSettings.team.backgroundColor, "important");
+        } else {
+          section.style.removeProperty("background-color");
+        }
+        if (pageBackgroundSettings.team.backgroundImage) {
+          section.style.setProperty("background-image", `url(${pageBackgroundSettings.team.backgroundImage})`, "important");
+          section.style.setProperty("background-size", "cover", "important");
+          section.style.setProperty("background-position", "center", "important");
+          section.style.setProperty("background-repeat", "no-repeat", "important");
+        } else {
+          section.style.setProperty("background-image", "none", "important");
+        }
+      }
     }
   }
-
-  // Page 2 now contains all content (no separate page 3)
 }
 
 // Apply vignette mask to canvas container
