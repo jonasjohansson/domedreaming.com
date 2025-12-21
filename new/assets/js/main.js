@@ -12,14 +12,17 @@ import {
   currentCameraRotation,
   startCameraPosition,
   startCameraRotation,
+  exteriorCameraPosition,
+  exteriorCameraRotation,
   saveSettings,
 } from "./settings.js";
 import { updateLEDAnimation } from "./3d/led-strip.js";
-import { initScrollIncrement } from "./scroll-increment.js";
+import { initScrollIncrement, setScrollProgressCallback, getCameraTransitionProgress, isInCameraTransition } from "./scroll-increment.js";
 import { initGridDotsSystem } from "./grid-dots.js";
 import { initDashboard } from "./dashboard.js";
 import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam } from "./3d/texture.js";
 import { textureRotationSettings } from "./settings.js";
+import { initScrollDebug } from "./utils/scroll-debug.js";
 
 let animationFrameId = null;
 let lastTime = 0;
@@ -143,7 +146,13 @@ async function init() {
   // Setup camera controls
   setupCameraControls();
 
-  // Initialize scroll increment functionality
+  // Set up camera transition based on scroll (before model loads)
+  setupCameraScrollTransition();
+
+  // Initialize scroll debug tools
+  initScrollDebug();
+
+  // Initialize camera transition (no scroll increment - smooth camera transition only)
   initScrollIncrement();
 
   // Initialize grid dots (static background)
@@ -180,6 +189,111 @@ async function init() {
   startRenderLoop();
 }
 
+/**
+ * Setup camera transition based on scroll progress
+ */
+function setupCameraScrollTransition() {
+  console.log("[Camera Setup] Initializing camera transition");
+  console.log("[Camera Setup] Exterior position:", exteriorCameraPosition);
+  console.log("[Camera Setup] Exterior rotation:", exteriorCameraRotation);
+  console.log("[Camera Setup] Interior position:", startCameraPosition);
+  console.log("[Camera Setup] Interior rotation:", startCameraRotation);
+
+  // Set initial camera position to exterior view
+  camera.position.set(exteriorCameraPosition.x, exteriorCameraPosition.y, exteriorCameraPosition.z);
+  camera.rotation.set(exteriorCameraRotation.x, exteriorCameraRotation.y, exteriorCameraRotation.z);
+
+  console.log("[Camera Setup] Camera set to exterior position:", camera.position);
+  console.log("[Camera Setup] Camera set to exterior rotation:", camera.rotation);
+
+  // Update camera based on scroll progress
+  setScrollProgressCallback((progress) => {
+    console.log("[Camera Setup] Scroll progress callback triggered with:", progress);
+    updateCameraFromScroll(progress);
+  });
+
+  // Initial update
+  const initialProgress = getCameraTransitionProgress();
+  console.log("[Camera Setup] Initial progress:", initialProgress);
+  updateCameraFromScroll(initialProgress);
+}
+
+/**
+ * Update camera position and rotation based on scroll progress
+ * @param {number} progress - 0 (exterior) to 1 (interior)
+ */
+// Cache last progress to avoid unnecessary updates
+let lastCameraProgress = -1;
+let updateCount = 0;
+
+function updateCameraFromScroll(progress) {
+  updateCount++;
+
+  // Clamp progress to 0-1
+  progress = Math.max(0, Math.min(1, progress));
+
+  // Always update - don't skip based on progress change
+  // The render loop needs to continuously apply the camera position
+
+  // Use linear interpolation for now (can add easing later if needed)
+  // Linear is more predictable and directly corresponds to scroll
+  const easedProgress = progress;
+
+  // Interpolate position
+  const deltaX = startCameraPosition.x - exteriorCameraPosition.x;
+  const deltaY = startCameraPosition.y - exteriorCameraPosition.y;
+  const deltaZ = startCameraPosition.z - exteriorCameraPosition.z;
+
+  const newX = exteriorCameraPosition.x + deltaX * easedProgress;
+  const newY = exteriorCameraPosition.y + deltaY * easedProgress;
+  const newZ = exteriorCameraPosition.z + deltaZ * easedProgress;
+
+  // Interpolate rotation
+  const deltaRotX = startCameraRotation.x - exteriorCameraRotation.x;
+  const deltaRotY = startCameraRotation.y - exteriorCameraRotation.y;
+  const deltaRotZ = startCameraRotation.z - exteriorCameraRotation.z;
+
+  const newRotX = exteriorCameraRotation.x + deltaRotX * easedProgress;
+  const newRotY = exteriorCameraRotation.y + deltaRotY * easedProgress;
+  const newRotZ = exteriorCameraRotation.z + deltaRotZ * easedProgress;
+
+  // Log every 60 frames (roughly once per second at 60fps) or when progress changes significantly
+  const progressChanged = Math.abs(progress - lastCameraProgress) > 0.01;
+  const shouldLog = updateCount % 60 === 0 || progressChanged;
+
+  if (shouldLog) {
+    console.log("[Camera] ===== UPDATE =====");
+    console.log("[Camera] Progress:", progress.toFixed(4), `(${(progress * 100).toFixed(1)}%)`, "eased:", easedProgress.toFixed(4));
+    console.log("[Camera] Exterior:", exteriorCameraPosition);
+    console.log("[Camera] Interior:", startCameraPosition);
+    console.log("[Camera] Deltas:", { x: deltaX.toFixed(2), y: deltaY.toFixed(2), z: deltaZ.toFixed(2) });
+    console.log("[Camera] Calculated position:", { x: newX.toFixed(4), y: newY.toFixed(4), z: newZ.toFixed(4) });
+    console.log("[Camera] Calculated rotation:", { x: newRotX.toFixed(4), y: newRotY.toFixed(4), z: newRotZ.toFixed(4) });
+    console.log("[Camera] Camera BEFORE set:", camera.position.clone());
+  }
+
+  // Set camera position and rotation
+  camera.position.set(newX, newY, newZ);
+  camera.rotation.set(newRotX, newRotY, newRotZ);
+
+  // Verify the values were set correctly
+  const actualPos = camera.position.clone();
+  const actualRot = camera.rotation.clone();
+  const posMatches = Math.abs(actualPos.x - newX) < 0.001 && Math.abs(actualPos.y - newY) < 0.001 && Math.abs(actualPos.z - newZ) < 0.001;
+  const rotMatches =
+    Math.abs(actualRot.x - newRotX) < 0.001 && Math.abs(actualRot.y - newRotY) < 0.001 && Math.abs(actualRot.z - newRotZ) < 0.001;
+
+  if (shouldLog) {
+    console.log("[Camera] Camera AFTER set:", actualPos);
+    if (!posMatches || !rotMatches) {
+      console.error("[Camera] ⚠️ WARNING: Camera values don't match what we set!");
+      console.error("[Camera] Position match:", posMatches, "Rotation match:", rotMatches);
+    }
+    console.log("[Camera] ===================");
+    lastCameraProgress = progress;
+  }
+}
+
 // Render loop
 function animate(currentTime) {
   animationFrameId = requestAnimationFrame(animate);
@@ -187,8 +301,40 @@ function animate(currentTime) {
   const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
   lastTime = currentTime;
 
-  // Update movement
-  updateMovement();
+  // Update camera from scroll (only if not in dome mode)
+  // Always update based on current progress, even if transition is complete
+  if (!document.body.classList.contains("dome-mode")) {
+    const progress = getCameraTransitionProgress();
+    const inTransition = isInCameraTransition();
+    // Update camera based on current progress - this ensures smooth updates every frame
+    updateCameraFromScroll(progress);
+
+    // Debug: Log if camera position doesn't match expected (every 60 frames)
+    if (updateCount % 60 === 0 && progress > 0 && progress < 1) {
+      const expectedX = exteriorCameraPosition.x + (startCameraPosition.x - exteriorCameraPosition.x) * progress;
+      const expectedY = exteriorCameraPosition.y + (startCameraPosition.y - exteriorCameraPosition.y) * progress;
+      const expectedZ = exteriorCameraPosition.z + (startCameraPosition.z - exteriorCameraPosition.z) * progress;
+      const actualX = camera.position.x;
+      const actualY = camera.position.y;
+      const actualZ = camera.position.z;
+
+      if (Math.abs(actualX - expectedX) > 0.1 || Math.abs(actualY - expectedY) > 0.1 || Math.abs(actualZ - expectedZ) > 0.1) {
+        console.warn("[Camera Debug] Position mismatch!");
+        console.warn("Expected:", { x: expectedX.toFixed(2), y: expectedY.toFixed(2), z: expectedZ.toFixed(2) });
+        console.warn("Actual:", { x: actualX.toFixed(2), y: actualY.toFixed(2), z: actualZ.toFixed(2) });
+        console.warn("Progress:", progress, "Delta:", {
+          x: (actualX - expectedX).toFixed(2),
+          y: (actualY - expectedY).toFixed(2),
+          z: (actualZ - expectedZ).toFixed(2),
+        });
+      }
+    }
+  }
+
+  // Update movement (only in dome mode)
+  if (document.body.classList.contains("dome-mode")) {
+    updateMovement();
+  }
 
   // Update current camera position and rotation from Three.js camera
   currentCameraPosition.x = camera.position.x;
@@ -199,8 +345,11 @@ function animate(currentTime) {
   currentCameraRotation.z = camera.rotation.z;
 
   // Auto-save camera position/rotation to start settings periodically
+  // BUT: Don't auto-save during camera transition (when not in dome mode)
+  // This prevents overwriting the target position while transitioning
   const timeSinceLastSave = currentTime - lastCameraSaveTime;
-  if (timeSinceLastSave >= CAMERA_SAVE_INTERVAL) {
+  const isInTransition = !document.body.classList.contains("dome-mode") && isInCameraTransition();
+  if (timeSinceLastSave >= CAMERA_SAVE_INTERVAL && !isInTransition) {
     Object.assign(startCameraPosition, currentCameraPosition);
     Object.assign(startCameraRotation, currentCameraRotation);
     saveSettings(fbxMeshes, glbLights); // Save settings including camera position/rotation

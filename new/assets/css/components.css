@@ -1,18 +1,10 @@
 /* Block base styles - allows content to grow while aligning to grid */
 .block {
-  align-self: start; /* Align to grid row start by default */
+  align-self: start; /* Align to grid row start */
   /* Content can grow beyond min-height, spanning multiple grid rows */
   overflow: visible; /* Allow text to flow outside block boundaries */
   height: 100%; /* Ensure block fills its grid area */
   min-height: 0; /* Allow grid to control height */
-}
-
-/* Vertically center blocks when v-center class is present */
-.block.v-center {
-  align-self: center;
-  display: flex;
-  flex-direction: column;
-  justify-content: center; /* Vertically center content */
 }
 
 #loading {
@@ -102,30 +94,11 @@ main strong {
   text-transform: uppercase;
 }
 
-/* Image blocks - images should fill the block, not be centered */
-.block:has(img):not(:has(.image-caption)) {
-  justify-content: stretch; /* Images fill the block */
-  align-items: stretch;
-}
-
-.block:has(img):not(:has(.image-caption)) img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-/* Override v-center for image blocks - images should fill, not center */
-.block.v-center:has(img):not(:has(.image-caption)) {
-  justify-content: stretch;
-  align-items: stretch;
-}
-
 /* Image captions - shown for images with width > 8 and height > 4 */
 /* Make blocks with captions use flexbox column layout */
 .block:has(.image-caption) {
   display: flex;
   flex-direction: column;
-  justify-content: stretch; /* Images fill available space */
 }
 
 .block:has(.image-caption) img {
@@ -145,52 +118,4 @@ main strong {
   text-align: left;
   text-transform: lowercase;
   flex-shrink: 0;
-}
-
-/* Large text utility class - higher specificity to override page-content p */
-.page-content p.large,
-p.large,
-.large {
-  font-size: calc(var(--font-size-base) * 1.5) !important;
-}
-
-/* Large text on mobile */
-@media (max-width: 768px) {
-  .page-content p.large,
-  p.large,
-  .large {
-    font-size: calc(var(--font-size-base) * 1.25) !important;
-  }
-}
-
-/* Padding-right utility classes - x/10th of a column width */
-.pad-r-1 {
-  padding-right: calc(var(--col-width) / 10);
-}
-.pad-r-2 {
-  padding-right: calc(var(--col-width) * 2 / 10);
-}
-.pad-r-3 {
-  padding-right: calc(var(--col-width) * 3 / 10);
-}
-.pad-r-4 {
-  padding-right: calc(var(--col-width) * 4 / 10);
-}
-.pad-r-5 {
-  padding-right: calc(var(--col-width) * 5 / 10);
-}
-.pad-r-6 {
-  padding-right: calc(var(--col-width) * 6 / 10);
-}
-.pad-r-7 {
-  padding-right: calc(var(--col-width) * 7 / 10);
-}
-.pad-r-8 {
-  padding-right: calc(var(--col-width) * 8 / 10);
-}
-.pad-r-9 {
-  padding-right: calc(var(--col-width) * 9 / 10);
-}
-.pad-r-10 {
-  padding-right: var(--col-width);
 }

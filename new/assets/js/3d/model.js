@@ -227,10 +227,9 @@ export function loadModel(createColorGUI) {
         if (infoPanel) infoPanel.classList.add("loaded");
       }, 300);
 
-      // Set camera position
-      camera.position.set(settings.startCameraPosition.x, settings.startCameraPosition.y, settings.startCameraPosition.z);
-      camera.rotation.set(settings.startCameraRotation.x, settings.startCameraRotation.y, settings.startCameraRotation.z);
-      euler.set(settings.startCameraRotation.x, settings.startCameraRotation.y, settings.startCameraRotation.z);
+      // Don't set camera position here - it's handled by the scroll transition system
+      // Just set the euler for camera controls
+      euler.set(settings.exteriorCameraRotation.x, settings.exteriorCameraRotation.y, settings.exteriorCameraRotation.z);
 
       setModelLoaded(true);
 

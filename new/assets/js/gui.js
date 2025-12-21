@@ -109,29 +109,6 @@ export function createColorGUI() {
     }
   }
 
-  const backgroundColorControl = pageColorsFolder.addColor(pageColorsObj, "backgroundColor");
-  backgroundColorControl.name("Background Color");
-  backgroundColorControl.onChange((value) => {
-    updateCSSVariable("--color-bg", value);
-    document.body.style.backgroundColor = value;
-    settings.pageColorSettings.backgroundColor = value;
-    settings.saveSettings(fbxMeshes, glbLights);
-  });
-
-  const textColorControl = pageColorsFolder.addColor(pageColorsObj, "textColor");
-  textColorControl.name("Text Color");
-  textColorControl.onChange((value) => {
-    updateCSSVariable("--color-text", value);
-    const main = document.querySelector("main");
-    if (main) main.style.color = value;
-    const intro = document.querySelector("section.intro");
-    if (intro) intro.style.color = value;
-    const introText = document.querySelector(".intro-text");
-    if (introText) introText.style.color = value;
-    settings.pageColorSettings.textColor = value;
-    settings.saveSettings(fbxMeshes, glbLights);
-  });
-
   const dotColorControl = pageColorsFolder.addColor(pageColorsObj, "dotColor");
   dotColorControl.name("Dot Color");
   dotColorControl.onChange((value) => {
@@ -144,18 +121,18 @@ export function createColorGUI() {
 
   // No sidebar or header island controls – layout simplified
 
-  // Scroll increment settings
-  const scrollFolder = websiteFolder.addFolder("Scroll Increment");
-  const scrollObj = {
-    enabled: settings.scrollSettings.enabled,
-  };
+  // Scroll increment settings - DISABLED (removed scroll increment functionality)
+  // const scrollFolder = websiteFolder.addFolder("Scroll Increment");
+  // const scrollObj = {
+  //   enabled: settings.scrollSettings.enabled,
+  // };
 
-  const scrollEnabledControl = scrollFolder.add(scrollObj, "enabled");
-  scrollEnabledControl.name("Enabled");
-  scrollEnabledControl.onChange((value) => {
-    settings.scrollSettings.enabled = value;
-    settings.saveSettings(fbxMeshes, glbLights);
-  });
+  // const scrollEnabledControl = scrollFolder.add(scrollObj, "enabled");
+  // scrollEnabledControl.name("Enabled");
+  // scrollEnabledControl.onChange((value) => {
+  //   settings.scrollSettings.enabled = value;
+  //   settings.saveSettings(fbxMeshes, glbLights);
+  // });
 
   // Canvas blending mode (moved to Website section)
   const blendingModes = {

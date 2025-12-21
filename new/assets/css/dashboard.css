@@ -6,7 +6,7 @@
   width: 100vw;
   height: 100vh;
   display: grid;
-  grid-template-columns: repeat(15, 1fr);
+  grid-template-columns: repeat(14, 1fr);
   grid-auto-rows: var(--row-height);
   column-gap: var(--grid-gap);
   row-gap: 0;
@@ -21,6 +21,16 @@
 /* Landing page overlay - visible but behind text */
 #dashboard-overlay {
   z-index: 15; /* Above canvas, below footer text */
+}
+
+/* First page blocks start hidden, appear instantly when transition completes */
+/* Only target text blocks, not dashboard blocks */
+#dashboard-overlay .block:not(.dashboard-block) {
+  opacity: 0;
+}
+
+#dashboard-overlay.blocks-visible .block:not(.dashboard-block) {
+  opacity: 1;
 }
 
 /* Page 2 overlay - on top of text */
@@ -222,16 +232,6 @@
   gap: 0;
 }
 
-/* About section: images behind text blocks */
-.page-content.responsive .dashboard-block {
-  z-index: 0; /* Behind text blocks */
-}
-
-.page-content.responsive .block:not(.dashboard-block) {
-  position: relative;
-  z-index: 2; /* Text blocks in front of images */
-}
-
 .page-content .block img {
   width: 100%;
   height: 100%;
@@ -302,20 +302,4 @@
   color: var(--color-text);
   line-height: var(--line-height-base);
   margin-bottom: var(--quarter-row-height);
-}
-
-/* Mobile: Stack responsive blocks */
-@media (max-width: 768px) {
-  .page-content.responsive {
-    grid-auto-rows: min-content; /* Allow rows to grow based on content */
-  }
-
-  .page-content.responsive .block.responsive {
-    grid-column: 1 / -1; /* Span all columns, stack naturally */
-    grid-row: auto; /* Let it take as many rows as needed, ignore y- class */
-    grid-row-start: auto; /* Override y- class */
-    height: auto; /* Allow height to grow with content */
-    min-height: 0; /* Remove min-height constraint */
-    margin-bottom: var(--half-row-height); /* Add spacing between stacked blocks */
-  }
 }

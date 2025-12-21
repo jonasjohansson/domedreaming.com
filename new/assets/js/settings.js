@@ -26,8 +26,13 @@ export let startCameraPosition = { x: 0, y: 5.4, z: -4.3 };
 export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
+// Exterior camera position (outside looking at the dome)
+export let exteriorCameraPosition = { x: 0, y: 15, z: 25 };
+export let exteriorCameraRotation = { x: -0.5, y: 0, z: 0 };
+// Number of scroll rows for camera transition
+export let cameraTransitionRows = 10;
 export let bloomSettings = {
-  enabled: true, // Bloom enabled by default
+  enabled: false, // Bloom disabled by default
   strength: 1.5,
   radius: 0.4,
   threshold: 0.85,
@@ -59,12 +64,12 @@ export let pageColorSettings = {
   },
 };
 export let scrollSettings = {
-  enabled: true, // Enabled for tactile row-height snapping
-  scrollTimeout: 25, // Delay in ms before allowing next scroll
-  touchThreshold: 30, // Minimum touch movement in pixels to trigger scroll
-  snapThreshold: 0.5, // Minimum distance in pixels to trigger scroll
-  initialSnapThreshold: 1, // Threshold for initial snap on page load
-  gridColumns: 15, // Number of grid columns (should match CSS --grid-columns)
+  enabled: false, // Scroll increment disabled - using smooth camera transition instead
+  scrollTimeout: 0, // Delay in ms before allowing next scroll (not used)
+  touchThreshold: 30, // Minimum touch movement in pixels to trigger scroll (not used)
+  snapThreshold: 0.5, // Minimum distance in pixels to trigger scroll (not used)
+  initialSnapThreshold: 1, // Threshold for initial snap on page load (not used)
+  gridColumns: 14, // Number of grid columns (should match CSS --grid-columns)
   gridRows: 10, // Number of grid rows (should match CSS --grid-rows)
 };
 
@@ -88,7 +93,7 @@ export let pageBackgroundSettings = {
     backgroundImage: null, // Data URL or path
   },
   about: {
-    backgroundColor: "#463434",
+    backgroundColor: "#000000",
     backgroundImage: null,
   },
   team: {
@@ -219,61 +224,35 @@ export function applyPageBackgrounds() {
   const canvasWrapper = document.querySelector(".canvas-wrapper");
   if (canvasWrapper) {
     if (pageBackgroundSettings.canvas.backgroundColor) {
-      canvasWrapper.style.setProperty("background-color", pageBackgroundSettings.canvas.backgroundColor, "important");
-    } else {
-      canvasWrapper.style.removeProperty("background-color");
+      canvasWrapper.style.backgroundColor = pageBackgroundSettings.canvas.backgroundColor;
     }
     if (pageBackgroundSettings.canvas.backgroundImage) {
-      canvasWrapper.style.setProperty("background-image", `url(${pageBackgroundSettings.canvas.backgroundImage})`, "important");
-      canvasWrapper.style.setProperty("background-size", "cover", "important");
-      canvasWrapper.style.setProperty("background-position", "center", "important");
-      canvasWrapper.style.setProperty("background-repeat", "no-repeat", "important");
+      canvasWrapper.style.backgroundImage = `url(${pageBackgroundSettings.canvas.backgroundImage})`;
+      canvasWrapper.style.backgroundSize = "cover";
+      canvasWrapper.style.backgroundPosition = "center";
+      canvasWrapper.style.backgroundRepeat = "no-repeat";
     } else {
-      canvasWrapper.style.setProperty("background-image", "none", "important");
+      canvasWrapper.style.backgroundImage = "none";
     }
   }
 
-  // About page (first page-section after canvas)
-  const pageSections = document.querySelectorAll(".page-section");
-  if (pageSections.length > 0) {
-    // Apply about background to first page-section
-    const aboutSection = pageSections[0];
-    if (aboutSection) {
-      if (pageBackgroundSettings.about.backgroundColor) {
-        aboutSection.style.setProperty("background-color", pageBackgroundSettings.about.backgroundColor, "important");
-      } else {
-        aboutSection.style.removeProperty("background-color");
-      }
-      if (pageBackgroundSettings.about.backgroundImage) {
-        aboutSection.style.setProperty("background-image", `url(${pageBackgroundSettings.about.backgroundImage})`, "important");
-        aboutSection.style.setProperty("background-size", "cover", "important");
-        aboutSection.style.setProperty("background-position", "center", "important");
-        aboutSection.style.setProperty("background-repeat", "no-repeat", "important");
-      } else {
-        aboutSection.style.setProperty("background-image", "none", "important");
-      }
+  // About page (second viewport)
+  const page2 = document.getElementById("page-2");
+  if (page2) {
+    if (pageBackgroundSettings.about.backgroundColor) {
+      page2.style.backgroundColor = pageBackgroundSettings.about.backgroundColor;
     }
-
-    // Apply team background to remaining sections if needed
-    if (pageSections.length > 1 && pageBackgroundSettings.team) {
-      for (let i = 1; i < pageSections.length; i++) {
-        const section = pageSections[i];
-        if (pageBackgroundSettings.team.backgroundColor) {
-          section.style.setProperty("background-color", pageBackgroundSettings.team.backgroundColor, "important");
-        } else {
-          section.style.removeProperty("background-color");
-        }
-        if (pageBackgroundSettings.team.backgroundImage) {
-          section.style.setProperty("background-image", `url(${pageBackgroundSettings.team.backgroundImage})`, "important");
-          section.style.setProperty("background-size", "cover", "important");
-          section.style.setProperty("background-position", "center", "important");
-          section.style.setProperty("background-repeat", "no-repeat", "important");
-        } else {
-          section.style.setProperty("background-image", "none", "important");
-        }
-      }
+    if (pageBackgroundSettings.about.backgroundImage) {
+      page2.style.backgroundImage = `url(${pageBackgroundSettings.about.backgroundImage})`;
+      page2.style.backgroundSize = "cover";
+      page2.style.backgroundPosition = "center";
+      page2.style.backgroundRepeat = "no-repeat";
+    } else {
+      page2.style.backgroundImage = "none";
     }
   }
+
+  // Page 2 now contains all content (no separate page 3)
 }
 
 // Apply vignette mask to canvas container
