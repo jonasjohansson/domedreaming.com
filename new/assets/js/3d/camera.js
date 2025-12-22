@@ -41,8 +41,12 @@ export function setupCameraControls() {
   document.addEventListener("mozpointerlockchange", onPointerLockChange);
   document.addEventListener("webkitpointerlockchange", onPointerLockChange);
 
-  // Canvas click handler removed - only the "enter the dome" button can enter dome mode
-  // This prevents accidental clicks on the 3D scene from entering dome mode
+  canvas.addEventListener("click", () => {
+    // Enter dome mode (fade overlays, request pointer lock, disable scroll)
+    if (!isPointerLocked && window.enterDomeModeFromCanvas) {
+      window.enterDomeModeFromCanvas();
+    }
+  });
 
   // Mouse movement
   function onMouseMove(event) {

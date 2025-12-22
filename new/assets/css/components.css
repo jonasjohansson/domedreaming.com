@@ -119,8 +119,3 @@ main strong {
   text-transform: lowercase;
   flex-shrink: 0;
 }
-
-/* Ensure image-caption class works on p elements too */
-p.image-caption {
-  font-size: 12px !important;
-}
