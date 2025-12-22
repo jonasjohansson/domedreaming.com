@@ -13,7 +13,7 @@ function handleImageClick(block) {
   document.querySelectorAll(".dashboard-block.active, .page-content .block.active").forEach((el) => {
     el.classList.remove("active");
   });
-  
+
   // Add active class to clicked image
   block.classList.add("active");
 }
@@ -67,13 +67,66 @@ function updatePositionClasses(block, col, row, colSpan, rowSpan) {
 function makeDraggable(block) {
   let isDragging = false;
   let startX, startY, startCol, startRow;
-  let offsetX, offsetY; // Offset from mouse to block's top-left corner
+  let offsetX, offsetY; // Offset from mouse/touch to block's top-left corner
   let hasMoved = false; // Track if block has been moved
-  let mouseMoved = false; // Track if mouse moved significantly (indicates drag)
+  let mouseMoved = false; // Track if mouse/touch moved significantly (indicates drag)
 
+  // Shared function to handle drag movement (works for both mouse and touch)
+  function handleDragMove(clientX, clientY) {
+    if (!isDragging) return;
+
+    const container = block.parentElement;
+    if (!container) return;
+
+    const containerRect = container.getBoundingClientRect();
+    const gridColumns = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--grid-columns")) || 12;
+    const colWidth = containerRect.width / gridColumns;
+    const rowHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
+
+    const deltaX = clientX - startX;
+    const deltaY = clientY - startY;
+
+    // Check if moved significantly (more than 5px) - indicates drag
+    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+      mouseMoved = true;
+    }
+
+    // Calculate which grid cell the clicked point (position - offset) is over
+    // This ensures the block follows the cursor/finger from where it was clicked
+    const pointerX = clientX - containerRect.left;
+    const pointerY = clientY - containerRect.top;
+
+    // The clicked point in the block should stay under the cursor/finger
+    // So we calculate which grid cell that point should be in
+    const clickedPointX = pointerX - offsetX;
+    const clickedPointY = pointerY - offsetY;
+
+    const targetCol = Math.floor(clickedPointX / colWidth) + 1;
+    const targetRow = Math.floor(clickedPointY / rowHeight) + 1;
+
+    const currentColSpan = parseInt(block.dataset.colSpan || "1", 10);
+    const newCol = Math.max(1, Math.min(gridColumns - currentColSpan + 1, targetCol));
+    const newRow = Math.max(1, targetRow);
+
+    // Check if position actually changed
+    if (newCol !== startCol || newRow !== startRow) {
+      hasMoved = true;
+      block.dataset.hasMoved = "true";
+    }
+
+    // Preserve the span when updating position
+    const colSpan = block.dataset.colSpan || "1";
+    const rowSpan = block.dataset.rowSpan || "1";
+
+    // Update utility classes instead of inline styles - this snaps to grid during drag
+    updatePositionClasses(block, newCol, newRow, parseInt(colSpan, 10), parseInt(rowSpan, 10));
+  }
+
+  // Mouse events
   block.addEventListener("mousedown", (e) => {
     isDragging = true;
     mouseMoved = false;
+    hasMoved = false;
     block.classList.add("dragging");
 
     const container = block.parentElement;
@@ -81,7 +134,7 @@ function makeDraggable(block) {
 
     const blockRect = block.getBoundingClientRect();
     const containerRect = container.getBoundingClientRect();
-    
+
     // Calculate offset from mouse position to block's top-left corner
     offsetX = e.clientX - blockRect.left;
     offsetY = e.clientY - blockRect.top;
@@ -102,53 +155,7 @@ function makeDraggable(block) {
   });
 
   document.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-
-    const container = block.parentElement;
-    if (!container) return;
-
-    const containerRect = container.getBoundingClientRect();
-    const gridColumns = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--grid-columns")) || 12;
-    const colWidth = containerRect.width / gridColumns;
-    const rowHeight = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--row-height")) || colWidth;
-
-    const deltaX = e.clientX - startX;
-    const deltaY = e.clientY - startY;
-
-    // Check if mouse moved significantly (more than 5px) - indicates drag
-    if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
-      mouseMoved = true;
-    }
-
-    // Calculate which grid cell the clicked point (mouse position - offset) is over
-    // This ensures the block follows the cursor from where it was clicked
-    const mouseX = e.clientX - containerRect.left;
-    const mouseY = e.clientY - containerRect.top;
-    
-    // The clicked point in the block should stay under the cursor
-    // So we calculate which grid cell that point should be in
-    const clickedPointX = mouseX - offsetX;
-    const clickedPointY = mouseY - offsetY;
-    
-    const targetCol = Math.floor(clickedPointX / colWidth) + 1;
-    const targetRow = Math.floor(clickedPointY / rowHeight) + 1;
-
-    const currentColSpan = parseInt(block.dataset.colSpan || "1", 10);
-    const newCol = Math.max(1, Math.min(gridColumns - currentColSpan + 1, targetCol));
-    const newRow = Math.max(1, targetRow);
-
-    // Check if position actually changed
-    if (newCol !== startCol || newRow !== startRow) {
-      hasMoved = true;
-      block.dataset.hasMoved = "true";
-    }
-
-    // Preserve the span when updating position
-    const colSpan = block.dataset.colSpan || "1";
-    const rowSpan = block.dataset.rowSpan || "1";
-
-    // Update utility classes instead of inline styles
-    updatePositionClasses(block, newCol, newRow, parseInt(colSpan, 10), parseInt(rowSpan, 10));
+    handleDragMove(e.clientX, e.clientY);
   });
 
   document.addEventListener("mouseup", () => {
@@ -169,6 +176,83 @@ function makeDraggable(block) {
       }, 100);
     }
   });
+
+  // Touch events for mobile
+  block.addEventListener(
+    "touchstart",
+    (e) => {
+      // Don't interfere with camera controls in dome mode
+      if (document.body.classList.contains("dome-mode")) return;
+
+      isDragging = true;
+      mouseMoved = false;
+      hasMoved = false;
+      block.classList.add("dragging");
+
+      const container = block.parentElement;
+      if (!container) return;
+
+      const touch = e.touches[0];
+      const blockRect = block.getBoundingClientRect();
+      const containerRect = container.getBoundingClientRect();
+
+      // Calculate offset from touch position to block's top-left corner
+      offsetX = touch.clientX - blockRect.left;
+      offsetY = touch.clientY - blockRect.top;
+
+      startX = touch.clientX;
+      startY = touch.clientY;
+
+      // Get position from utility classes
+      const pos = getPositionFromClasses(block);
+      startCol = pos.col;
+      startRow = pos.row;
+
+      // Store spans for later use
+      block.dataset.colSpan = String(pos.colSpan);
+      block.dataset.rowSpan = String(pos.rowSpan);
+
+      e.preventDefault();
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "touchmove",
+    (e) => {
+      if (!isDragging) return;
+      // Don't interfere with camera controls in dome mode
+      if (document.body.classList.contains("dome-mode")) return;
+
+      const touch = e.touches[0];
+      handleDragMove(touch.clientX, touch.clientY);
+      e.preventDefault();
+    },
+    { passive: false }
+  );
+
+  document.addEventListener(
+    "touchend",
+    (e) => {
+      if (isDragging) {
+        isDragging = false;
+        block.classList.remove("dragging");
+        // Store touch movement state for click handler
+        block.dataset.mouseMoved = mouseMoved ? "true" : "false";
+        // If touch didn't move significantly, trigger click for z-index
+        if (!mouseMoved && !hasMoved) {
+          setTimeout(() => {
+            handleImageClick(block);
+          }, 10);
+        }
+        // Reset after a short delay to allow click handler to check
+        setTimeout(() => {
+          block.dataset.mouseMoved = "false";
+        }, 100);
+      }
+    },
+    { passive: false }
+  );
 }
 
 /**
@@ -273,10 +357,10 @@ export function initDashboard() {
   blocks.forEach((block) => {
     makeDraggable(block);
     makeResizable(block);
-    
+
     // Click handler is handled in mouseup if no drag occurred
   });
-  
+
   // Also handle page-content images (non-draggable images)
   const pageContentImages = document.querySelectorAll(".page-content .block img");
   pageContentImages.forEach((img) => {
@@ -288,7 +372,3 @@ export function initDashboard() {
     }
   });
 }
-
-
-
-

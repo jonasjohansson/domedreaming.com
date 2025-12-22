@@ -109,6 +109,29 @@ export function createColorGUI() {
     }
   }
 
+  const backgroundColorControl = pageColorsFolder.addColor(pageColorsObj, "backgroundColor");
+  backgroundColorControl.name("Background Color");
+  backgroundColorControl.onChange((value) => {
+    updateCSSVariable("--color-bg", value);
+    document.body.style.backgroundColor = value;
+    settings.pageColorSettings.backgroundColor = value;
+    settings.saveSettings(fbxMeshes, glbLights);
+  });
+
+  const textColorControl = pageColorsFolder.addColor(pageColorsObj, "textColor");
+  textColorControl.name("Text Color");
+  textColorControl.onChange((value) => {
+    updateCSSVariable("--color-text", value);
+    const main = document.querySelector("main");
+    if (main) main.style.color = value;
+    const intro = document.querySelector("section.intro");
+    if (intro) intro.style.color = value;
+    const introText = document.querySelector(".intro-text");
+    if (introText) introText.style.color = value;
+    settings.pageColorSettings.textColor = value;
+    settings.saveSettings(fbxMeshes, glbLights);
+  });
+
   const dotColorControl = pageColorsFolder.addColor(pageColorsObj, "dotColor");
   dotColorControl.name("Dot Color");
   dotColorControl.onChange((value) => {
@@ -121,18 +144,18 @@ export function createColorGUI() {
 
   // No sidebar or header island controls – layout simplified
 
-  // Scroll increment settings - DISABLED (removed scroll increment functionality)
-  // const scrollFolder = websiteFolder.addFolder("Scroll Increment");
-  // const scrollObj = {
-  //   enabled: settings.scrollSettings.enabled,
-  // };
+  // Scroll increment settings
+  const scrollFolder = websiteFolder.addFolder("Scroll Increment");
+  const scrollObj = {
+    enabled: settings.scrollSettings.enabled,
+  };
 
-  // const scrollEnabledControl = scrollFolder.add(scrollObj, "enabled");
-  // scrollEnabledControl.name("Enabled");
-  // scrollEnabledControl.onChange((value) => {
-  //   settings.scrollSettings.enabled = value;
-  //   settings.saveSettings(fbxMeshes, glbLights);
-  // });
+  const scrollEnabledControl = scrollFolder.add(scrollObj, "enabled");
+  scrollEnabledControl.name("Enabled");
+  scrollEnabledControl.onChange((value) => {
+    settings.scrollSettings.enabled = value;
+    settings.saveSettings(fbxMeshes, glbLights);
+  });
 
   // Canvas blending mode (moved to Website section)
   const blendingModes = {
@@ -509,279 +532,7 @@ export function createColorGUI() {
   // Camera settings
   const cameraFolder = sceneFolder.addFolder("Camera Settings");
 
-  // Camera Debug Mode - Manual positioning
-  const cameraDebugFolder = cameraFolder.addFolder("Camera Debug (Manual Control)");
-  cameraDebugFolder.open();
-
-  // Debug mode state
-  let cameraDebugMode = false;
-  let cameraLookAtEnabled = false;
-  const domeCenterDebug = { x: 0, y: 5, z: 0 };
-
-  // Manual camera position controls
-  const manualCameraPos = {
-    x: camera.position.x,
-    y: camera.position.y,
-    z: camera.position.z,
-  };
-
-  // Manual camera rotation controls
-  const manualCameraRot = {
-    x: camera.rotation.x,
-    y: camera.rotation.y,
-    z: camera.rotation.z,
-  };
-
-  const debugPosFolder = cameraDebugFolder.addFolder("Manual Position");
-  const posXControl = debugPosFolder.add(manualCameraPos, "x", -50, 50, 0.1).name("X");
-  const posYControl = debugPosFolder.add(manualCameraPos, "y", -50, 50, 0.1).name("Y");
-  const posZControl = debugPosFolder.add(manualCameraPos, "z", -50, 50, 0.1).name("Z");
-
-  const updateManualPosition = () => {
-    if (cameraDebugMode) {
-      camera.position.set(manualCameraPos.x, manualCameraPos.y, manualCameraPos.z);
-      if (cameraLookAtEnabled) {
-        camera.lookAt(new THREE.Vector3(domeCenterDebug.x, domeCenterDebug.y, domeCenterDebug.z));
-        // Update rotation display after lookAt
-        manualCameraRot.x = camera.rotation.x;
-        manualCameraRot.y = camera.rotation.y;
-        manualCameraRot.z = camera.rotation.z;
-        rotXControl.updateDisplay();
-        rotYControl.updateDisplay();
-        rotZControl.updateDisplay();
-      }
-      // Update current position display
-      settings.currentCameraPosition.x = camera.position.x;
-      settings.currentCameraPosition.y = camera.position.y;
-      settings.currentCameraPosition.z = camera.position.z;
-    }
-  };
-
-  posXControl.onChange(updateManualPosition);
-  posYControl.onChange(updateManualPosition);
-  posZControl.onChange(updateManualPosition);
-
-  const debugRotFolder = cameraDebugFolder.addFolder("Manual Rotation");
-  const rotXControl = debugRotFolder.add(manualCameraRot, "x", -Math.PI, Math.PI, 0.01).name("Rot X");
-  const rotYControl = debugRotFolder.add(manualCameraRot, "y", -Math.PI, Math.PI, 0.01).name("Rot Y");
-  const rotZControl = debugRotFolder.add(manualCameraRot, "z", -Math.PI, Math.PI, 0.01).name("Rot Z");
-
-  const updateManualRotation = () => {
-    if (cameraDebugMode && !cameraLookAtEnabled) {
-      camera.rotation.set(manualCameraRot.x, manualCameraRot.y, manualCameraRot.z);
-      // Update current rotation display
-      settings.currentCameraRotation.x = camera.rotation.x;
-      settings.currentCameraRotation.y = camera.rotation.y;
-      settings.currentCameraRotation.z = camera.rotation.z;
-    }
-  };
-
-  rotXControl.onChange(updateManualRotation);
-  rotYControl.onChange(updateManualRotation);
-  rotZControl.onChange(updateManualRotation);
-
-  // LookAt controls
-  const lookAtFolder = cameraDebugFolder.addFolder("LookAt Target");
-  lookAtFolder
-    .add(domeCenterDebug, "x", -50, 50, 0.1)
-    .name("Center X")
-    .onChange(() => {
-      if (cameraDebugMode && cameraLookAtEnabled) {
-        camera.lookAt(new THREE.Vector3(domeCenterDebug.x, domeCenterDebug.y, domeCenterDebug.z));
-        manualCameraRot.x = camera.rotation.x;
-        manualCameraRot.y = camera.rotation.y;
-        manualCameraRot.z = camera.rotation.z;
-        rotXControl.updateDisplay();
-        rotYControl.updateDisplay();
-        rotZControl.updateDisplay();
-      }
-    });
-  lookAtFolder
-    .add(domeCenterDebug, "y", -50, 50, 0.1)
-    .name("Center Y")
-    .onChange(() => {
-      if (cameraDebugMode && cameraLookAtEnabled) {
-        camera.lookAt(new THREE.Vector3(domeCenterDebug.x, domeCenterDebug.y, domeCenterDebug.z));
-        manualCameraRot.x = camera.rotation.x;
-        manualCameraRot.y = camera.rotation.y;
-        manualCameraRot.z = camera.rotation.z;
-        rotXControl.updateDisplay();
-        rotYControl.updateDisplay();
-        rotZControl.updateDisplay();
-      }
-    });
-  lookAtFolder
-    .add(domeCenterDebug, "z", -50, 50, 0.1)
-    .name("Center Z")
-    .onChange(() => {
-      if (cameraDebugMode && cameraLookAtEnabled) {
-        camera.lookAt(new THREE.Vector3(domeCenterDebug.x, domeCenterDebug.y, domeCenterDebug.z));
-        manualCameraRot.x = camera.rotation.x;
-        manualCameraRot.y = camera.rotation.y;
-        manualCameraRot.z = camera.rotation.z;
-        rotXControl.updateDisplay();
-        rotYControl.updateDisplay();
-        rotZControl.updateDisplay();
-      }
-    });
-
-  // Enable/disable debug mode
-  const debugModeObj = { enabled: cameraDebugMode };
-  const debugModeControl = cameraDebugFolder.add(debugModeObj, "enabled").name("Enable Debug Mode");
-  debugModeControl.onChange((value) => {
-    cameraDebugMode = value;
-    window.cameraDebugControls.enabled = value;
-    if (value) {
-      // Sync manual controls with current camera
-      manualCameraPos.x = camera.position.x;
-      manualCameraPos.y = camera.position.y;
-      manualCameraPos.z = camera.position.z;
-      manualCameraRot.x = camera.rotation.x;
-      manualCameraRot.y = camera.rotation.y;
-      manualCameraRot.z = camera.rotation.z;
-      posXControl.updateDisplay();
-      posYControl.updateDisplay();
-      posZControl.updateDisplay();
-      rotXControl.updateDisplay();
-      rotYControl.updateDisplay();
-      rotZControl.updateDisplay();
-      // Update rotation controls state
-      rotXControl.disable(cameraLookAtEnabled);
-      rotYControl.disable(cameraLookAtEnabled);
-      rotZControl.disable(cameraLookAtEnabled);
-    }
-  });
-
-  // Toggle lookAt
-  const lookAtControlObj = { enabled: cameraLookAtEnabled };
-  const lookAtControl = cameraDebugFolder.add(lookAtControlObj, "enabled").name("Use LookAt");
-  lookAtControl.onChange((value) => {
-    cameraLookAtEnabled = value;
-    window.cameraDebugControls.lookAtEnabled = value;
-    if (cameraDebugMode) {
-      if (value) {
-        camera.lookAt(new THREE.Vector3(domeCenterDebug.x, domeCenterDebug.y, domeCenterDebug.z));
-        manualCameraRot.x = camera.rotation.x;
-        manualCameraRot.y = camera.rotation.y;
-        manualCameraRot.z = camera.rotation.z;
-        rotXControl.updateDisplay();
-        rotYControl.updateDisplay();
-        rotZControl.updateDisplay();
-      }
-      // Disable rotation controls when lookAt is enabled
-      rotXControl.disable(value);
-      rotYControl.disable(value);
-      rotZControl.disable(value);
-    }
-  });
-
-  // Initially disable rotation controls if lookAt starts enabled
-  if (cameraLookAtEnabled) {
-    rotXControl.disable(true);
-    rotYControl.disable(true);
-    rotZControl.disable(true);
-  }
-
-  // Camera position/rotation capture buttons
-  const captureActions = {
-    captureToStart: () => {
-      settings.startCameraPosition.x = camera.position.x;
-      settings.startCameraPosition.y = camera.position.y;
-      settings.startCameraPosition.z = camera.position.z;
-      settings.startCameraRotation.x = camera.rotation.x;
-      settings.startCameraRotation.y = camera.rotation.y;
-      settings.startCameraRotation.z = camera.rotation.z;
-      settings.saveSettings(fbxMeshes, glbLights);
-      createColorGUI();
-    },
-    captureToExterior: () => {
-      settings.exteriorCameraPosition.x = camera.position.x;
-      settings.exteriorCameraPosition.y = camera.position.y;
-      settings.exteriorCameraPosition.z = camera.position.z;
-      settings.exteriorCameraRotation.x = camera.rotation.x;
-      settings.exteriorCameraRotation.y = camera.rotation.y;
-      settings.exteriorCameraRotation.z = camera.rotation.z;
-      settings.saveSettings(fbxMeshes, glbLights);
-      createColorGUI();
-    },
-    loadStart: () => {
-      if (cameraDebugMode) {
-        manualCameraPos.x = settings.startCameraPosition.x;
-        manualCameraPos.y = settings.startCameraPosition.y;
-        manualCameraPos.z = settings.startCameraPosition.z;
-        manualCameraRot.x = settings.startCameraRotation.x;
-        manualCameraRot.y = settings.startCameraRotation.y;
-        manualCameraRot.z = settings.startCameraRotation.z;
-        updateManualPosition();
-        if (!cameraLookAtEnabled) {
-          updateManualRotation();
-        }
-        posXControl.updateDisplay();
-        posYControl.updateDisplay();
-        posZControl.updateDisplay();
-        rotXControl.updateDisplay();
-        rotYControl.updateDisplay();
-        rotZControl.updateDisplay();
-      }
-    },
-    loadExterior: () => {
-      if (cameraDebugMode) {
-        manualCameraPos.x = settings.exteriorCameraPosition.x;
-        manualCameraPos.y = settings.exteriorCameraPosition.y;
-        manualCameraPos.z = settings.exteriorCameraPosition.z;
-        manualCameraRot.x = settings.exteriorCameraRotation.x;
-        manualCameraRot.y = settings.exteriorCameraRotation.y;
-        manualCameraRot.z = settings.exteriorCameraRotation.z;
-        updateManualPosition();
-        if (!cameraLookAtEnabled) {
-          updateManualRotation();
-        }
-        posXControl.updateDisplay();
-        posYControl.updateDisplay();
-        posZControl.updateDisplay();
-        rotXControl.updateDisplay();
-        rotYControl.updateDisplay();
-        rotZControl.updateDisplay();
-      }
-    },
-  };
-
-  const captureFolder = cameraDebugFolder.addFolder("Capture & Load");
-  captureFolder.add(captureActions, "captureToStart").name("Capture → Start (Interior)");
-  captureFolder.add(captureActions, "captureToExterior").name("Capture → Exterior");
-  captureFolder.add(captureActions, "loadStart").name("Load Start Position");
-  captureFolder.add(captureActions, "loadExterior").name("Load Exterior Position");
-
-  // Store controls for update loop
-  window.cameraDebugControls = {
-    enabled: cameraDebugMode,
-    lookAtEnabled: cameraLookAtEnabled,
-    setEnabled: (value) => {
-      cameraDebugMode = value;
-      window.cameraDebugControls.enabled = value;
-      debugModeControl.setValue(value);
-    },
-    update: () => {
-      if (cameraDebugMode) {
-        // Update manual controls from camera (for live updates)
-        manualCameraPos.x = camera.position.x;
-        manualCameraPos.y = camera.position.y;
-        manualCameraPos.z = camera.position.z;
-        manualCameraRot.x = camera.rotation.x;
-        manualCameraRot.y = camera.rotation.y;
-        manualCameraRot.z = camera.rotation.z;
-        posXControl.updateDisplay();
-        posYControl.updateDisplay();
-        posZControl.updateDisplay();
-        rotXControl.updateDisplay();
-        rotYControl.updateDisplay();
-        rotZControl.updateDisplay();
-      }
-    },
-  };
-
-  // Original camera settings (for reference)
-  const startPosFolder = cameraFolder.addFolder("Starting Position (Interior)");
+  const startPosFolder = cameraFolder.addFolder("Starting Position");
   startPosFolder
     .add(settings.startCameraPosition, "x")
     .name("Start X")
@@ -795,7 +546,7 @@ export function createColorGUI() {
     .name("Start Z")
     .onChange(() => settings.saveSettings(fbxMeshes, glbLights));
 
-  const startRotFolder = cameraFolder.addFolder("Starting Rotation (Interior)");
+  const startRotFolder = cameraFolder.addFolder("Starting Rotation");
   startRotFolder
     .add(settings.startCameraRotation, "x")
     .name("Start Rot X")
@@ -809,34 +560,6 @@ export function createColorGUI() {
     .name("Start Rot Z")
     .onChange(() => settings.saveSettings(fbxMeshes, glbLights));
 
-  const exteriorPosFolder = cameraFolder.addFolder("Exterior Position");
-  exteriorPosFolder
-    .add(settings.exteriorCameraPosition, "x")
-    .name("Exterior X")
-    .onChange(() => settings.saveSettings(fbxMeshes, glbLights));
-  exteriorPosFolder
-    .add(settings.exteriorCameraPosition, "y")
-    .name("Exterior Y")
-    .onChange(() => settings.saveSettings(fbxMeshes, glbLights));
-  exteriorPosFolder
-    .add(settings.exteriorCameraPosition, "z")
-    .name("Exterior Z")
-    .onChange(() => settings.saveSettings(fbxMeshes, glbLights));
-
-  const exteriorRotFolder = cameraFolder.addFolder("Exterior Rotation");
-  exteriorRotFolder
-    .add(settings.exteriorCameraRotation, "x")
-    .name("Exterior Rot X")
-    .onChange(() => settings.saveSettings(fbxMeshes, glbLights));
-  exteriorRotFolder
-    .add(settings.exteriorCameraRotation, "y")
-    .name("Exterior Rot Y")
-    .onChange(() => settings.saveSettings(fbxMeshes, glbLights));
-  exteriorRotFolder
-    .add(settings.exteriorCameraRotation, "z")
-    .name("Exterior Rot Z")
-    .onChange(() => settings.saveSettings(fbxMeshes, glbLights));
-
   const currentPosFolder = cameraFolder.addFolder("Current Position");
   currentPosFolder.add(settings.currentCameraPosition, "x").name("Current X").listen();
   currentPosFolder.add(settings.currentCameraPosition, "y").name("Current Y").listen();
@@ -846,235 +569,6 @@ export function createColorGUI() {
   currentRotFolder.add(settings.currentCameraRotation, "x").name("Current Rot X").listen();
   currentRotFolder.add(settings.currentCameraRotation, "y").name("Current Rot Y").listen();
   currentRotFolder.add(settings.currentCameraRotation, "z").name("Current Rot Z").listen();
-
-  // ===== CAMERA TRANSITION DEBUG TOOL =====
-  const transitionDebugFolder = cameraFolder.addFolder("Camera Transition Debug");
-  transitionDebugFolder.open();
-
-  // Transition debug settings
-  const transitionDebugSettings = {
-    // Start (Exterior) position
-    startPosX: settings.exteriorCameraPosition.x,
-    startPosY: settings.exteriorCameraPosition.y,
-    startPosZ: settings.exteriorCameraPosition.z,
-    // Start (Exterior) rotation
-    startRotX: settings.exteriorCameraRotation.x,
-    startRotY: settings.exteriorCameraRotation.y,
-    startRotZ: settings.exteriorCameraRotation.z,
-    // End (Interior) position
-    endPosX: settings.startCameraPosition.x,
-    endPosY: settings.startCameraPosition.y,
-    endPosZ: settings.startCameraPosition.z,
-    // End (Interior) rotation
-    endRotX: settings.startCameraRotation.x,
-    endRotY: settings.startCameraRotation.y,
-    endRotZ: settings.startCameraRotation.z,
-    // Slerp options for position
-    slerpPosX: true,
-    slerpPosY: true,
-    slerpPosZ: true,
-    // Slerp options for rotation
-    slerpRotX: true,
-    slerpRotY: true,
-    slerpRotZ: true,
-    // Easing function
-    easingFunction: "easeInOutCubic",
-  };
-
-  // Start Position Controls
-  const transitionStartPosFolder = transitionDebugFolder.addFolder("Start Position (Exterior)");
-  transitionStartPosFolder
-    .add(transitionDebugSettings, "startPosX", -100, 100, 0.1)
-    .name("X")
-    .onChange(() => {
-      settings.exteriorCameraPosition.x = transitionDebugSettings.startPosX;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-  transitionStartPosFolder
-    .add(transitionDebugSettings, "startPosY", -100, 100, 0.1)
-    .name("Y")
-    .onChange(() => {
-      settings.exteriorCameraPosition.y = transitionDebugSettings.startPosY;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-  transitionStartPosFolder
-    .add(transitionDebugSettings, "startPosZ", -100, 100, 0.1)
-    .name("Z")
-    .onChange(() => {
-      settings.exteriorCameraPosition.z = transitionDebugSettings.startPosZ;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-
-  // Start Rotation Controls
-  const transitionStartRotFolder = transitionDebugFolder.addFolder("Start Rotation (Exterior)");
-  transitionStartRotFolder
-    .add(transitionDebugSettings, "startRotX", -Math.PI, Math.PI, 0.01)
-    .name("Rot X")
-    .onChange(() => {
-      settings.exteriorCameraRotation.x = transitionDebugSettings.startRotX;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-  transitionStartRotFolder
-    .add(transitionDebugSettings, "startRotY", -Math.PI, Math.PI, 0.01)
-    .name("Rot Y")
-    .onChange(() => {
-      settings.exteriorCameraRotation.y = transitionDebugSettings.startRotY;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-  transitionStartRotFolder
-    .add(transitionDebugSettings, "startRotZ", -Math.PI, Math.PI, 0.01)
-    .name("Rot Z")
-    .onChange(() => {
-      settings.exteriorCameraRotation.z = transitionDebugSettings.startRotZ;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-
-  // End Position Controls
-  const transitionEndPosFolder = transitionDebugFolder.addFolder("End Position (Interior)");
-  transitionEndPosFolder
-    .add(transitionDebugSettings, "endPosX", -100, 100, 0.1)
-    .name("X")
-    .onChange(() => {
-      settings.startCameraPosition.x = transitionDebugSettings.endPosX;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-  transitionEndPosFolder
-    .add(transitionDebugSettings, "endPosY", -100, 100, 0.1)
-    .name("Y")
-    .onChange(() => {
-      settings.startCameraPosition.y = transitionDebugSettings.endPosY;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-  transitionEndPosFolder
-    .add(transitionDebugSettings, "endPosZ", -100, 100, 0.1)
-    .name("Z")
-    .onChange(() => {
-      settings.startCameraPosition.z = transitionDebugSettings.endPosZ;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-
-  // End Rotation Controls
-  const transitionEndRotFolder = transitionDebugFolder.addFolder("End Rotation (Interior)");
-  transitionEndRotFolder
-    .add(transitionDebugSettings, "endRotX", -Math.PI, Math.PI, 0.01)
-    .name("Rot X")
-    .onChange(() => {
-      settings.startCameraRotation.x = transitionDebugSettings.endRotX;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-  transitionEndRotFolder
-    .add(transitionDebugSettings, "endRotY", -Math.PI, Math.PI, 0.01)
-    .name("Rot Y")
-    .onChange(() => {
-      settings.startCameraRotation.y = transitionDebugSettings.endRotY;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-  transitionEndRotFolder
-    .add(transitionDebugSettings, "endRotZ", -Math.PI, Math.PI, 0.01)
-    .name("Rot Z")
-    .onChange(() => {
-      settings.startCameraRotation.z = transitionDebugSettings.endRotZ;
-      settings.saveSettings(fbxMeshes, glbLights);
-    });
-
-  // Slerp Options for Position
-  const slerpPosFolder = transitionDebugFolder.addFolder("Slerp Position Axes");
-  slerpPosFolder
-    .add(transitionDebugSettings, "slerpPosX")
-    .name("Slerp X")
-    .onChange(() => {
-      if (window.cameraTransitionDebug) {
-        window.cameraTransitionDebug.slerpPosX = transitionDebugSettings.slerpPosX;
-      }
-    });
-  slerpPosFolder
-    .add(transitionDebugSettings, "slerpPosY")
-    .name("Slerp Y")
-    .onChange(() => {
-      if (window.cameraTransitionDebug) {
-        window.cameraTransitionDebug.slerpPosY = transitionDebugSettings.slerpPosY;
-      }
-    });
-  slerpPosFolder
-    .add(transitionDebugSettings, "slerpPosZ")
-    .name("Slerp Z")
-    .onChange(() => {
-      if (window.cameraTransitionDebug) {
-        window.cameraTransitionDebug.slerpPosZ = transitionDebugSettings.slerpPosZ;
-      }
-    });
-
-  // Slerp Options for Rotation
-  const slerpRotFolder = transitionDebugFolder.addFolder("Slerp Rotation Axes");
-  slerpRotFolder
-    .add(transitionDebugSettings, "slerpRotX")
-    .name("Slerp Rot X")
-    .onChange(() => {
-      if (window.cameraTransitionDebug) {
-        window.cameraTransitionDebug.slerpRotX = transitionDebugSettings.slerpRotX;
-      }
-    });
-  slerpRotFolder
-    .add(transitionDebugSettings, "slerpRotY")
-    .name("Slerp Rot Y")
-    .onChange(() => {
-      if (window.cameraTransitionDebug) {
-        window.cameraTransitionDebug.slerpRotY = transitionDebugSettings.slerpRotY;
-      }
-    });
-  slerpRotFolder
-    .add(transitionDebugSettings, "slerpRotZ")
-    .name("Slerp Rot Z")
-    .onChange(() => {
-      if (window.cameraTransitionDebug) {
-        window.cameraTransitionDebug.slerpRotZ = transitionDebugSettings.slerpRotZ;
-      }
-    });
-
-  // Sync initial values from settings
-  transitionDebugSettings.startPosX = settings.exteriorCameraPosition.x;
-  transitionDebugSettings.startPosY = settings.exteriorCameraPosition.y;
-  transitionDebugSettings.startPosZ = settings.exteriorCameraPosition.z;
-  transitionDebugSettings.startRotX = settings.exteriorCameraRotation.x;
-  transitionDebugSettings.startRotY = settings.exteriorCameraRotation.y;
-  transitionDebugSettings.startRotZ = settings.exteriorCameraRotation.z;
-  transitionDebugSettings.endPosX = settings.startCameraPosition.x;
-  transitionDebugSettings.endPosY = settings.startCameraPosition.y;
-  transitionDebugSettings.endPosZ = settings.startCameraPosition.z;
-  transitionDebugSettings.endRotX = settings.startCameraRotation.x;
-  transitionDebugSettings.endRotY = settings.startCameraRotation.y;
-  transitionDebugSettings.endRotZ = settings.startCameraRotation.z;
-
-  // Add current values display (read-only, updates live)
-  const currentStartPosFolder = transitionDebugFolder.addFolder("Current Start Position (Live)");
-  currentStartPosFolder.add(settings.exteriorCameraPosition, "x").name("Start X").listen();
-  currentStartPosFolder.add(settings.exteriorCameraPosition, "y").name("Start Y").listen();
-  currentStartPosFolder.add(settings.exteriorCameraPosition, "z").name("Start Z").listen();
-
-  const currentStartRotFolder = transitionDebugFolder.addFolder("Current Start Rotation (Live)");
-  currentStartRotFolder.add(settings.exteriorCameraRotation, "x").name("Start Rot X").listen();
-  currentStartRotFolder.add(settings.exteriorCameraRotation, "y").name("Start Rot Y").listen();
-  currentStartRotFolder.add(settings.exteriorCameraRotation, "z").name("Start Rot Z").listen();
-
-  const currentEndPosFolder = transitionDebugFolder.addFolder("Current End Position (Live)");
-  currentEndPosFolder.add(settings.startCameraPosition, "x").name("End X").listen();
-  currentEndPosFolder.add(settings.startCameraPosition, "y").name("End Y").listen();
-  currentEndPosFolder.add(settings.startCameraPosition, "z").name("End Z").listen();
-
-  const currentEndRotFolder = transitionDebugFolder.addFolder("Current End Rotation (Live)");
-  currentEndRotFolder.add(settings.startCameraRotation, "x").name("End Rot X").listen();
-  currentEndRotFolder.add(settings.startCameraRotation, "y").name("End Rot Y").listen();
-  currentEndRotFolder.add(settings.startCameraRotation, "z").name("End Rot Z").listen();
-
-  // Expose settings to window for use in main.js
-  window.cameraTransitionDebug = {
-    slerpPosX: transitionDebugSettings.slerpPosX,
-    slerpPosY: transitionDebugSettings.slerpPosY,
-    slerpPosZ: transitionDebugSettings.slerpPosZ,
-    slerpRotX: transitionDebugSettings.slerpRotX,
-    slerpRotY: transitionDebugSettings.slerpRotY,
-    slerpRotZ: transitionDebugSettings.slerpRotZ,
-  };
 
   const cameraActions = {
     copyCurrentToStart: () => {

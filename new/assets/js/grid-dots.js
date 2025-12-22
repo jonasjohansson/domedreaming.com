@@ -4,7 +4,7 @@
  */
 
 let dotsContainer = null;
-let gridColumns = 14;
+let gridColumns = 15;
 let colWidth = 0;
 let rowHeight = 0;
 
@@ -56,15 +56,11 @@ function createDotElements() {
   // Clear existing dots
   dotsContainer.innerHTML = "";
 
-  // Calculate how many rows we need to cover the entire document height
-  // Use document height instead of viewport height so dots scroll with content
-  // Get scroll height before modifying DOM to prevent scroll jumps
-  const currentScrollY = window.scrollY || window.pageYOffset;
-  const documentHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, window.innerHeight);
-  const documentRows = Math.ceil(documentHeight / rowHeight);
+  // Calculate how many rows we need to cover the viewport
+  const viewportRows = Math.ceil(window.innerHeight / rowHeight);
 
-  // Create dots grouped by rows - scrolls with page
-  for (let row = 0; row < documentRows; row++) {
+  // Create dots grouped by rows - fixed position
+  for (let row = 0; row < viewportRows; row++) {
     // Create a row container for 12 dots
     const rowContainer = document.createElement("div");
     rowContainer.className = "dot-row";
@@ -84,16 +80,40 @@ function createDotElements() {
 
     dotsContainer.appendChild(rowContainer);
   }
+}
 
-  // Restore scroll position if it changed during DOM manipulation
-  const newScrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, window.innerHeight);
-  if (Math.abs(window.scrollY - currentScrollY) > 1) {
-    // Only restore if scroll position changed significantly (more than 1px)
-    window.scrollTo({
-      top: currentScrollY,
-      behavior: "auto",
-    });
+/**
+ * Track cursor/touch position and update dot fade effect
+ */
+function initCursorTracking() {
+  const dotsContainer = document.getElementById("grid-dots-container");
+  if (!dotsContainer) return;
+
+  function updateCursorPosition(x, y) {
+    const xPercent = (x / window.innerWidth) * 100;
+    const yPercent = (y / window.innerHeight) * 100;
+    dotsContainer.style.setProperty("--cursor-x", `${xPercent}%`);
+    dotsContainer.style.setProperty("--cursor-y", `${yPercent}%`);
   }
+
+  // Mouse tracking
+  document.addEventListener("mousemove", (e) => {
+    updateCursorPosition(e.clientX, e.clientY);
+  });
+
+  // Touch tracking
+  document.addEventListener("touchmove", (e) => {
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      updateCursorPosition(touch.clientX, touch.clientY);
+    }
+  }, { passive: true });
+
+  // Reset when mouse/touch leaves
+  document.addEventListener("mouseleave", () => {
+    dotsContainer.style.setProperty("--cursor-x", "50%");
+    dotsContainer.style.setProperty("--cursor-y", "50%");
+  });
 }
 
 /**
@@ -101,38 +121,11 @@ function createDotElements() {
  */
 export function initGridDotsSystem() {
   initGridDots();
+  initCursorTracking();
 
   // Update on resize to recreate dots for new viewport size
   window.addEventListener("resize", () => {
     updateDotsSize();
     createDotElements();
   });
-
-  // Update dots when content height changes (e.g., after page loads)
-  // Use a MutationObserver to detect content changes without causing scroll jumps
-  let lastDocumentHeight = 0;
-  const updateDotsOnContentChange = () => {
-    const documentHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight, window.innerHeight);
-    const expectedRows = Math.ceil(documentHeight / rowHeight);
-    const currentRows = dotsContainer ? dotsContainer.children.length : 0;
-
-    // Only recreate if the number of rows needed has changed AND document height actually changed
-    // This prevents unnecessary recreations that cause scroll jumps
-    if (expectedRows !== currentRows && documentHeight !== lastDocumentHeight) {
-      lastDocumentHeight = documentHeight;
-      updateDotsSize();
-      createDotElements();
-    }
-  };
-
-  // Use ResizeObserver to detect document height changes without polling
-  const resizeObserver = new ResizeObserver(() => {
-    updateDotsOnContentChange();
-  });
-
-  // Observe body for height changes
-  resizeObserver.observe(document.body);
-
-  // Also update after a short delay to catch initial content load
-  setTimeout(updateDotsOnContentChange, 2000);
 }

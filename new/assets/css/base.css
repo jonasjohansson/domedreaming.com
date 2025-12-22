@@ -99,13 +99,11 @@
 }
 
 html {
-  scroll-behavior: auto; /* No smooth scrolling, no snapping */
-  overflow-y: auto; /* Enable scroll */
+  scroll-behavior: auto; /* Use auto for better scroll-snap compatibility */
   overflow-x: hidden;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
-  height: auto;
-  min-height: 100%;
+  height: 100%;
 }
 
 html::-webkit-scrollbar {
@@ -117,7 +115,7 @@ body {
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
   letter-spacing: var(--letter-spacing-normal);
-  overflow-y: auto; /* Enable scroll for multi-page layout */
+  overflow-y: auto; /* Enable scroll */
   overflow-x: hidden;
   -ms-overflow-style: none;
   scrollbar-width: none;
@@ -127,6 +125,7 @@ body {
   margin: 0;
   padding: 0;
   min-height: 300vh; /* 3 pages × 100vh */
+  scroll-behavior: smooth; /* Smooth scrolling for snap animation */
 }
 
 body::-webkit-scrollbar {
@@ -153,14 +152,13 @@ body::before {
   opacity: 0; /* Hidden - animated dots replace them */
 }
 
-/* Grid dots - DOM elements - scrolls with page content */
+/* Grid dots - DOM elements */
 #grid-dots-container {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100%;
-  min-height: 100vh;
+  height: 100vh;
   pointer-events: none;
   z-index: 10002; /* Above all page content and GUI */
   overflow: visible;
@@ -169,8 +167,6 @@ body::before {
   grid-auto-rows: var(--row-height);
   column-gap: var(--grid-gap);
   row-gap: 0;
-  /* Prevent container from affecting document height calculations */
-  will-change: contents;
 }
 
 .dot-row {

@@ -12,7 +12,7 @@
 }
 
 #canvas-container {
-  grid-column: 1 / -1; /* Span all 14 columns to fill viewport */
+  grid-column: 1 / -1; /* Span all 15 columns to fill viewport */
   width: 100%;
   height: 100vh; /* Will be set dynamically by JavaScript to match row-heights */
   position: relative;

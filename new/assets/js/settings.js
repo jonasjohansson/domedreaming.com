@@ -23,17 +23,11 @@ export let cameraSettings = {
   rotationSpeed: 120,
 };
 export let startCameraPosition = { x: 0, y: 5.4, z: -4.3 };
-export let startCameraRotation = { x: -2.8, y: 0, z: -3.14 };
+export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
-// Exterior camera position (outside looking at the dome) - starting position
-// Start: position (0, 12, 30), rotation (-8°, 0, 0°) - zoomed in closer
-export let exteriorCameraPosition = { x: 0, y: 12, z: 30 };
-export let exteriorCameraRotation = { x: (-8 * Math.PI) / 180, y: 0, z: 0 }; // -8°, 0, 0°
-// Number of scroll rows for camera transition
-export let cameraTransitionRows = 10;
 export let bloomSettings = {
-  enabled: false, // Bloom disabled by default
+  enabled: true, // Bloom enabled by default
   strength: 1.5,
   radius: 0.4,
   threshold: 0.85,
@@ -65,12 +59,12 @@ export let pageColorSettings = {
   },
 };
 export let scrollSettings = {
-  enabled: false, // Scroll increment disabled - using smooth camera transition instead
-  scrollTimeout: 0, // Delay in ms before allowing next scroll (not used)
-  touchThreshold: 30, // Minimum touch movement in pixels to trigger scroll (not used)
-  snapThreshold: 0.5, // Minimum distance in pixels to trigger scroll (not used)
-  initialSnapThreshold: 1, // Threshold for initial snap on page load (not used)
-  gridColumns: 14, // Number of grid columns (should match CSS --grid-columns)
+  enabled: true, // Enabled for tactile row-height snapping
+  scrollTimeout: 25, // Delay in ms before allowing next scroll
+  touchThreshold: 30, // Minimum touch movement in pixels to trigger scroll
+  snapThreshold: 0.5, // Minimum distance in pixels to trigger scroll
+  initialSnapThreshold: 1, // Threshold for initial snap on page load
+  gridColumns: 15, // Number of grid columns (should match CSS --grid-columns)
   gridRows: 10, // Number of grid rows (should match CSS --grid-rows)
 };
 
@@ -94,7 +88,7 @@ export let pageBackgroundSettings = {
     backgroundImage: null, // Data URL or path
   },
   about: {
-    backgroundColor: "#000000",
+    backgroundColor: "#463434",
     backgroundImage: null,
   },
   team: {
@@ -225,35 +219,61 @@ export function applyPageBackgrounds() {
   const canvasWrapper = document.querySelector(".canvas-wrapper");
   if (canvasWrapper) {
     if (pageBackgroundSettings.canvas.backgroundColor) {
-      canvasWrapper.style.backgroundColor = pageBackgroundSettings.canvas.backgroundColor;
+      canvasWrapper.style.setProperty("background-color", pageBackgroundSettings.canvas.backgroundColor, "important");
+    } else {
+      canvasWrapper.style.removeProperty("background-color");
     }
     if (pageBackgroundSettings.canvas.backgroundImage) {
-      canvasWrapper.style.backgroundImage = `url(${pageBackgroundSettings.canvas.backgroundImage})`;
-      canvasWrapper.style.backgroundSize = "cover";
-      canvasWrapper.style.backgroundPosition = "center";
-      canvasWrapper.style.backgroundRepeat = "no-repeat";
+      canvasWrapper.style.setProperty("background-image", `url(${pageBackgroundSettings.canvas.backgroundImage})`, "important");
+      canvasWrapper.style.setProperty("background-size", "cover", "important");
+      canvasWrapper.style.setProperty("background-position", "center", "important");
+      canvasWrapper.style.setProperty("background-repeat", "no-repeat", "important");
     } else {
-      canvasWrapper.style.backgroundImage = "none";
+      canvasWrapper.style.setProperty("background-image", "none", "important");
     }
   }
 
-  // About page (second viewport)
-  const page2 = document.getElementById("page-2");
-  if (page2) {
-    if (pageBackgroundSettings.about.backgroundColor) {
-      page2.style.backgroundColor = pageBackgroundSettings.about.backgroundColor;
+  // About page (first page-section after canvas)
+  const pageSections = document.querySelectorAll(".page-section");
+  if (pageSections.length > 0) {
+    // Apply about background to first page-section
+    const aboutSection = pageSections[0];
+    if (aboutSection) {
+      if (pageBackgroundSettings.about.backgroundColor) {
+        aboutSection.style.setProperty("background-color", pageBackgroundSettings.about.backgroundColor, "important");
+      } else {
+        aboutSection.style.removeProperty("background-color");
+      }
+      if (pageBackgroundSettings.about.backgroundImage) {
+        aboutSection.style.setProperty("background-image", `url(${pageBackgroundSettings.about.backgroundImage})`, "important");
+        aboutSection.style.setProperty("background-size", "cover", "important");
+        aboutSection.style.setProperty("background-position", "center", "important");
+        aboutSection.style.setProperty("background-repeat", "no-repeat", "important");
+      } else {
+        aboutSection.style.setProperty("background-image", "none", "important");
+      }
     }
-    if (pageBackgroundSettings.about.backgroundImage) {
-      page2.style.backgroundImage = `url(${pageBackgroundSettings.about.backgroundImage})`;
-      page2.style.backgroundSize = "cover";
-      page2.style.backgroundPosition = "center";
-      page2.style.backgroundRepeat = "no-repeat";
-    } else {
-      page2.style.backgroundImage = "none";
+
+    // Apply team background to remaining sections if needed
+    if (pageSections.length > 1 && pageBackgroundSettings.team) {
+      for (let i = 1; i < pageSections.length; i++) {
+        const section = pageSections[i];
+        if (pageBackgroundSettings.team.backgroundColor) {
+          section.style.setProperty("background-color", pageBackgroundSettings.team.backgroundColor, "important");
+        } else {
+          section.style.removeProperty("background-color");
+        }
+        if (pageBackgroundSettings.team.backgroundImage) {
+          section.style.setProperty("background-image", `url(${pageBackgroundSettings.team.backgroundImage})`, "important");
+          section.style.setProperty("background-size", "cover", "important");
+          section.style.setProperty("background-position", "center", "important");
+          section.style.setProperty("background-repeat", "no-repeat", "important");
+        } else {
+          section.style.setProperty("background-image", "none", "important");
+        }
+      }
     }
   }
-
-  // Page 2 now contains all content (no separate page 3)
 }
 
 // Apply vignette mask to canvas container

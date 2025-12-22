@@ -6,6 +6,6 @@ export function setupLighting() {
   const ambientLight = new THREE.AmbientLight(0xffffff, 0.2);
   scene.add(ambientLight);
 
-  // Fog removed - no atmospheric fog
-  scene.fog = null;
+  // Fog for atmospheric depth
+  scene.fog = new THREE.Fog(0x1a1a1a, 20, 60);
 }
