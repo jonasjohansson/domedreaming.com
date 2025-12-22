@@ -223,36 +223,59 @@ export function applyPageBackgrounds() {
   // Canvas page (first viewport)
   const canvasWrapper = document.querySelector(".canvas-wrapper");
   if (canvasWrapper) {
+    // Always set background color first (shows through transparent areas of image)
     if (pageBackgroundSettings.canvas.backgroundColor) {
-      canvasWrapper.style.backgroundColor = pageBackgroundSettings.canvas.backgroundColor;
+      canvasWrapper.style.setProperty("background-color", pageBackgroundSettings.canvas.backgroundColor, "important");
+    } else {
+      canvasWrapper.style.setProperty("background-color", "transparent", "important");
     }
     if (pageBackgroundSettings.canvas.backgroundImage) {
-      canvasWrapper.style.backgroundImage = `url(${pageBackgroundSettings.canvas.backgroundImage})`;
-      canvasWrapper.style.backgroundSize = "cover";
-      canvasWrapper.style.backgroundPosition = "center";
-      canvasWrapper.style.backgroundRepeat = "no-repeat";
+      canvasWrapper.style.setProperty("background-image", `url(${pageBackgroundSettings.canvas.backgroundImage})`, "important");
+      canvasWrapper.style.setProperty("background-size", "cover", "important");
+      canvasWrapper.style.setProperty("background-position", "center", "important");
+      canvasWrapper.style.setProperty("background-repeat", "no-repeat", "important");
     } else {
-      canvasWrapper.style.backgroundImage = "none";
+      canvasWrapper.style.setProperty("background-image", "none", "important");
     }
   }
 
   // About page (second viewport)
   const page2 = document.getElementById("page-2");
   if (page2) {
+    // Always set background color first (shows through transparent areas of image)
     if (pageBackgroundSettings.about.backgroundColor) {
-      page2.style.backgroundColor = pageBackgroundSettings.about.backgroundColor;
+      page2.style.setProperty("background-color", pageBackgroundSettings.about.backgroundColor, "important");
+    } else {
+      page2.style.setProperty("background-color", "transparent", "important");
     }
     if (pageBackgroundSettings.about.backgroundImage) {
-      page2.style.backgroundImage = `url(${pageBackgroundSettings.about.backgroundImage})`;
-      page2.style.backgroundSize = "cover";
-      page2.style.backgroundPosition = "center";
-      page2.style.backgroundRepeat = "no-repeat";
+      page2.style.setProperty("background-image", `url(${pageBackgroundSettings.about.backgroundImage})`, "important");
+      page2.style.setProperty("background-size", "cover", "important");
+      page2.style.setProperty("background-position", "center", "important");
+      page2.style.setProperty("background-repeat", "no-repeat", "important");
     } else {
-      page2.style.backgroundImage = "none";
+      page2.style.setProperty("background-image", "none", "important");
     }
   }
 
-  // Page 2 now contains all content (no separate page 3)
+  // Team page (if exists)
+  const page3 = document.getElementById("page-3");
+  if (page3) {
+    // Always set background color first (shows through transparent areas of image)
+    if (pageBackgroundSettings.team.backgroundColor) {
+      page3.style.setProperty("background-color", pageBackgroundSettings.team.backgroundColor, "important");
+    } else {
+      page3.style.setProperty("background-color", "transparent", "important");
+    }
+    if (pageBackgroundSettings.team.backgroundImage) {
+      page3.style.setProperty("background-image", `url(${pageBackgroundSettings.team.backgroundImage})`, "important");
+      page3.style.setProperty("background-size", "cover", "important");
+      page3.style.setProperty("background-position", "center", "important");
+      page3.style.setProperty("background-repeat", "no-repeat", "important");
+    } else {
+      page3.style.setProperty("background-image", "none", "important");
+    }
+  }
 }
 
 // Apply vignette mask to canvas container

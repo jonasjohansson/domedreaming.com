@@ -190,6 +190,15 @@ body::before {
   align-self: start;
   opacity: 1;
   display: block;
+  pointer-events: none; /* Disable hover effects */
+}
+
+.animated-dot:hover {
+  /* Explicitly disable any hover effects */
+  opacity: 1 !important;
+  transform: none !important;
+  width: 1px !important;
+  height: 1px !important;
 }
 
 /* Utility: force element to the top layer within the page */
