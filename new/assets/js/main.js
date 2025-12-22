@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { scene, camera, renderer, canvas } from "./3d/scene.js";
 import { setupLighting } from "./3d/lighting.js";
 import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js";
@@ -28,6 +29,7 @@ let animationFrameId = null;
 let lastTime = 0;
 let lastCameraSaveTime = 0;
 const CAMERA_SAVE_INTERVAL = 2000; // Save camera position every 2 seconds
+// Removed continuous orbit - camera only moves based on scroll
 
 // Set canvas container to fill entire viewport using rows and columns
 function setCanvasHeight() {
@@ -201,10 +203,50 @@ function setupCameraScrollTransition() {
 
   // Set initial camera position to exterior view
   camera.position.set(exteriorCameraPosition.x, exteriorCameraPosition.y, exteriorCameraPosition.z);
-  camera.rotation.set(exteriorCameraRotation.x, exteriorCameraRotation.y, exteriorCameraRotation.z);
 
-  console.log("[Camera Setup] Camera set to exterior position:", camera.position);
-  console.log("[Camera Setup] Camera set to exterior rotation:", camera.rotation);
+  // Look at target point (0, 6, 8) - this will remain until entering dome mode
+  const lookAtTarget = new THREE.Vector3(0, 6, 8);
+  camera.lookAt(lookAtTarget);
+
+  // Store lookAt target for use during transition
+  window.cameraLookAtTarget = lookAtTarget;
+  window.cameraLookAtEnabled = true; // Enabled until entering dome mode
+
+  console.log("[Camera Setup] Camera set to exterior position (above):", camera.position);
+  console.log("[Camera Setup] Camera set to exterior rotation (looking down):", camera.rotation);
+  console.log("[Camera Setup] Rotation in degrees:", {
+    x: ((exteriorCameraRotation.x * 180) / Math.PI).toFixed(2) + "°",
+    y: ((exteriorCameraRotation.y * 180) / Math.PI).toFixed(2) + "°",
+    z: ((exteriorCameraRotation.z * 180) / Math.PI).toFixed(2) + "°",
+  });
+  console.log("[Camera Setup] Expected: position (0, 12, 30), rotation (-8°, 0, 0°)");
+  console.log("[Camera Setup] Actual position:", `(${camera.position.x}, ${camera.position.y}, ${camera.position.z})`);
+  console.log(
+    "[Camera Setup] Actual rotation:",
+    `(${((camera.rotation.x * 180) / Math.PI).toFixed(2)}°, ${((camera.rotation.y * 180) / Math.PI).toFixed(2)}°, ${(
+      (camera.rotation.z * 180) /
+      Math.PI
+    ).toFixed(2)}°)`
+  );
+
+  // Check if model is loaded and visible
+  const model = document.querySelector('[id*="dome"]') || window.wisdomeModel;
+  if (model) {
+    console.log("[Camera Setup] Model found at position:", model.position || "N/A");
+  } else {
+    console.warn("[Camera Setup] Model not found - camera might be looking at empty space");
+  }
+
+  // Expose test function to try different positions
+  window.testCameraPosition = function (x, y, z) {
+    camera.position.set(x, y, z);
+    camera.lookAt(new THREE.Vector3(0, 5, 0));
+    console.log(`[Camera Test] Set to (${x}, ${y}, ${z}), rotation:`, camera.rotation);
+  };
+
+  console.log("[Camera Setup] Test different positions with: testCameraPosition(x, y, z)");
+  console.log("[Camera Setup] Try: testCameraPosition(0, 5, 50) or testCameraPosition(0, 5, -50)");
+  console.log("[Camera Setup] Or: testCameraPosition(50, 5, 0) or testCameraPosition(-50, 5, 0)");
 
   // Update camera based on scroll progress
   setScrollProgressCallback((progress) => {
@@ -225,6 +267,7 @@ function setupCameraScrollTransition() {
 // Cache last progress to avoid unnecessary updates
 let lastCameraProgress = -1;
 let updateCount = 0;
+let lastCameraQuaternion = new THREE.Quaternion();
 
 function updateCameraFromScroll(progress) {
   updateCount++;
@@ -232,63 +275,86 @@ function updateCameraFromScroll(progress) {
   // Clamp progress to 0-1
   progress = Math.max(0, Math.min(1, progress));
 
-  // Always update - don't skip based on progress change
-  // The render loop needs to continuously apply the camera position
+  // LookAt target point (remains constant during transition)
+  const lookAtTarget = window.cameraLookAtTarget || new THREE.Vector3(0, 6, 8);
+  const lookAtEnabled = window.cameraLookAtEnabled !== false; // Default to true, disabled in dome mode
 
-  // Use linear interpolation for now (can add easing later if needed)
-  // Linear is more predictable and directly corresponds to scroll
-  const easedProgress = progress;
+  // Smooth easing function for natural transition
+  const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+  const easedProgress = easeInOutCubic(progress);
 
-  // Interpolate position
-  const deltaX = startCameraPosition.x - exteriorCameraPosition.x;
-  const deltaY = startCameraPosition.y - exteriorCameraPosition.y;
-  const deltaZ = startCameraPosition.z - exteriorCameraPosition.z;
+  // Calculate orbit around Y axis
+  // Start from exterior position, orbit around lookAt target, end at interior position
+  const startPos = new THREE.Vector3(exteriorCameraPosition.x, exteriorCameraPosition.y, exteriorCameraPosition.z);
+  const endPos = new THREE.Vector3(startCameraPosition.x, startCameraPosition.y, startCameraPosition.z);
 
-  const newX = exteriorCameraPosition.x + deltaX * easedProgress;
-  const newY = exteriorCameraPosition.y + deltaY * easedProgress;
-  const newZ = exteriorCameraPosition.z + deltaZ * easedProgress;
+  // Calculate distance from lookAt target for start and end positions
+  const startOffset = startPos.clone().sub(lookAtTarget);
+  const endOffset = endPos.clone().sub(lookAtTarget);
 
-  // Interpolate rotation
-  const deltaRotX = startCameraRotation.x - exteriorCameraRotation.x;
-  const deltaRotY = startCameraRotation.y - exteriorCameraRotation.y;
-  const deltaRotZ = startCameraRotation.z - exteriorCameraRotation.z;
+  // Get horizontal distance and angle for start position
+  const startDistance = Math.sqrt(startOffset.x * startOffset.x + startOffset.z * startOffset.z);
+  const startAngle = Math.atan2(startOffset.z, startOffset.x);
+  const startHeight = startOffset.y;
 
-  const newRotX = exteriorCameraRotation.x + deltaRotX * easedProgress;
-  const newRotY = exteriorCameraRotation.y + deltaRotY * easedProgress;
-  const newRotZ = exteriorCameraRotation.z + deltaRotZ * easedProgress;
+  // Get horizontal distance and angle for end position
+  const endDistance = Math.sqrt(endOffset.x * endOffset.x + endOffset.z * endOffset.z);
+  const endAngle = Math.atan2(endOffset.z, endOffset.x);
+  const endHeight = endOffset.y;
+
+  // Interpolate: orbit around Y axis while moving from start to end
+  // The orbit angle smoothly transitions from startAngle to endAngle
+  const orbitAngle = startAngle + (endAngle - startAngle) * easedProgress;
+  const orbitDistance = startDistance + (endDistance - startDistance) * easedProgress;
+  const orbitHeight = startHeight + (endHeight - startHeight) * easedProgress;
+
+  // Calculate new position orbiting around Y axis
+  const newX = lookAtTarget.x + Math.cos(orbitAngle) * orbitDistance;
+  const newY = lookAtTarget.y + orbitHeight;
+  const newZ = lookAtTarget.z + Math.sin(orbitAngle) * orbitDistance;
+
+  // Set camera position
+  camera.position.set(newX, newY, newZ);
+
+  // Apply lookAt if enabled (disabled when in dome mode)
+  if (lookAtEnabled) {
+    // During transition: blend between lookAt rotation and final rotation
+    // At progress 0: full lookAt, at progress 1: full final rotation
+    const tempCamera = new THREE.PerspectiveCamera();
+    tempCamera.position.set(newX, newY, newZ);
+    tempCamera.lookAt(lookAtTarget);
+    const lookAtQuaternion = tempCamera.quaternion.clone();
+
+    // Get final rotation as quaternion
+    const finalEuler = new THREE.Euler(startCameraRotation.x, startCameraRotation.y, startCameraRotation.z, "YXZ");
+    const finalQuaternion = new THREE.Quaternion().setFromEuler(finalEuler);
+
+    // Blend between lookAt and final rotation based on progress
+    // Use eased progress for smooth transition
+    camera.quaternion.copy(lookAtQuaternion);
+    camera.quaternion.slerp(finalQuaternion, easedProgress);
+    camera.rotation.setFromQuaternion(camera.quaternion);
+  } else {
+    // In dome mode, use the final rotation directly
+    camera.rotation.set(startCameraRotation.x, startCameraRotation.y, startCameraRotation.z);
+    camera.quaternion.setFromEuler(new THREE.Euler(startCameraRotation.x, startCameraRotation.y, startCameraRotation.z, "YXZ"));
+  }
+
+  // Store current quaternion for next frame continuity check
+  lastCameraQuaternion.copy(camera.quaternion);
 
   // Log every 60 frames (roughly once per second at 60fps) or when progress changes significantly
   const progressChanged = Math.abs(progress - lastCameraProgress) > 0.01;
   const shouldLog = updateCount % 60 === 0 || progressChanged;
 
   if (shouldLog) {
-    console.log("[Camera] ===== UPDATE =====");
-    console.log("[Camera] Progress:", progress.toFixed(4), `(${(progress * 100).toFixed(1)}%)`, "eased:", easedProgress.toFixed(4));
-    console.log("[Camera] Exterior:", exteriorCameraPosition);
-    console.log("[Camera] Interior:", startCameraPosition);
-    console.log("[Camera] Deltas:", { x: deltaX.toFixed(2), y: deltaY.toFixed(2), z: deltaZ.toFixed(2) });
-    console.log("[Camera] Calculated position:", { x: newX.toFixed(4), y: newY.toFixed(4), z: newZ.toFixed(4) });
-    console.log("[Camera] Calculated rotation:", { x: newRotX.toFixed(4), y: newRotY.toFixed(4), z: newRotZ.toFixed(4) });
-    console.log("[Camera] Camera BEFORE set:", camera.position.clone());
-  }
-
-  // Set camera position and rotation
-  camera.position.set(newX, newY, newZ);
-  camera.rotation.set(newRotX, newRotY, newRotZ);
-
-  // Verify the values were set correctly
-  const actualPos = camera.position.clone();
-  const actualRot = camera.rotation.clone();
-  const posMatches = Math.abs(actualPos.x - newX) < 0.001 && Math.abs(actualPos.y - newY) < 0.001 && Math.abs(actualPos.z - newZ) < 0.001;
-  const rotMatches =
-    Math.abs(actualRot.x - newRotX) < 0.001 && Math.abs(actualRot.y - newRotY) < 0.001 && Math.abs(actualRot.z - newRotZ) < 0.001;
-
-  if (shouldLog) {
-    console.log("[Camera] Camera AFTER set:", actualPos);
-    if (!posMatches || !rotMatches) {
-      console.error("[Camera] ⚠️ WARNING: Camera values don't match what we set!");
-      console.error("[Camera] Position match:", posMatches, "Rotation match:", rotMatches);
-    }
+    console.log("[Camera] ===== ORBIT TRANSITION =====");
+    console.log("[Camera] Progress:", progress.toFixed(4), `(${(progress * 100).toFixed(1)}%)`);
+    console.log("[Camera] LookAt enabled:", lookAtEnabled);
+    console.log("[Camera] LookAt target:", `(${lookAtTarget.x}, ${lookAtTarget.y}, ${lookAtTarget.z})`);
+    console.log("[Camera] Current position:", { x: newX.toFixed(4), y: newY.toFixed(4), z: newZ.toFixed(4) });
+    console.log("[Camera] Orbit angle:", ((orbitAngle * 180) / Math.PI).toFixed(2) + "°");
+    console.log("[Camera] Orbit distance:", orbitDistance.toFixed(2));
     console.log("[Camera] ===================");
     lastCameraProgress = progress;
   }
@@ -301,32 +367,20 @@ function animate(currentTime) {
   const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
   lastTime = currentTime;
 
-  // Update camera from scroll (only if not in dome mode)
+  // Update camera from scroll (only if not in dome mode and debug mode is off)
   // Always update based on current progress, even if transition is complete
   if (!document.body.classList.contains("dome-mode")) {
-    const progress = getCameraTransitionProgress();
-    const inTransition = isInCameraTransition();
-    // Update camera based on current progress - this ensures smooth updates every frame
-    updateCameraFromScroll(progress);
-
-    // Debug: Log if camera position doesn't match expected (every 60 frames)
-    if (updateCount % 60 === 0 && progress > 0 && progress < 1) {
-      const expectedX = exteriorCameraPosition.x + (startCameraPosition.x - exteriorCameraPosition.x) * progress;
-      const expectedY = exteriorCameraPosition.y + (startCameraPosition.y - exteriorCameraPosition.y) * progress;
-      const expectedZ = exteriorCameraPosition.z + (startCameraPosition.z - exteriorCameraPosition.z) * progress;
-      const actualX = camera.position.x;
-      const actualY = camera.position.y;
-      const actualZ = camera.position.z;
-
-      if (Math.abs(actualX - expectedX) > 0.1 || Math.abs(actualY - expectedY) > 0.1 || Math.abs(actualZ - expectedZ) > 0.1) {
-        console.warn("[Camera Debug] Position mismatch!");
-        console.warn("Expected:", { x: expectedX.toFixed(2), y: expectedY.toFixed(2), z: expectedZ.toFixed(2) });
-        console.warn("Actual:", { x: actualX.toFixed(2), y: actualY.toFixed(2), z: actualZ.toFixed(2) });
-        console.warn("Progress:", progress, "Delta:", {
-          x: (actualX - expectedX).toFixed(2),
-          y: (actualY - expectedY).toFixed(2),
-          z: (actualZ - expectedZ).toFixed(2),
-        });
+    // Check if camera debug mode is enabled (skip scroll updates if so)
+    const debugModeEnabled = window.cameraDebugControls && window.cameraDebugControls.enabled;
+    if (!debugModeEnabled) {
+      const progress = getCameraTransitionProgress();
+      // Update camera based on current progress - this ensures smooth updates every frame
+      // Camera only moves when scroll changes, no automatic spinning
+      updateCameraFromScroll(progress);
+    } else {
+      // Update debug controls display
+      if (window.cameraDebugControls.update) {
+        window.cameraDebugControls.update();
       }
     }
   }
@@ -399,6 +453,9 @@ function initDomeMode() {
     // Prevent scrolling when in dome mode
     document.documentElement.style.overflow = "hidden";
 
+    // Disable lookAt when entering dome mode - user can freely look around
+    window.cameraLookAtEnabled = false;
+
     // Set canvas to full viewport height in dome mode
     const canvasContainer = document.getElementById("canvas-container");
     if (canvasContainer) {
@@ -418,6 +475,9 @@ function initDomeMode() {
     if (body.classList.contains("dome-mode")) {
       body.classList.remove("dome-mode");
       document.documentElement.style.overflow = "auto";
+
+      // Re-enable lookAt when exiting dome mode
+      window.cameraLookAtEnabled = true;
 
       // Reset canvas height to row-height based size
       const canvasContainer = document.getElementById("canvas-container");

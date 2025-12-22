@@ -23,12 +23,13 @@ export let cameraSettings = {
   rotationSpeed: 120,
 };
 export let startCameraPosition = { x: 0, y: 5.4, z: -4.3 };
-export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
+export let startCameraRotation = { x: -2.8, y: 0, z: -3.14 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
-// Exterior camera position (outside looking at the dome)
-export let exteriorCameraPosition = { x: 0, y: 15, z: 25 };
-export let exteriorCameraRotation = { x: -0.5, y: 0, z: 0 };
+// Exterior camera position (outside looking at the dome) - starting position
+// Start: position (0, 12, 30), rotation (-8°, 0, 0°) - zoomed in closer
+export let exteriorCameraPosition = { x: 0, y: 12, z: 30 };
+export let exteriorCameraRotation = { x: (-8 * Math.PI) / 180, y: 0, z: 0 }; // -8°, 0, 0°
 // Number of scroll rows for camera transition
 export let cameraTransitionRows = 10;
 export let bloomSettings = {

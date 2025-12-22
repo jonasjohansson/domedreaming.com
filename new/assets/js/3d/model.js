@@ -29,8 +29,11 @@ export function loadModel(createColorGUI) {
       }
       const object = gltf.scene;
       wisdomeModel = object;
+      // Reset to default position and rotation
       object.scale.setScalar(1);
       object.position.set(0, 0, 0);
+      object.rotation.set(0, 0, 0);
+      object.quaternion.set(0, 0, 0, 1); // Reset quaternion to identity
 
       // Clean up any null/undefined children to avoid traverse errors
       pruneObjectChildren(object);
