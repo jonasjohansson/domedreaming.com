@@ -1,18 +1,15 @@
-/* Block base styles - allows content to grow while aligning to grid */
 .block {
-  align-self: start; /* Align to grid row start by default */
-  /* Content can grow beyond min-height, spanning multiple grid rows */
-  overflow: visible; /* Allow text to flow outside block boundaries */
-  height: 100%; /* Ensure block fills its grid area */
-  min-height: 0; /* Allow grid to control height */
+  align-self: start;
+  overflow: visible;
+  height: 100%;
+  min-height: 0;
 }
 
-/* Vertically center blocks when v-center class is present */
 .block.v-center {
   align-self: center;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Vertically center content */
+  justify-content: center;
 }
 
 #loading {
@@ -78,7 +75,6 @@ main p:last-child {
   padding-bottom: 0;
 }
 
-/* Mobile/small screens: double line-height */
 @media (max-width: 768px) {
   main p {
     line-height: calc(var(--row-height) / 2);
@@ -95,16 +91,13 @@ main strong {
   font-weight: var(--font-weight-medium);
 }
 
-/* DOME DREAMING styling - use KovskijDisplay font */
 .dome-dreaming-text {
-  /* font-family: "KovskijDisplay", serif; */
   font-weight: normal;
   text-transform: uppercase;
 }
 
-/* Image blocks - images should fill the block, not be centered */
 .block:has(img):not(:has(.image-caption)) {
-  justify-content: stretch; /* Images fill the block */
+  justify-content: stretch;
   align-items: stretch;
 }
 
@@ -114,18 +107,15 @@ main strong {
   object-fit: cover;
 }
 
-/* Override v-center for image blocks - images should fill, not center */
 .block.v-center:has(img):not(:has(.image-caption)) {
   justify-content: stretch;
   align-items: stretch;
 }
 
-/* Image captions - shown for images with width > 8 and height > 4 */
-/* Make blocks with captions use flexbox column layout */
 .block:has(.image-caption) {
   display: flex;
   flex-direction: column;
-  justify-content: stretch; /* Images fill available space */
+  justify-content: stretch;
 }
 
 .block:has(.image-caption) img {
@@ -146,14 +136,12 @@ main strong {
   flex-shrink: 0;
 }
 
-/* Large text utility class - higher specificity to override page-content p */
 .page-content p.large,
 p.large,
 .large {
   font-size: calc(var(--font-size-base) * 1.5) !important;
 }
 
-/* Large text on mobile */
 @media (max-width: 768px) {
   .page-content p.large,
   p.large,
@@ -162,14 +150,12 @@ p.large,
   }
 }
 
-/* Small text utility class */
 .page-content p.small,
 p.small,
 .small {
   font-size: calc(var(--font-size-base) * 0.875) !important;
 }
 
-/* Small text on mobile */
 @media (max-width: 768px) {
   .page-content p.small,
   p.small,
@@ -177,8 +163,6 @@ p.small,
     font-size: calc(var(--font-size-base) * 0.8) !important;
   }
 }
-
-/* Padding-right utility classes - x/10th of a column width */
 .pad-r-1 {
   padding-right: calc(var(--col-width) / 10);
 }

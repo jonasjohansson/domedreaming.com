@@ -8,7 +8,6 @@
   --half-row-height: calc(var(--row-height) / 2);
   --quarter-row-height: calc(var(--row-height) / 4);
   --third-row-height: calc(var(--row-height) / 3);
-  --line-height-base: calc(var(--row-height) / 2.5); /* Slightly more than third, less than half */
 
   /* Colors */
   --color-bg: #000000;
@@ -99,45 +98,39 @@
 }
 
 html {
-  scroll-behavior: auto; /* No smooth scrolling - grid moves with scroll */
+  scroll-behavior: auto;
   overflow-x: hidden;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   height: 100%;
 }
 
 html::-webkit-scrollbar {
-  display: none; /* Chrome, Safari, Opera */
+  display: none;
 }
 
 body {
-  position: relative; /* For absolute positioned grid dots container */
+  position: relative;
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
   letter-spacing: var(--letter-spacing-normal);
-  overflow-y: auto; /* Enable scroll */
+  overflow-y: auto;
   overflow-x: hidden;
   -ms-overflow-style: none;
   scrollbar-width: none;
   background-color: var(--color-bg);
   color: var(--color-text);
-  position: relative;
   margin: 0;
   padding: 0;
-  min-height: 300vh; /* 3 pages × 100vh */
-  scroll-behavior: smooth; /* Smooth scrolling for snap animation */
+  min-height: 300vh;
+  scroll-behavior: auto;
 }
 
 body::-webkit-scrollbar {
   display: none;
 }
 
-body::-webkit-scrollbar {
-  display: none;
-}
-
-/* Dotted grid background - static dots (hidden, animated dots replace them) */
 body::before {
   content: "";
   position: fixed;
@@ -150,7 +143,7 @@ body::before {
   background-position: calc(var(--col-width) / 2) calc(var(--row-height) / 2);
   pointer-events: none;
   z-index: var(--z-dots);
-  opacity: 0; /* Hidden - animated dots replace them */
+  opacity: 0;
 }
 
 /* Grid dots - DOM elements */
@@ -174,10 +167,6 @@ body::before {
   display: contents;
 }
 
-.dot-row {
-  display: contents;
-}
-
 .animated-dot {
   width: 1px;
   height: 1px;
@@ -189,24 +178,20 @@ body::before {
   display: block;
 }
 
-/* Utility: force element to the top layer within the page */
 .top {
   position: relative;
-  z-index: 1000; /* Above most content, below full-screen overlays */
+  z-index: 1000;
 }
 
-/* Grid utility classes */
 .grid {
   display: grid;
   grid-template-columns: repeat(var(--grid-columns), 1fr);
-  grid-auto-rows: var(--row-height); /* Enable auto-placement with row-height sizing */
-  grid-auto-flow: row; /* Flow items row by row in document order */
+  grid-auto-rows: var(--row-height);
+  grid-auto-flow: row;
   column-gap: var(--grid-gap);
   width: 100%;
   padding: 0;
 }
-
-/* Column start utilities */
 .x-1 {
   grid-column-start: 1;
 }
@@ -250,7 +235,6 @@ body::before {
   grid-column-start: 14;
 }
 
-/* Width / height utilities for grid spans */
 .w-1 {
   grid-column-end: span 1;
 }
@@ -294,7 +278,6 @@ body::before {
   grid-column-end: span 14;
 }
 
-/* Height classes: set row span */
 .h-1 {
   grid-row-end: span 1;
 }
@@ -338,8 +321,7 @@ body::before {
   grid-row-end: span 14;
 }
 
-/* Row utility classes (vertical grid placement) */
-/* If y- class is omitted, items will auto-place (flow naturally) */
+/* Row utility classes */
 .y-1 {
   grid-row-start: 1;
 }
@@ -369,31 +351,4 @@ body::before {
 }
 .y-10 {
   grid-row-start: 10;
-}
-
-/* Auto-placement: items without y- class will flow naturally */
-/* By default, CSS Grid will auto-place items in the next available row */
-/* If you want an item to flow naturally, simply omit the y- class */
-
-.rowspan-2 {
-  grid-row-end: span 2;
-}
-.rowspan-3 {
-  grid-row-end: span 3;
-}
-.rowspan-4 {
-  grid-row-end: span 4;
-}
-.rowspan-5 {
-  grid-row-end: span 5;
-}
-.rowspan-6 {
-  grid-row-end: span 6;
-}
-
-/* Site wrapper */
-.site-wrapper {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
 }

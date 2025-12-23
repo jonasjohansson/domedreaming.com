@@ -1,20 +1,18 @@
-/* Canvas wrapper - first viewport */
 .canvas-wrapper {
   width: 100%;
-  height: calc(var(--row-height) * 10); /* 10 grid rows tall */
+  height: calc(var(--row-height) * 10);
   margin: 0;
   padding: 0;
   display: grid;
   grid-template-columns: repeat(var(--grid-columns), 1fr);
   column-gap: var(--grid-gap);
   position: relative;
-  /* First page - full viewport height */
 }
 
 #canvas-container {
-  grid-column: 1 / -1; /* Span all 15 columns to fill viewport */
+  grid-column: 1 / -1;
   width: 100%;
-  height: 100vh; /* Will be set dynamically by JavaScript to match row-heights */
+  height: 100vh;
   position: relative;
   opacity: 1;
   overflow: hidden;
@@ -22,7 +20,6 @@
   display: block;
   padding: 0;
   margin: 0;
-  /* No mask - canvas fills viewport directly */
   clip-path: none;
   -webkit-clip-path: none;
 }
@@ -33,13 +30,13 @@
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 50; /* High enough to receive drop events, above canvas and images */
-  pointer-events: none; /* Disabled by default, enabled on drag-over */
+  z-index: 50;
+  pointer-events: none;
 }
 
 #drop-zone.drag-over {
   background: rgba(0, 150, 255, 0.05);
-  pointer-events: all; /* Enable pointer events when dragging over */
+  pointer-events: all;
 }
 
 canvas {
@@ -54,7 +51,7 @@ canvas {
 }
 
 main {
-  display: block !important; /* Show main content */
+  display: block !important;
   position: relative;
   width: 100%;
   padding: 0;
@@ -64,7 +61,6 @@ main {
   z-index: 10;
 }
 
-/* Utility: center text within a block (horizontally and vertically) */
 .center {
   text-align: center;
   display: flex;
@@ -73,14 +69,12 @@ main {
   align-items: center;
 }
 
-/* Canvas overlay blocks (text + button over canvas) */
 .grid-overlay .block {
   position: relative;
   z-index: 100;
   pointer-events: auto;
 }
 
-/* Footer-style text over canvas */
 .grid-overlay .block p {
   font-size: var(--font-size-base);
   color: var(--color-text);
@@ -90,7 +84,6 @@ main {
   text-align: center;
 }
 
-/* Global link styling */
 a:link,
 a:visited {
   color: var(--color-text);
@@ -129,7 +122,6 @@ main button:hover {
   color: var(--color-bg);
 }
 
-/* Dome mode - fade out dashboard overlay and footer text */
 body.dome-mode .dashboard-overlay {
   opacity: 0;
   pointer-events: none;
@@ -153,19 +145,19 @@ body.dome-mode .canvas-wrapper {
 }
 
 body.dome-mode #canvas-container {
-  height: 100vh !important; /* Full viewport height in dome mode */
+  height: 100vh !important;
   width: 100vw !important;
 }
 
 body:not(.dome-mode) .dashboard-overlay {
   opacity: 1;
-  pointer-events: none; /* Keep pointer-events: none for overlay container */
+  pointer-events: none;
   transition: opacity var(--transition-normal);
 }
 
 body:not(.dome-mode) .grid-overlay {
   opacity: 1;
-  pointer-events: none; /* Keep pointer-events: none for container, buttons override */
+  pointer-events: none;
   transition: opacity var(--transition-normal);
 }
 
@@ -178,15 +170,11 @@ main .block {
   page-break-inside: avoid;
 }
 
-/* Page sections - use row-height calculations */
 .page-section {
-  height: calc(var(--row-height) * 10); /* 10 rows */
+  height: calc(var(--row-height) * 10);
   min-height: calc(var(--row-height) * 10);
 }
 
-/* Third page section - taller height and background color */
 main > section.page-section:nth-of-type(3) {
   background-color: #2e2f20;
-  height: calc(var(--row-height) * 14); /* 14 rows */
-  min-height: calc(var(--row-height) * 14);
 }
