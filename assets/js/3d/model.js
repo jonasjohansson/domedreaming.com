@@ -227,10 +227,17 @@ export function loadModel() {
         if (infoPanel) infoPanel.classList.add("loaded");
       }, 300);
 
-      // Set camera position
-      camera.position.set(settings.startCameraPosition.x, settings.startCameraPosition.y, settings.startCameraPosition.z);
-      camera.rotation.set(settings.startCameraRotation.x, settings.startCameraRotation.y, settings.startCameraRotation.z);
-      euler.set(settings.startCameraRotation.x, settings.startCameraRotation.y, settings.startCameraRotation.z);
+      // Reset camera position and rotation to ensure consistency
+      // Use the settings values, ensuring they're valid
+      const camPos = settings.startCameraPosition || { x: 0, y: 5.4, z: -4.3 };
+      const camRot = settings.startCameraRotation || { x: -3, y: 0, z: 3.121154018741333 };
+      
+      camera.position.set(camPos.x, camPos.y, camPos.z);
+      camera.rotation.set(camRot.x, camRot.y, camRot.z);
+      // Ensure quaternion is updated from rotation
+      camera.updateMatrixWorld();
+      // Sync euler with camera quaternion to ensure consistency
+      euler.setFromQuaternion(camera.quaternion);
 
       setModelLoaded(true);
 

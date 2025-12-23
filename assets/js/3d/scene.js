@@ -4,7 +4,9 @@ export const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a1a);
 
 export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 5, 10);
+// Initialize with default position (will be reset when model loads)
+camera.position.set(0, 5.4, -4.3);
+camera.rotation.set(-3, 0, 3.121154018741333);
 
 export const renderer = new THREE.WebGLRenderer({
   antialias: false, // Disable antialiasing for better performance
@@ -50,4 +52,23 @@ export function setResizeHandler(handler) {
   window.removeEventListener("resize", resizeHandler);
   resizeHandler = handler;
   window.addEventListener("resize", resizeHandler);
+}
+
+/**
+ * Reset camera to a specific position and rotation
+ * Ensures quaternion and euler are properly synchronized
+ */
+export function resetCamera(position, rotation, euler) {
+  if (position) {
+    camera.position.set(position.x, position.y, position.z);
+  }
+  if (rotation) {
+    camera.rotation.set(rotation.x, rotation.y, rotation.z);
+    // Ensure quaternion is updated from rotation
+    camera.updateMatrixWorld();
+    // Sync euler if provided
+    if (euler) {
+      euler.setFromQuaternion(camera.quaternion);
+    }
+  }
 }

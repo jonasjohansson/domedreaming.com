@@ -5,7 +5,8 @@ import { cameraSettings } from "../settings.js";
 // State variables
 export let isPointerLocked = false;
 export let isTouching = false;
-export let euler = new THREE.Euler(0, 0, 0, "YXZ");
+// Initialize euler with default rotation to match camera initialization
+export let euler = new THREE.Euler(-3, 0, 3.121154018741333, "YXZ");
 export let modelLoaded = false;
 export let touchStartX = 0;
 export let touchStartY = 0;

@@ -12,6 +12,9 @@ export function setNavMeshQuery(query) {
 }
 
 export function updateMovement() {
+  // Don't allow movement until model is loaded
+  if (!modelLoaded) return;
+  
   camera.updateMatrixWorld();
 
   const forward = new THREE.Vector3();
