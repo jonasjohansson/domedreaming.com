@@ -183,3 +183,10 @@ main .block {
   height: calc(var(--row-height) * 10); /* 10 rows */
   min-height: calc(var(--row-height) * 10);
 }
+
+/* Third page section - taller height and background color */
+main > section.page-section:nth-of-type(3) {
+  background-color: #2e2f20;
+  height: calc(var(--row-height) * 14); /* 14 rows */
+  min-height: calc(var(--row-height) * 14);
+}

@@ -143,7 +143,6 @@ main strong {
   padding: 0;
   opacity: var(--opacity-muted);
   text-align: left;
-  text-transform: lowercase;
   flex-shrink: 0;
 }
 
@@ -160,6 +159,22 @@ p.large,
   p.large,
   .large {
     font-size: calc(var(--font-size-base) * 1.25) !important;
+  }
+}
+
+/* Small text utility class */
+.page-content p.small,
+p.small,
+.small {
+  font-size: calc(var(--font-size-base) * 0.875) !important;
+}
+
+/* Small text on mobile */
+@media (max-width: 768px) {
+  .page-content p.small,
+  p.small,
+  .small {
+    font-size: calc(var(--font-size-base) * 0.8) !important;
   }
 }
 

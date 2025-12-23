@@ -99,7 +99,7 @@
 }
 
 html {
-  scroll-behavior: auto; /* Use auto for better scroll-snap compatibility */
+  scroll-behavior: auto; /* No smooth scrolling - grid moves with scroll */
   overflow-x: hidden;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE and Edge */
@@ -111,6 +111,7 @@ html::-webkit-scrollbar {
 }
 
 body {
+  position: relative; /* For absolute positioned grid dots container */
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
@@ -154,11 +155,11 @@ body::before {
 
 /* Grid dots - DOM elements */
 #grid-dots-container {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  min-height: 100vh;
   pointer-events: none;
   z-index: 10002; /* Above all page content and GUI */
   overflow: visible;
@@ -323,6 +324,18 @@ body::before {
 }
 .h-10 {
   grid-row-end: span 10;
+}
+.h-11 {
+  grid-row-end: span 11;
+}
+.h-12 {
+  grid-row-end: span 12;
+}
+.h-13 {
+  grid-row-end: span 13;
+}
+.h-14 {
+  grid-row-end: span 14;
 }
 
 /* Row utility classes (vertical grid placement) */
