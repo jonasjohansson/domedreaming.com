@@ -113,18 +113,29 @@ main strong {
 }
 
 .block:has(.image-caption) {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: stretch;
+  overflow: visible;
 }
 
 .block:has(.image-caption) img {
+  position: relative;
   flex: 1;
   min-height: 0;
   object-fit: cover;
 }
 
+.block:has(p) {
+  max-width: 800px;
+}
+
 .image-caption {
+  position: absolute;
+  bottom: calc(-1 * var(--quarter-row-height));
+  left: 0;
+  mix-blend-mode: difference;
   font-size: 12px;
   color: var(--color-text);
   font-weight: var(--font-weight-normal);
@@ -156,11 +167,19 @@ p.small,
   font-size: calc(var(--font-size-base) * 0.875) !important;
 }
 
+/* Footer credits - even smaller text */
+.page-section:last-of-type p.small {
+  font-size: calc(var(--font-size-base) * 0.75) !important;
+}
+
 @media (max-width: 768px) {
   .page-content p.small,
   p.small,
   .small {
     font-size: calc(var(--font-size-base) * 0.8) !important;
+  }
+  .page-section:last-of-type p.small {
+    font-size: calc(var(--font-size-base) * 0.7) !important;
   }
 }
 .pad-r-1 {
