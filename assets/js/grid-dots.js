@@ -95,49 +95,10 @@ function createDotElements() {
 }
 
 /**
- * Track cursor/touch position and update dot fade effect
- */
-function initCursorTracking() {
-  const dotsContainer = document.getElementById("grid-dots-container");
-  if (!dotsContainer) return;
-
-  function updateCursorPosition(x, y) {
-    const xPercent = (x / window.innerWidth) * 100;
-    const yPercent = (y / window.innerHeight) * 100;
-    dotsContainer.style.setProperty("--cursor-x", `${xPercent}%`);
-    dotsContainer.style.setProperty("--cursor-y", `${yPercent}%`);
-  }
-
-  // Mouse tracking
-  document.addEventListener("mousemove", (e) => {
-    updateCursorPosition(e.clientX, e.clientY);
-  });
-
-  // Touch tracking
-  document.addEventListener(
-    "touchmove",
-    (e) => {
-      if (e.touches.length > 0) {
-        const touch = e.touches[0];
-        updateCursorPosition(touch.clientX, touch.clientY);
-      }
-    },
-    { passive: true }
-  );
-
-  // Reset when mouse/touch leaves
-  document.addEventListener("mouseleave", () => {
-    dotsContainer.style.setProperty("--cursor-x", "50%");
-    dotsContainer.style.setProperty("--cursor-y", "50%");
-  });
-}
-
-/**
  * Initialize and export
  */
 export function initGridDotsSystem() {
   initGridDots();
-  initCursorTracking();
 
   // Update on resize to recreate dots for new document size
   window.addEventListener("resize", () => {

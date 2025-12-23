@@ -256,26 +256,10 @@ export function applyPageBackgrounds() {
   }
 
   // About page (first page-section after canvas)
+  // Background is now handled by CSS in layout.css
   const pageSections = document.querySelectorAll(".page-section");
   if (pageSections.length > 0) {
-    // Apply about background to first page-section
-    const aboutSection = pageSections[0];
-    if (aboutSection) {
-      if (pageBackgroundSettings.about.backgroundColor) {
-        const rgbaColor = hexToRgba(pageBackgroundSettings.about.backgroundColor, 0.5);
-        aboutSection.style.setProperty("background-color", rgbaColor, "important");
-      } else {
-        aboutSection.style.removeProperty("background-color");
-      }
-      if (pageBackgroundSettings.about.backgroundImage) {
-        aboutSection.style.setProperty("background-image", `url(${pageBackgroundSettings.about.backgroundImage})`, "important");
-        aboutSection.style.setProperty("background-size", "cover", "important");
-        aboutSection.style.setProperty("background-position", "center", "important");
-        aboutSection.style.setProperty("background-repeat", "no-repeat", "important");
-      } else {
-        aboutSection.style.setProperty("background-image", "none", "important");
-      }
-    }
+    // Skip first page-section - handled by CSS
 
     // Apply team background to remaining sections if needed
     if (pageSections.length > 1 && pageBackgroundSettings.team) {

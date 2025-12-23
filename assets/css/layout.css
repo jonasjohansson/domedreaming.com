@@ -204,6 +204,10 @@ main .block {
   min-height: calc(var(--row-height) * 10);
 }
 
+main > section.page-section:first-of-type {
+  background-color: rgba(70, 52, 52, 1);
+}
+
 main > section.page-section:nth-of-type(3) {
-  background-color: rgba(46, 47, 32, 0.5);
+  background-color: rgba(46, 47, 32, 1);
 }
