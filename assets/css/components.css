@@ -127,10 +127,6 @@ main strong {
   object-fit: cover;
 }
 
-.block:has(p) {
-  max-width: 800px;
-}
-
 .image-caption {
   position: absolute;
   bottom: calc(-1 * var(--quarter-row-height));

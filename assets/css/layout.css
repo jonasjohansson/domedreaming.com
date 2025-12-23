@@ -84,6 +84,35 @@ main {
   text-align: center;
 }
 
+/* Parallax layer - 15 cols, 40 rows high, sits below main */
+#parallax-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: calc(100vh * 5);
+  pointer-events: none;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(var(--grid-columns), 1fr);
+  grid-auto-rows: calc(100vh / 8);
+  column-gap: var(--grid-gap);
+  row-gap: 0;
+  will-change: transform;
+}
+
+#parallax-layer .parallax-item {
+  overflow: hidden;
+  opacity: 0.5;
+  mix-blend-mode: difference;
+}
+
+#parallax-layer .parallax-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 a:link,
 a:visited {
   color: var(--color-text);
@@ -176,5 +205,5 @@ main .block {
 }
 
 main > section.page-section:nth-of-type(3) {
-  background-color: #2e2f20;
+  background-color: rgba(46, 47, 32, 0.5);
 }

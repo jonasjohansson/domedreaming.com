@@ -26,6 +26,15 @@ let lastTime = 0;
 let lastCameraSaveTime = 0;
 const CAMERA_SAVE_INTERVAL = 2000; // Save camera position every 2 seconds
 
+function updateParallax() {
+  const scrollY = window.scrollY || window.pageYOffset || 0;
+  const items = document.querySelectorAll(".parallax-item");
+  items.forEach((item) => {
+    const factor = parseFloat(item.dataset.parallaxFactor || "0.4");
+    item.style.transform = `translateY(${scrollY * factor * -1}px)`;
+  });
+}
+
 function setCanvasHeight() {
   const canvasContainer = document.getElementById("canvas-container");
   const canvasWrapper = document.querySelector(".canvas-wrapper");
@@ -41,7 +50,6 @@ function setCanvasHeight() {
   canvasContainer.style.margin = "0";
   canvasWrapper.style.height = `${targetHeight}px`;
 }
-
 
 function applyDomeDreamingFont() {
   const mainElement = document.querySelector("main");
@@ -120,6 +128,8 @@ async function init() {
 
   setCanvasHeight();
   window.addEventListener("resize", setCanvasHeight);
+  window.addEventListener("scroll", updateParallax, { passive: true });
+  updateParallax();
   loadModel(createColorGUI);
   startRenderLoop();
 }

@@ -119,7 +119,6 @@ body {
   overflow-x: hidden;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  background-color: var(--color-bg);
   color: var(--color-text);
   margin: 0;
   padding: 0;
@@ -409,4 +408,94 @@ body::before {
 }
 .y-10 {
   grid-row-start: 10;
+}
+.y-11 {
+  grid-row-start: 11;
+}
+.y-12 {
+  grid-row-start: 12;
+}
+.y-13 {
+  grid-row-start: 13;
+}
+.y-14 {
+  grid-row-start: 14;
+}
+.y-15 {
+  grid-row-start: 15;
+}
+.y-16 {
+  grid-row-start: 16;
+}
+.y-17 {
+  grid-row-start: 17;
+}
+.y-18 {
+  grid-row-start: 18;
+}
+.y-19 {
+  grid-row-start: 19;
+}
+.y-20 {
+  grid-row-start: 20;
+}
+.y-21 {
+  grid-row-start: 21;
+}
+.y-22 {
+  grid-row-start: 22;
+}
+.y-23 {
+  grid-row-start: 23;
+}
+.y-24 {
+  grid-row-start: 24;
+}
+.y-25 {
+  grid-row-start: 25;
+}
+.y-26 {
+  grid-row-start: 26;
+}
+.y-27 {
+  grid-row-start: 27;
+}
+.y-28 {
+  grid-row-start: 28;
+}
+.y-29 {
+  grid-row-start: 29;
+}
+.y-30 {
+  grid-row-start: 30;
+}
+.y-31 {
+  grid-row-start: 31;
+}
+.y-32 {
+  grid-row-start: 32;
+}
+.y-33 {
+  grid-row-start: 33;
+}
+.y-34 {
+  grid-row-start: 34;
+}
+.y-35 {
+  grid-row-start: 35;
+}
+.y-36 {
+  grid-row-start: 36;
+}
+.y-37 {
+  grid-row-start: 37;
+}
+.y-38 {
+  grid-row-start: 38;
+}
+.y-39 {
+  grid-row-start: 39;
+}
+.y-40 {
+  grid-row-start: 40;
 }

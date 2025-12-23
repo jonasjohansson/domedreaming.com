@@ -212,6 +212,28 @@ function applySettings(settings) {
 }
 
 /**
+ * Convert hex color to rgba with 0.5 alpha
+ */
+function hexToRgba(hex, alpha = 0.5) {
+  if (!hex) return null;
+  if (hex.startsWith("rgba")) return hex;
+  if (hex.startsWith("rgb")) {
+    const rgb = hex.match(/\d+/g);
+    if (rgb && rgb.length >= 3) {
+      return `rgba(${rgb[0]}, ${rgb[1]}, ${rgb[2]}, ${alpha})`;
+    }
+  }
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (result) {
+    const r = parseInt(result[1], 16);
+    const g = parseInt(result[2], 16);
+    const b = parseInt(result[3], 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+  return hex;
+}
+
+/**
  * Apply page background settings to DOM elements
  */
 export function applyPageBackgrounds() {
@@ -240,7 +262,8 @@ export function applyPageBackgrounds() {
     const aboutSection = pageSections[0];
     if (aboutSection) {
       if (pageBackgroundSettings.about.backgroundColor) {
-        aboutSection.style.setProperty("background-color", pageBackgroundSettings.about.backgroundColor, "important");
+        const rgbaColor = hexToRgba(pageBackgroundSettings.about.backgroundColor, 0.5);
+        aboutSection.style.setProperty("background-color", rgbaColor, "important");
       } else {
         aboutSection.style.removeProperty("background-color");
       }
@@ -258,8 +281,9 @@ export function applyPageBackgrounds() {
     if (pageSections.length > 1 && pageBackgroundSettings.team) {
       for (let i = 1; i < pageSections.length; i++) {
         const section = pageSections[i];
-        if (pageBackgroundSettings.team.backgroundColor) {
-          section.style.setProperty("background-color", pageBackgroundSettings.team.backgroundColor, "important");
+        if (pageBackgroundSettings.team.backgroundColor && pageBackgroundSettings.team.backgroundColor !== "#000000") {
+          const rgbaColor = hexToRgba(pageBackgroundSettings.team.backgroundColor, 0.5);
+          section.style.setProperty("background-color", rgbaColor, "important");
         } else {
           section.style.removeProperty("background-color");
         }
