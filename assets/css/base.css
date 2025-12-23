@@ -75,10 +75,10 @@
 /* Large displays: increase font sizes significantly */
 @media (min-width: 1200px) {
   :root {
-    --font-size-base: 24px;
-    --font-size-small: 22px;
-    --font-size-xs: 20px;
-    --font-size-intro: 24px;
+    --font-size-base: 20px;
+    --font-size-small: 18px;
+    --font-size-xs: 16px;
+    --font-size-intro: 20px;
   }
 }
 
