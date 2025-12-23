@@ -58,11 +58,12 @@ function copyStaticAssets() {
   return {
     name: "copy-static-assets",
     async closeBundle() {
-      // Copy fonts and models as-is (no optimization needed)
+      // Copy fonts, models, and favicon as-is (no optimization needed)
       const copyAsIs = [
-        { src: "assets/fonts", dest: "dist/assets/fonts" },
-        { src: "assets/models", dest: "dist/assets/models" },
-        { src: "assets/js/libs", dest: "dist/assets/js/libs" },
+        { src: "assets/fonts", dest: "docs/assets/fonts" },
+        { src: "assets/models", dest: "docs/assets/models" },
+        { src: "assets/js/libs", dest: "docs/assets/js/libs" },
+        { src: "assets/favicon", dest: "docs/assets/favicon" },
       ];
 
       function copyDir(src, dest) {
@@ -93,8 +94,8 @@ function copyStaticAssets() {
       // Optimize images
       console.log("Optimizing images...");
       const imageDirs = [
-        { src: "assets/img", dest: "dist/assets/img" },
-        { src: "assets/media", dest: "dist/assets/media" },
+        { src: "assets/img", dest: "docs/assets/img" },
+        { src: "assets/media", dest: "docs/assets/media" },
       ];
 
       async function processImageDir(src, dest) {
@@ -183,8 +184,10 @@ export default defineConfig({
     exclude: ["@recast-navigation/core", "@recast-navigation/wasm", "@recast-navigation/generators", "@recast-navigation/three"],
   },
   build: {
-    outDir: "dist",
+    outDir: "docs",
     emptyOutDir: true,
+    // Increase chunk size warning limit (Three.js is large)
+    chunkSizeWarningLimit: 1000,
     // Minify JavaScript
     minify: "terser",
     terserOptions: {
@@ -201,6 +204,28 @@ export default defineConfig({
         // Clean, organized file naming
         entryFileNames: "assets/js/[name]-[hash].js",
         chunkFileNames: "assets/js/chunks/[name]-[hash].js",
+        // Manual chunks for better code splitting
+        manualChunks: (id) => {
+          // Split three.js into its own chunk
+          if (id.includes("three.module.js") || id.includes("three.core.js")) {
+            return "three";
+          }
+          // Split three.js addons into separate chunk
+          if (id.includes("three/addons") || id.includes("postprocessing") || id.includes("shaders") || id.includes("GLTFLoader")) {
+            return "three-addons";
+          }
+          // Split 3D related code
+          if (id.includes("/3d/")) {
+            return "3d";
+          }
+          // Split GUI and dashboard into separate chunks
+          if (id.includes("gui.js") || id.includes("lil-gui")) {
+            return "gui";
+          }
+          if (id.includes("dashboard.js")) {
+            return "dashboard";
+          }
+        },
         assetFileNames: (assetInfo) => {
           const name = assetInfo.name || "asset";
 
