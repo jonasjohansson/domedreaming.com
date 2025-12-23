@@ -96,7 +96,17 @@ export function findLEDRim(model) {
   const allNames = [];
   model.traverse((child) => {
     allNames.push(child.name || "unnamed");
-    if (child.name === "LED_Rim" || child.name.includes("LED_Rim") || child.name.toLowerCase().includes("led")) {
+    // More flexible search for LED rim - check various naming patterns
+    const name = child.name || "";
+    const nameLower = name.toLowerCase();
+    if (
+      name === "LED_Rim" ||
+      name.includes("LED_Rim") ||
+      name.includes("LEDRim") ||
+      name.includes("led_rim") ||
+      nameLower.includes("ledrim") ||
+      (nameLower.includes("led") && nameLower.includes("rim"))
+    ) {
       found = child;
       console.log(`Found LED rim object: "${child.name}", type: ${child.type || child.constructor.name}`);
     }
