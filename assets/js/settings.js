@@ -433,13 +433,6 @@ export async function reloadFromJSON() {
   await loadSettings(true);
   await applySettingsToScene();
 
-  // Reload GUI to reflect changes
-  import("./gui.js").then((gui) => {
-    if (typeof gui.createColorGUI === "function") {
-      gui.createColorGUI();
-    }
-  });
-
   console.log("Settings reloaded from JSON file");
 }
 

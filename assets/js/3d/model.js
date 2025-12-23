@@ -14,12 +14,12 @@ export let glbLights = [];
 export let glbLightsGroup = null;
 export let hotspots = [];
 
-export function loadModel(createColorGUI) {
+export function loadModel() {
   const loader = new GLTFLoader();
   const loadingDiv = document.getElementById("loading");
 
   loader.load(
-    "assets/models/wisdome-rim.glb",
+    "assets/models/wisdome.glb",
     (gltf) => {
       console.log("Wisdome GLB loaded successfully");
       if (!gltf || !gltf.scene) {
@@ -240,7 +240,6 @@ export function loadModel(createColorGUI) {
       }
 
       initNavmesh();
-      createColorGUI();
       loadDefaultScreenTexture();
       setupDragAndDrop(); // Initialize drag and drop for texture updates
     },

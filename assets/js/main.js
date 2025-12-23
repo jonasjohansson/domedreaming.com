@@ -4,7 +4,6 @@ import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js
 import { setupCameraControls } from "./3d/camera.js";
 import { updateMovement } from "./3d/movement.js";
 import { loadModel, fbxMeshes, glbLights } from "./3d/model.js";
-import { createColorGUI } from "./gui.js";
 import {
   loadSettings,
   canvasSettings,
@@ -130,7 +129,7 @@ async function init() {
   window.addEventListener("resize", setCanvasHeight);
   window.addEventListener("scroll", updateParallax, { passive: true });
   updateParallax();
-  loadModel(createColorGUI);
+  loadModel();
   startRenderLoop();
 }
 

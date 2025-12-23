@@ -183,6 +183,16 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["@recast-navigation/core", "@recast-navigation/wasm", "@recast-navigation/generators", "@recast-navigation/three"],
   },
+  // Disable caching for development
+  server: {
+    port: 3000,
+    open: true,
+    headers: {
+      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+      Pragma: "no-cache",
+      Expires: "0",
+    },
+  },
   build: {
     outDir: "docs",
     emptyOutDir: true,
@@ -218,10 +228,7 @@ export default defineConfig({
           if (id.includes("/3d/")) {
             return "3d";
           }
-          // Split GUI and dashboard into separate chunks
-          if (id.includes("gui.js") || id.includes("lil-gui")) {
-            return "gui";
-          }
+          // Split dashboard into separate chunk
           if (id.includes("dashboard.js")) {
             return "dashboard";
           }
@@ -256,8 +263,4 @@ export default defineConfig({
     },
   },
   plugins: [resolveThreeImports(), copyStaticAssets()],
-  server: {
-    port: 3000,
-    open: true,
-  },
 });

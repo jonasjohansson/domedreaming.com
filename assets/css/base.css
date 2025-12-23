@@ -164,6 +164,7 @@ body::before {
 
 .dot-row {
   display: contents;
+  pointer-events: none;
 }
 
 .animated-dot {
@@ -175,6 +176,8 @@ body::before {
   align-self: start;
   opacity: 1;
   display: block;
+  pointer-events: none !important;
+  cursor: default;
 }
 
 .top {

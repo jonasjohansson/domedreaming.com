@@ -83,6 +83,8 @@ function createDotElements() {
       // Set grid position using data attributes
       dot.style.gridColumn = col + 1;
       dot.style.gridRow = row + 1;
+      // Disable pointer events to prevent hover
+      dot.style.pointerEvents = "none";
 
       rowContainer.appendChild(dot);
     }
