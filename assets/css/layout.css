@@ -151,6 +151,12 @@ main button:hover {
   color: var(--color-bg);
 }
 
+main button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 body.dome-mode .dashboard-overlay {
   opacity: 0;
   pointer-events: none;
@@ -202,12 +208,79 @@ main .block {
 .page-section {
   height: calc(var(--row-height) * 10);
   min-height: calc(var(--row-height) * 10);
+  background-color: inherit;
 }
 
 main > section.page-section:first-of-type {
   background-color: rgba(70, 52, 52, 1);
 }
 
+main > section.page-section:first-of-type .page-content {
+  background-color: inherit;
+}
+
+main > section.page-section:nth-of-type(2) {
+  background-color: #21272f;
+}
+
+main > section.page-section:nth-of-type(2) .page-content {
+  background-color: inherit;
+}
+
 main > section.page-section:nth-of-type(3) {
   background-color: rgba(46, 47, 32, 1);
+}
+
+/* Color class for inheriting background color */
+.color {
+  background-color: inherit;
+}
+
+/* Color palette classes */
+.bg-col-1 {
+  background-color: rgba(70, 52, 52, 1);
+}
+
+.bg-col-2 {
+  background-color: #21272f;
+}
+
+.bg-col-3 {
+  background-color: rgba(46, 47, 32, 1);
+}
+
+.bg-col-4 {
+  background-color: #000000;
+}
+
+.bg-col-5 {
+  background-color: #333333;
+}
+
+/* Column count classes - for multi-column layout */
+.col-2 {
+  column-count: 2;
+  column-gap: var(--spacing-md);
+}
+
+.col-3 {
+  column-count: 3;
+  column-gap: var(--spacing-md);
+}
+
+/* Break class - column break (not on mobile) */
+.break {
+  break-before: column;
+}
+
+/* On mobile, single column and no breaks */
+@media (max-width: 768px) {
+  .col-2,
+  .col-3 {
+    column-count: 1;
+  }
+
+  .break {
+    break-before: auto;
+  }
 }

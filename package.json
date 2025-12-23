@@ -1,0 +1,17 @@
+{
+  "name": "domedreaming",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "preview": "vite preview",
+    "preview:watch": "vite build --watch"
+  },
+  "devDependencies": {
+    "vite": "^7.3.0",
+    "terser": "^5.36.0",
+    "sharp": "^0.33.0"
+  }
+}

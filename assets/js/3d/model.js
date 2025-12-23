@@ -146,7 +146,7 @@ export function loadModel(createColorGUI) {
             setScreenObject(child);
             child.visible = true;
           } else {
-            const material = getMaterial(child);
+            let material = getMaterial(child);
             const originalColor = material?.color ? material.color.clone() : new THREE.Color(0xffffff);
 
             // Enhance materials for better visual quality
