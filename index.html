@@ -29,6 +29,15 @@
       property="og:image"
       content="https://domedreaming.com/assets/img/wisdome-stockholm-visuals.jpg" />
     <meta
+      property="og:image:width"
+      content="1200" />
+    <meta
+      property="og:image:height"
+      content="630" />
+    <meta
+      property="og:image:type"
+      content="image/jpeg" />
+    <meta
       property="og:site_name"
       content="Dome Dreaming" />
 
@@ -58,6 +67,8 @@
     <link
       rel="canonical"
       href="https://domedreaming.com/" />
+
+    <!-- Favicons -->
     <link
       rel="icon"
       type="image/png"
@@ -68,12 +79,23 @@
       type="image/svg+xml"
       href="assets/favicon/favicon.svg" />
     <link
+      rel="apple-touch-icon"
+      href="assets/favicon/favicon-96x96.png" />
+
+    <!-- Resource Hints -->
+    <link
       rel="preconnect"
       href="https://fonts.googleapis.com" />
     <link
       rel="preconnect"
       href="https://fonts.gstatic.com"
       crossorigin />
+    <link
+      rel="dns-prefetch"
+      href="https://fonts.googleapis.com" />
+    <link
+      rel="dns-prefetch"
+      href="https://fonts.gstatic.com" />
     <link
       rel="preload"
       href="assets/fonts/OffBit-Regular.woff2"
@@ -89,6 +111,14 @@
     <link
       rel="stylesheet"
       href="assets/css/main.css" />
+
+    <!-- Preload critical JavaScript modules -->
+    <link
+      rel="modulepreload"
+      href="assets/js/main.js" />
+    <link
+      rel="modulepreload"
+      href="assets/js/libs/three/three.module.js" />
   </head>
   <body>
     <main class="grid">
@@ -130,7 +160,11 @@
             </p>
           </div>
           <div class="block x-5 w-7 y-9 h-1">
-            <button id="enter-dome-btn">Enter the Dome</button>
+            <button
+              id="enter-dome-btn"
+              aria-label="Enter the 3D dome simulator">
+              Enter the Dome
+            </button>
           </div>
         </div>
       </div>
@@ -152,24 +186,33 @@
           <div class="dashboard-block block x-4 w-3 h-2 y-2">
             <img
               src="assets/img/wisdome-stockholm-exterior.jpg"
-              alt="Wisdome Stockholm" />
+              alt="Wisdome Stockholm exterior view"
+              loading="lazy"
+              decoding="async" />
             <figcaption class="image-caption">Wisdome Stockholm</figcaption>
           </div>
           <div class="dashboard-block block x-2 w-3 h-2 y-7">
             <img
               src="assets/img/wisdome-malmo-exterior.jpeg"
-              alt="Wisdome Malmö" />
+              alt="Wisdome Malmö exterior view"
+              loading="lazy"
+              decoding="async" />
             <figcaption class="image-caption">Wisdome Malmö</figcaption>
           </div>
           <div class="dashboard-block block x-11 w-3 h-2 y-8">
             <img
               src="assets/img/wisdome-malmo-visuals.jpg"
-              alt="Wisdome Malmö" />
+              alt="Fulldome visuals at Wisdome Malmö"
+              loading="lazy"
+              decoding="async" />
           </div>
           <div class="dashboard-block block x-9 w-4 h-2 y-3">
             <img
               src="assets/img/wisdome-stockholm-visuals.jpg"
-              alt="Wisdome Malmö" />
+              alt="Fulldome visuals at Wisdome Stockholm"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async" />
           </div>
         </div>
       </section>
@@ -179,13 +222,17 @@
           <div class="block x-1 w-12 h-7 y-2">
             <img
               src="assets/img/wisdome-stockholm-exterior.jpg"
-              alt="Wisdome Stockholm" />
+              alt="Wisdome Stockholm exterior view"
+              loading="lazy"
+              decoding="async" />
             <figcaption class="image-caption">Wisdome Stockholm</figcaption>
           </div>
           <div class="block x-3 w-12 h-7 y-3">
             <img
               src="assets/img/wisdome-malmo-exterior.jpeg"
-              alt="Wisdome Malmö" />
+              alt="Wisdome Malmö exterior view"
+              loading="lazy"
+              decoding="async" />
             <figcaption class="image-caption">Wisdome Malmö</figcaption>
           </div>
         </div>
@@ -314,6 +361,7 @@
 
     <script
       type="module"
-      src="assets/js/main.js"></script>
+      src="assets/js/main.js"
+      defer></script>
   </body>
 </html>
