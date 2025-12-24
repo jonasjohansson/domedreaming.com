@@ -113,6 +113,11 @@
   box-sizing: border-box;
 }
 
+/* Images should not show pointer cursor */
+img {
+  cursor: default;
+}
+
 html {
   scroll-behavior: auto;
   overflow-x: hidden;

@@ -36,7 +36,7 @@
   justify-content: center;
   overflow: hidden;
   pointer-events: auto;
-  cursor: pointer;
+  cursor: default;
   position: relative;
   z-index: 15;
   opacity: 0.5;
@@ -73,6 +73,7 @@
   height: 100%;
   object-fit: cover;
   border-radius: 16px;
+  cursor: default;
 }
 
 .dashboard-block.size-1x1 {
@@ -144,6 +145,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  cursor: default;
 }
 
 .page-content .block:hover,
