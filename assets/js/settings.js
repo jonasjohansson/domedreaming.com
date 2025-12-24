@@ -277,7 +277,7 @@ export function applyPageBackgrounds() {
           section.style.setProperty("background-position", "center", "important");
           section.style.setProperty("background-repeat", "no-repeat", "important");
         } else {
-          section.style.setProperty("background-image", "none", "important");
+          section.style.removeProperty("background-image");
         }
       }
     }

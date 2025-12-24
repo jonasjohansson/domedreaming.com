@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { scene, camera } from "./scene.js";
 import { getMaterial, safeTraverse, pruneObjectChildren } from "./utils.js";
 import * as settings from "../settings.js";
@@ -16,6 +17,14 @@ export let hotspots = [];
 
 export function loadModel() {
   const loader = new GLTFLoader();
+  
+  // Set up DRACOLoader for Draco-compressed models
+  const dracoLoader = new DRACOLoader();
+  // Use CDN for decoder files (will switch to local after downloading)
+  // TODO: After running ./download-draco.sh, change this to: "assets/js/libs/three/draco/"
+  dracoLoader.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/libs/draco/gltf/");
+  loader.setDRACOLoader(dracoLoader);
+  
   const loadingDiv = document.getElementById("loading");
 
   loader.load(
