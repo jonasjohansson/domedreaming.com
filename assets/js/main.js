@@ -18,6 +18,8 @@ import { initScrollIncrement } from "./scroll-increment.js";
 import { initGridDotsSystem } from "./grid-dots.js";
 import { initDashboard } from "./dashboard.js";
 import { initResponsiveHeights } from "./responsive-height.js";
+import { initASCIIDecorative } from "./ascii-decorative.js";
+import { initParallaxLayer } from "./parallax-layer.js";
 import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam } from "./3d/texture.js";
 import { textureRotationSettings } from "./settings.js";
 import { getRowHeight } from "./utils.js";
@@ -115,6 +117,12 @@ async function init() {
 
   // Initialize responsive heights
   initResponsiveHeights();
+
+  // Initialize parallax layer
+  initParallaxLayer();
+
+  // Initialize ASCII decorative layer
+  //initASCIIDecorative();
 
   initDashboard();
   applyDomeDreamingFont();
