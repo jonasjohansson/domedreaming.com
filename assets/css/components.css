@@ -168,7 +168,7 @@ p.small,
 .small {
   font-size: calc(var(--font-size-base) * 0.875) !important;
   opacity: 0.5;
-  line-height: 12px; /* Half the normal line-height (fixed) */
+  line-height: 1.5; /* Increased line-height for better readability */
 }
 
 /* Footer credits - even smaller text */
@@ -181,7 +181,7 @@ p.small,
   p.small,
   .small {
     font-size: calc(var(--font-size-base) * 0.8) !important;
-    line-height: 0.7; /* Half of 1.4 relative line-height */
+    line-height: 1.4; /* Increased line-height for better readability on mobile */
   }
   .page-section:last-of-type p.small {
     font-size: calc(var(--font-size-base) * 0.7) !important;
