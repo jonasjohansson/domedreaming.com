@@ -85,10 +85,10 @@
 /* Mobile: reduce font sizes */
 @media (max-width: 768px) {
   :root {
-    --font-size-base: 12px;
-    --font-size-small: 12px;
-    --font-size-xs: 10px;
-    --font-size-intro: 12px;
+    --font-size-base: 14px;
+    --font-size-small: 14px;
+    --font-size-xs: 12px;
+    --font-size-intro: 14px;
   }
 }
 
