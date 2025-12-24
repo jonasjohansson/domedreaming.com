@@ -194,7 +194,7 @@
   color: var(--color-text);
   line-height: var(--line-height-base);
   margin: 0;
-  margin-bottom: var(--line-height-base);
+  margin-bottom: 24px; /* Fixed margin matching line-height */
 }
 
 .page-content p:last-child {
@@ -203,8 +203,8 @@
 
 @media (max-width: 768px) {
   .page-content p {
-    line-height: calc(var(--row-height) / 5);
-    margin-bottom: calc(var(--row-height) / 5); /* Same as line-height on mobile */
+    line-height: 1.4; /* Relative line-height on mobile */
+    margin-bottom: calc(var(--font-size-base) * 1.4); /* Margin based on line-height */
   }
 }
 
@@ -223,4 +223,10 @@
     min-height: 0;
     margin: 0;
   }
+}
+
+/* Desktop: allow responsive blocks to grow beyond default height */
+.page-content.responsive .block.responsive {
+  height: auto;
+  min-height: calc(var(--row-height) * 10); /* Minimum 10 rows */
 }

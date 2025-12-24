@@ -84,6 +84,18 @@ main {
   text-align: center;
 }
 
+/* First page section uses relative line-height */
+main > section.page-section:first-of-type .grid-overlay .block p {
+  line-height: 1.4;
+}
+
+/* Mobile uses relative line-height */
+@media (max-width: 768px) {
+  .grid-overlay .block p {
+    line-height: 1.4;
+  }
+}
+
 /* Parallax layer - 15 cols, 40 rows high, sits below main */
 #parallax-layer {
   position: fixed;
@@ -218,6 +230,12 @@ main > section.page-section:first-of-type {
 
 main > section.page-section:first-of-type .page-content {
   background-color: inherit;
+  line-height: 1.4;
+}
+
+main > section.page-section:first-of-type .page-content p {
+  line-height: 1.4;
+  margin-bottom: calc(var(--font-size-base) * 1.4);
 }
 
 main > section.page-section:nth-of-type(2) {

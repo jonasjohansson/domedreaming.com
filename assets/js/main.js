@@ -17,6 +17,7 @@ import { updateLEDAnimation } from "./3d/led-strip.js";
 import { initScrollIncrement } from "./scroll-increment.js";
 import { initGridDotsSystem } from "./grid-dots.js";
 import { initDashboard } from "./dashboard.js";
+import { initResponsiveHeights } from "./responsive-height.js";
 import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam } from "./3d/texture.js";
 import { textureRotationSettings } from "./settings.js";
 
@@ -112,6 +113,9 @@ async function init() {
 
   // Initialize grid dots (static background)
   initGridDotsSystem();
+
+  // Initialize responsive heights
+  initResponsiveHeights();
 
   initDashboard();
   applyDomeDreamingFont();

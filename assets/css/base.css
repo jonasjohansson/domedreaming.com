@@ -23,7 +23,7 @@
   --font-size-small: 16px;
   --font-size-xs: 16px;
   --font-size-intro: 16px;
-  --line-height-base: calc(var(--row-height) / 4); /* Line-height divisible by row-height */
+  --line-height-base: 24px; /* Fixed line-height */
   --letter-spacing-tight: 0px;
   --letter-spacing-normal: 0.5px;
   --letter-spacing-wide: 2px;
@@ -156,7 +156,7 @@ body {
 
 @media (max-width: 768px) {
   body {
-    line-height: calc(var(--row-height) / 5); /* Smaller line-height on mobile */
+    line-height: 1.4; /* Relative line-height on mobile */
   }
 }
 
