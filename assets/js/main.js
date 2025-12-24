@@ -100,32 +100,29 @@ async function init() {
   // Load settings first
   await loadSettings();
 
-  // Setup lighting
-  setupLighting();
-
-  // Initialize post-processing
-  initPostProcessing();
-
-  // Setup camera controls
-  setupCameraControls();
-
-  // Initialize scroll increment functionality
+  // Initialize UI elements first (non-blocking, critical for LCP)
   initScrollIncrement();
-
-  // Initialize grid dots (static background)
   initGridDotsSystem();
-
-  // Initialize responsive heights
   initResponsiveHeights();
-
-  // Initialize parallax layer
-  initParallaxLayer();
-
-  // Initialize ASCII decorative layer
-  //initASCIIDecorative();
-
   initDashboard();
   applyDomeDreamingFont();
+
+  // Defer heavy 3D operations to avoid blocking main thread
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      setupLighting();
+      initPostProcessing();
+      setupCameraControls();
+      initParallaxLayer();
+    }, { timeout: 1000 });
+  } else {
+    setTimeout(() => {
+      setupLighting();
+      initPostProcessing();
+      setupCameraControls();
+      initParallaxLayer();
+    }, 50);
+  }
 
   // Setup webcam link
   const webcamLink = document.getElementById("connect-webcam-link");
@@ -140,8 +137,23 @@ async function init() {
   window.addEventListener("resize", setCanvasHeight);
   window.addEventListener("scroll", updateParallax, { passive: true });
   updateParallax();
-  loadModel();
-  startRenderLoop();
+  
+  // Defer 3D model loading to avoid blocking initial render and improve LCP
+  // Use requestIdleCallback if available, otherwise setTimeout
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      loadModel();
+      startRenderLoop();
+    }, { timeout: 2000 });
+  } else {
+    // Fallback: delay by one frame to let initial render complete
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        loadModel();
+        startRenderLoop();
+      }, 100);
+    });
+  }
 }
 
 // Render loop

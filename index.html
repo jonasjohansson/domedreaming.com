@@ -112,6 +112,13 @@
       rel="stylesheet"
       href="assets/css/main.css" />
 
+    <!-- Preload LCP image -->
+    <link
+      rel="preload"
+      href="assets/img/wisdome-stockholm-visuals.jpg"
+      as="image"
+      fetchpriority="high" />
+    
     <!-- Preload critical JavaScript modules -->
     <link
       rel="modulepreload"
@@ -212,7 +219,9 @@
               alt="Fulldome visuals at Wisdome Stockholm"
               loading="eager"
               fetchpriority="high"
-              decoding="async" />
+              decoding="async"
+              width="800"
+              height="600" />
           </div>
         </div>
       </section>
