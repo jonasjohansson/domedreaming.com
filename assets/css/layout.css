@@ -237,33 +237,33 @@ main > section.page-section:nth-of-type(3) {
 }
 
 /* Color palette classes */
-.bg-col-1 {
+.col-1 {
   background-color: rgba(70, 52, 52, 1);
 }
 
-.bg-col-2 {
+.col-2 {
   background-color: #21272f;
 }
 
-.bg-col-3 {
+.col-3 {
   background-color: rgba(46, 47, 32, 1);
 }
 
-.bg-col-4 {
+.col-4 {
   background-color: #000000;
 }
 
-.bg-col-5 {
+.col-5 {
   background-color: #333333;
 }
 
 /* Column count classes - for multi-column layout */
-.col-2 {
+.columns-2 {
   column-count: 2;
   column-gap: var(--spacing-md);
 }
 
-.col-3 {
+.columns-3 {
   column-count: 3;
   column-gap: var(--spacing-md);
 }
@@ -275,8 +275,8 @@ main > section.page-section:nth-of-type(3) {
 
 /* On mobile, single column and no breaks */
 @media (max-width: 768px) {
-  .col-2,
-  .col-3 {
+  .columns-2,
+  .columns-3 {
     column-count: 1;
   }
 
