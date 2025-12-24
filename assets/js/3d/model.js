@@ -49,22 +49,13 @@ export function loadModel() {
       glbLightsGroup.name = "GLBLights";
 
       // Find and group lights from GLB - check all possible light types
-      // Use requestIdleCallback to break up the traversal work
-      const processLights = () => {
-        safeTraverse(object, (child) => {
-          if (child.isLight) {
-            glbLights.push(child);
-            glbLightsGroup.add(child);
-            console.log("Found GLB light:", child.name || "Unnamed", child.type, "intensity:", child.intensity);
-          }
-        });
-      };
-      
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(processLights, { timeout: 100 });
-      } else {
-        processLights();
-      }
+      safeTraverse(object, (child) => {
+        if (child.isLight) {
+          glbLights.push(child);
+          glbLightsGroup.add(child);
+          console.log("Found GLB light:", child.name || "Unnamed", child.type, "intensity:", child.intensity);
+        }
+      });
 
       // Also check for lights that might not be detected by isLight
       if (glbLights.length === 0) {

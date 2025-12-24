@@ -12,8 +12,7 @@ function updateResponsiveHeights() {
   const responsiveBlocks = document.querySelectorAll(".block.responsive");
   const rowHeight = getRowHeight();
   // Use 12 rows on mobile, 10 on desktop
-  // Use documentElement.clientWidth for better iOS compatibility
-  const isMobile = (document.documentElement.clientWidth || window.innerWidth) <= 768;
+  const isMobile = window.innerWidth <= 768;
   const rowCount = isMobile ? 12 : 10;
   const fixedHeight = rowHeight * rowCount;
 

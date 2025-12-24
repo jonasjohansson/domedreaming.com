@@ -3,7 +3,7 @@ import { setupLighting } from "./3d/lighting.js";
 import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js";
 import { setupCameraControls } from "./3d/camera.js";
 import { updateMovement } from "./3d/movement.js";
-import { loadModel, fbxMeshes, glbLights, wisdomeModel } from "./3d/model.js";
+import { loadModel, fbxMeshes, glbLights } from "./3d/model.js";
 import {
   loadSettings,
   canvasSettings,
@@ -138,10 +138,22 @@ async function init() {
   window.addEventListener("scroll", updateParallax, { passive: true });
   updateParallax();
   
-  // Start render loop immediately (lightweight, just renders background)
-  // But don't load 3D model until user clicks "Enter the Dome"
-  // This significantly reduces initial payload and TBT
-  startRenderLoop();
+  // Defer 3D model loading to avoid blocking initial render and improve LCP
+  // Use requestIdleCallback if available, otherwise setTimeout
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      loadModel();
+      startRenderLoop();
+    }, { timeout: 2000 });
+  } else {
+    // Fallback: delay by one frame to let initial render complete
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        loadModel();
+        startRenderLoop();
+      }, 100);
+    });
+  }
 }
 
 // Render loop
@@ -151,31 +163,27 @@ function animate(currentTime) {
   const deltaTime = (currentTime - lastTime) / 1000;
   lastTime = currentTime;
 
-  // Only update movement and animations if model is loaded
-  // This allows the render loop to run (showing background) without the model
-  if (wisdomeModel) {
-    updateMovement();
+  updateMovement();
 
-    currentCameraPosition.x = camera.position.x;
-    currentCameraPosition.y = camera.position.y;
-    currentCameraPosition.z = camera.position.z;
-    currentCameraRotation.x = camera.rotation.x;
-    currentCameraRotation.y = camera.rotation.y;
-    currentCameraRotation.z = camera.rotation.z;
+  currentCameraPosition.x = camera.position.x;
+  currentCameraPosition.y = camera.position.y;
+  currentCameraPosition.z = camera.position.z;
+  currentCameraRotation.x = camera.rotation.x;
+  currentCameraRotation.y = camera.rotation.y;
+  currentCameraRotation.z = camera.rotation.z;
 
-    const timeSinceLastSave = currentTime - lastCameraSaveTime;
-    if (timeSinceLastSave >= CAMERA_SAVE_INTERVAL) {
-      Object.assign(startCameraPosition, currentCameraPosition);
-      Object.assign(startCameraRotation, currentCameraRotation);
-      saveSettings(fbxMeshes, glbLights);
-      lastCameraSaveTime = currentTime;
-    }
-
-    updateLEDAnimation(deltaTime);
-    updateTextureRotation(deltaTime);
+  const timeSinceLastSave = currentTime - lastCameraSaveTime;
+  if (timeSinceLastSave >= CAMERA_SAVE_INTERVAL) {
+    Object.assign(startCameraPosition, currentCameraPosition);
+    Object.assign(startCameraRotation, currentCameraRotation);
+    saveSettings(fbxMeshes, glbLights);
+    lastCameraSaveTime = currentTime;
   }
 
-  // Update post-processing and render (always render, even without model)
+  updateLEDAnimation(deltaTime);
+  updateTextureRotation(deltaTime);
+
+  // Update post-processing and render
   updatePostProcessing();
 }
 
@@ -207,12 +215,6 @@ function initDomeMode() {
 
   function enterDomeMode(shouldRequestPointerLock = false) {
     if (body.classList.contains("dome-mode")) return;
-
-    // Load 3D model and start render loop if not already loaded
-    if (!animationFrameId) {
-      loadModel();
-      startRenderLoop();
-    }
 
     body.classList.add("dome-mode");
     // Prevent scrolling when in dome mode

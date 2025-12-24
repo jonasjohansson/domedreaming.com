@@ -22,9 +22,7 @@
   --grid-rows: 10; /* Fixed vertical grid divisions */
   --grid-gap: 0;
   --col-width: calc(100vw / var(--grid-columns));
-  /* iOS Safari fix: use dvh (dynamic viewport height) if supported, fallback to 100vh */
-  --row-height: calc(100dvh / var(--grid-rows));
-  --row-height: calc(100vh / var(--grid-rows)); /* Fallback for browsers without dvh support */
+  --row-height: calc(100vh / var(--grid-rows));
   --half-row-height: calc(var(--row-height) / 2);
   --quarter-row-height: calc(var(--row-height) / 4);
   --third-row-height: calc(var(--row-height) / 3);
