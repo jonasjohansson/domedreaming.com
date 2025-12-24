@@ -20,6 +20,7 @@ import { initDashboard } from "./dashboard.js";
 import { initResponsiveHeights } from "./responsive-height.js";
 import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam } from "./3d/texture.js";
 import { textureRotationSettings } from "./settings.js";
+import { getRowHeight } from "./utils.js";
 
 let animationFrameId = null;
 let lastTime = 0;
@@ -40,9 +41,7 @@ function setCanvasHeight() {
   const canvasWrapper = document.querySelector(".canvas-wrapper");
   if (!canvasContainer || !canvasWrapper) return;
 
-  const rootStyles = getComputedStyle(document.documentElement);
-  const cssRowHeight = parseFloat(rootStyles.getPropertyValue("--row-height"));
-  const rowHeight = !isNaN(cssRowHeight) && cssRowHeight > 0 ? cssRowHeight : window.innerHeight / 10;
+  const rowHeight = getRowHeight();
   const targetHeight = rowHeight * 10;
 
   canvasContainer.style.height = `${targetHeight}px`;

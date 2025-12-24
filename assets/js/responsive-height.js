@@ -3,15 +3,7 @@
  * Makes .block.responsive elements grow in row-height increments based on content
  */
 
-/**
- * Get the row height from CSS
- */
-function getRowHeight() {
-  const rootStyles = getComputedStyle(document.documentElement);
-  const cssRowHeight = rootStyles.getPropertyValue("--row-height");
-  const parsed = parseFloat(cssRowHeight);
-  return !isNaN(parsed) && parsed > 0 ? parsed : window.innerHeight / 10;
-}
+import { getRowHeight } from "./utils.js";
 
 /**
  * Update responsive block heights - fixed to 10 row-heights
