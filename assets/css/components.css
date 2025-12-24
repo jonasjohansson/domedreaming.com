@@ -32,7 +32,7 @@
   width: 40px;
   height: 40px;
   animation: spin 1s linear infinite;
-  margin: 0 auto var(--quarter-row-height);
+  margin: 0 auto;
 }
 
 @keyframes spin {
@@ -48,36 +48,40 @@ main h1 {
   font-size: var(--font-size-base);
   color: var(--color-text);
   font-weight: var(--font-weight-normal);
-  margin-bottom: var(--quarter-row-height);
+  margin: 0;
   letter-spacing: var(--letter-spacing-tight);
+  line-height: var(--line-height-base);
 }
 
 main h2 {
   font-size: var(--font-size-base);
   color: var(--color-text);
   font-weight: var(--font-weight-normal);
-  margin-top: 0;
-  margin-bottom: var(--quarter-row-height);
+  margin: 0;
   letter-spacing: var(--letter-spacing-normal);
+  line-height: var(--line-height-base);
 }
 
 main p {
   font-size: var(--font-size-base);
   color: var(--color-text);
-  line-height: calc(var(--row-height) / 4);
+  line-height: var(--line-height-base);
   font-weight: var(--font-weight-normal);
   letter-spacing: var(--letter-spacing-normal);
-  margin: 0 0 var(--quarter-row-height) 0;
+  margin: 0;
+  margin-bottom: var(--line-height-base);
 }
 
 main p:last-child {
+  margin: 0;
   margin-bottom: 0;
-  padding-bottom: 0;
+  padding: 0;
 }
 
 @media (max-width: 768px) {
   main p {
-    line-height: calc(var(--row-height) / 2);
+    line-height: calc(var(--row-height) / 5); /* Smaller line-height on mobile */
+    margin-bottom: calc(var(--row-height) / 5); /* Same as line-height on mobile */
   }
 }
 

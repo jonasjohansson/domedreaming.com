@@ -33,12 +33,16 @@ function initGridDots() {
 function updateDotsSize() {
   const rootStyles = getComputedStyle(document.documentElement);
 
+  // Use documentElement.clientWidth instead of window.innerWidth for better iOS compatibility
+  // This avoids issues with iOS Safari's dynamic viewport
+  const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+
   // Column width from CSS var (falls back to viewport width / columns)
   const colWidthCSS = rootStyles.getPropertyValue("--col-width");
   if (colWidthCSS) {
-    colWidth = parseFloat(colWidthCSS) || window.innerWidth / gridColumns;
+    colWidth = parseFloat(colWidthCSS) || viewportWidth / gridColumns;
   } else {
-    colWidth = window.innerWidth / gridColumns;
+    colWidth = viewportWidth / gridColumns;
   }
 
   // Row height from CSS var (falls back to colWidth)
@@ -102,10 +106,25 @@ function createDotElements() {
 export function initGridDotsSystem() {
   initGridDots();
 
+  // Debounce resize handler for iOS Safari (address bar show/hide causes frequent resizes)
+  let resizeTimeout;
+  const handleResize = () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+      updateDotsSize();
+      createDotElements();
+    }, 150); // Debounce resize events, especially important for iOS
+  };
+
   // Update on resize to recreate dots for new document size
-  window.addEventListener("resize", () => {
-    updateDotsSize();
-    createDotElements();
+  window.addEventListener("resize", handleResize);
+  // Also listen to orientation change on mobile
+  window.addEventListener("orientationchange", () => {
+    // Longer delay for orientation change to allow viewport to settle
+    setTimeout(() => {
+      updateDotsSize();
+      createDotElements();
+    }, 300);
   });
 
   // Also update when content changes (e.g., images load, content added)
