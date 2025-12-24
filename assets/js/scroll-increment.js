@@ -136,7 +136,7 @@ function handleWheel(e) {
 }
 
 /**
- * Handle touch events for mobile scrolling
+ * Handle touch events for mobile scrolling - prevent default and use incremental scroll
  */
 function handleTouchStart(e) {
   // Don't interfere with dome mode
@@ -156,6 +156,9 @@ function handleTouchMove(e) {
 
   if (e.touches.length !== 1) return;
 
+  // Prevent default scrolling to use our incremental system
+  e.preventDefault();
+
   const touchY = e.touches[0].clientY;
   const deltaY = touchStartY - touchY;
 
@@ -168,6 +171,9 @@ function handleTouchMove(e) {
 function handleTouchEnd(e) {
   // Don't interfere with dome mode
   if (document.body.classList.contains("dome-mode")) return;
+
+  // Prevent default scrolling
+  e.preventDefault();
 
   if (!touchMoved || e.changedTouches.length !== 1) {
     touchMoved = false;
@@ -197,8 +203,6 @@ function handleTouchEnd(e) {
   }
 
   if (scrollDirection !== 0) {
-    // Prevent default scrolling behavior
-    e.preventDefault();
     scrollToRowIncrement(scrollDirection);
   }
 
@@ -218,14 +222,15 @@ export function initScrollIncrement() {
   window.addEventListener("wheel", handleWheel, { passive: false });
 
   // Handle touch events for step-based scrolling (mobile)
-  document.addEventListener("touchstart", handleTouchStart, { passive: true });
-  document.addEventListener("touchmove", handleTouchMove, { passive: true });
+  // Use passive: false to prevent default scrolling and use our incremental system
+  document.addEventListener("touchstart", handleTouchStart, { passive: false });
+  document.addEventListener("touchmove", handleTouchMove, { passive: false });
   document.addEventListener("touchend", handleTouchEnd, { passive: false });
 
   // Handle scroll events to snap to nearest row if user scrolls by other means
+  // On mobile, we prevent default touch scrolling, so this mainly handles programmatic scrolling
   let scrollTimeout = null;
 
-  // Detect if user is actively scrolling (for iOS momentum scrolling)
   window.addEventListener(
     "scroll",
     () => {
@@ -236,11 +241,10 @@ export function initScrollIncrement() {
         clearTimeout(scrollTimeout);
       }
 
-      // On mobile/iOS, wait longer for momentum scrolling to finish
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const delay = isMobile ? 300 : 50; // Longer delay on mobile for momentum scrolling
+      // Shorter delay since we're controlling scrolling on mobile
+      const delay = 50;
 
-      // Snap after a delay to allow natural scroll (and momentum) to complete
+      // Snap after a brief delay
       scrollTimeout = setTimeout(() => {
         handleScroll();
         scrollTimeout = null;
