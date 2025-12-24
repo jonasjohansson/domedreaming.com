@@ -261,12 +261,12 @@ main > section.page-section:nth-of-type(3) {
 /* Column count classes - for multi-column layout */
 .col-2 {
   column-count: 2;
-  column-gap: var(--spacing-md);
+  column-gap: var(--col-width);
 }
 
 .col-3 {
   column-count: 3;
-  column-gap: var(--spacing-md);
+  column-gap: var(--col-width);
 }
 
 /* Break class - column break (not on mobile) */

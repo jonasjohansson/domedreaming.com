@@ -70,9 +70,13 @@ function handleScroll() {
   const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
   const nearestRow = getNearestRowIncrement(scrollTop);
 
+  // On mobile/iOS, use larger tolerance to avoid interfering with momentum scrolling
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const tolerance = isMobile ? 5 : 1; // Larger tolerance on mobile
+
   // If we're not at a row increment, snap to it
   const distance = Math.abs(scrollTop - nearestRow);
-  if (distance > 1) {
+  if (distance > tolerance) {
     snapToNearestRow();
   }
 }
@@ -145,73 +149,25 @@ function handleWheel(e) {
 }
 
 /**
- * Handle touch events for mobile scrolling
+ * Handle touch events for mobile scrolling - iOS Safari compatible
+ * We let native scrolling work and only snap after scroll ends
  */
 function handleTouchStart(e) {
   // Don't interfere with dome mode
   if (document.body.classList.contains("dome-mode")) return;
-
-  // Only handle single touch
-  if (e.touches.length !== 1) return;
-
-  touchStartY = e.touches[0].clientY;
-  touchStartTime = Date.now();
-  touchMoved = false;
+  // Let iOS handle native scrolling - we'll snap after it ends
 }
 
 function handleTouchMove(e) {
   // Don't interfere with dome mode
   if (document.body.classList.contains("dome-mode")) return;
-
-  if (e.touches.length !== 1) return;
-
-  const touchY = e.touches[0].clientY;
-  const deltaY = touchStartY - touchY;
-
-  // If moved significantly, mark as moved
-  if (Math.abs(deltaY) > 10) {
-    touchMoved = true;
-  }
+  // Let iOS handle native scrolling
 }
 
 function handleTouchEnd(e) {
   // Don't interfere with dome mode
   if (document.body.classList.contains("dome-mode")) return;
-
-  if (!touchMoved || e.changedTouches.length !== 1) {
-    touchMoved = false;
-    return;
-  }
-
-  const touchEndY = e.changedTouches[0].clientY;
-  const deltaY = touchStartY - touchEndY;
-  const touchDuration = Date.now() - touchStartTime;
-
-  // Only process if it's a quick swipe gesture
-  if (touchDuration > MAX_SWIPE_TIME) {
-    touchMoved = false;
-    return;
-  }
-
-  // Determine scroll direction based on swipe
-  let scrollDirection = 0;
-  if (Math.abs(deltaY) >= MIN_SWIPE_DISTANCE) {
-    if (deltaY > 0) {
-      // Swiped up - scroll down (next row)
-      scrollDirection = 1;
-    } else {
-      // Swiped down - scroll up (previous row)
-      scrollDirection = -1;
-    }
-  }
-
-  if (scrollDirection !== 0) {
-    // Prevent default scrolling behavior
-    e.preventDefault();
-    scrollToRowIncrement(scrollDirection);
-  }
-
-  touchMoved = false;
+  // Let iOS handle native scrolling - snap will happen via scroll event
 }
 
 /**
@@ -226,28 +182,40 @@ export function initScrollIncrement() {
   // Handle wheel events for step-based scrolling (desktop)
   window.addEventListener("wheel", handleWheel, { passive: false });
 
-  // Handle touch events for step-based scrolling (mobile/iOS)
+  // Handle touch events - but let iOS handle native scrolling
+  // We only snap after scroll ends, not during touch
   document.addEventListener("touchstart", handleTouchStart, { passive: true });
   document.addEventListener("touchmove", handleTouchMove, { passive: true });
-  document.addEventListener("touchend", handleTouchEnd, { passive: false });
+  document.addEventListener("touchend", handleTouchEnd, { passive: true });
 
   // Handle scroll events to snap to nearest row if user scrolls by other means
   let scrollTimeout = null;
+  let isScrollingNative = false;
+  
+  // Detect if user is actively scrolling (for iOS momentum scrolling)
   window.addEventListener(
     "scroll",
     () => {
       if (isScrolling) return;
+
+      // Mark that native scrolling is happening
+      isScrollingNative = true;
 
       // Clear existing timeout
       if (scrollTimeout) {
         clearTimeout(scrollTimeout);
       }
 
-      // Snap after a brief delay to allow natural scroll to complete
+      // On mobile/iOS, wait longer for momentum scrolling to finish
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const delay = isMobile ? 300 : 50; // Longer delay on mobile for momentum scrolling
+
+      // Snap after a delay to allow natural scroll (and momentum) to complete
       scrollTimeout = setTimeout(() => {
+        isScrollingNative = false;
         handleScroll();
         scrollTimeout = null;
-      }, 50);
+      }, delay);
     },
     { passive: true }
   );

@@ -168,6 +168,7 @@ p.small,
 .small {
   font-size: calc(var(--font-size-base) * 0.875) !important;
   opacity: 0.5;
+  line-height: calc(var(--line-height-base) / 2); /* Half the normal line-height */
 }
 
 /* Footer credits - even smaller text */
@@ -180,6 +181,7 @@ p.small,
   p.small,
   .small {
     font-size: calc(var(--font-size-base) * 0.8) !important;
+    line-height: calc(var(--row-height) / 10); /* Half the mobile line-height */
   }
   .page-section:last-of-type p.small {
     font-size: calc(var(--font-size-base) * 0.7) !important;
