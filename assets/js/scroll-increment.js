@@ -13,8 +13,9 @@ const SCROLL_DELAY = 50; // Delay in milliseconds between scroll increments
 let touchStartY = 0;
 let touchStartTime = 0;
 let touchMoved = false;
-const MIN_SWIPE_DISTANCE = 50; // Minimum distance in pixels to trigger scroll
-const MAX_SWIPE_TIME = 500; // Maximum time in ms for a swipe gesture
+let lastTouchY = 0;
+let touchScrollAccumulator = 0; // Accumulate touch movement for continuous scrolling
+const MIN_SWIPE_DISTANCE = 30; // Minimum distance in pixels to trigger first scroll
 
 /**
  * Find the nearest row-height increment to the current scroll position
@@ -146,8 +147,10 @@ function handleTouchStart(e) {
   if (e.touches.length !== 1) return;
 
   touchStartY = e.touches[0].clientY;
+  lastTouchY = touchStartY;
   touchStartTime = Date.now();
   touchMoved = false;
+  touchScrollAccumulator = 0;
 }
 
 function handleTouchMove(e) {
@@ -160,11 +163,31 @@ function handleTouchMove(e) {
   e.preventDefault();
 
   const touchY = e.touches[0].clientY;
-  const deltaY = touchStartY - touchY;
+  const deltaY = lastTouchY - touchY; // Movement since last touch move
+  const totalDeltaY = touchStartY - touchY; // Total movement from start
 
   // If moved significantly, mark as moved
-  if (Math.abs(deltaY) > 10) {
+  if (Math.abs(totalDeltaY) > 10) {
     touchMoved = true;
+  }
+
+  // Accumulate touch movement
+  touchScrollAccumulator += deltaY;
+  lastTouchY = touchY;
+
+  // Check if we've accumulated enough movement for a scroll increment
+  const rowHeight = getRowHeight();
+  const scrollThreshold = rowHeight * 0.3; // Trigger scroll at 30% of row height
+
+  if (Math.abs(touchScrollAccumulator) >= scrollThreshold) {
+    // Determine scroll direction
+    const scrollDirection = touchScrollAccumulator > 0 ? 1 : -1;
+
+    // Trigger scroll increment
+    scrollToRowIncrement(scrollDirection);
+
+    // Reset accumulator (keep remainder for smooth continuous scrolling)
+    touchScrollAccumulator = touchScrollAccumulator % scrollThreshold;
   }
 }
 
@@ -175,38 +198,9 @@ function handleTouchEnd(e) {
   // Prevent default scrolling
   e.preventDefault();
 
-  if (!touchMoved || e.changedTouches.length !== 1) {
-    touchMoved = false;
-    return;
-  }
-
-  const touchEndY = e.changedTouches[0].clientY;
-  const deltaY = touchStartY - touchEndY;
-  const touchDuration = Date.now() - touchStartTime;
-
-  // Only process if it's a quick swipe gesture
-  if (touchDuration > MAX_SWIPE_TIME) {
-    touchMoved = false;
-    return;
-  }
-
-  // Determine scroll direction based on swipe
-  let scrollDirection = 0;
-  if (Math.abs(deltaY) >= MIN_SWIPE_DISTANCE) {
-    if (deltaY > 0) {
-      // Swiped up - scroll down (next row)
-      scrollDirection = 1;
-    } else {
-      // Swiped down - scroll up (previous row)
-      scrollDirection = -1;
-    }
-  }
-
-  if (scrollDirection !== 0) {
-    scrollToRowIncrement(scrollDirection);
-  }
-
+  // Reset touch state
   touchMoved = false;
+  touchScrollAccumulator = 0;
 }
 
 /**
