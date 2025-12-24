@@ -110,7 +110,8 @@
       crossorigin="anonymous" />
     <link
       rel="stylesheet"
-      href="assets/css/main.css" />
+      href="assets/css/main.css"
+      media="all" />
 
     <!-- Preload LCP image -->
     <link
@@ -169,6 +170,7 @@
           <div class="block x-5 w-7 y-9 h-1">
             <button
               id="enter-dome-btn"
+              type="button"
               aria-label="Enter the 3D dome simulator">
               Enter the Dome
             </button>
@@ -187,7 +189,12 @@
             </p>
           </div>
           <div class="block x-5 w-7 y-9 h-1">
-            <button disabled>Join the open call</button>
+            <button
+              type="button"
+              disabled
+              aria-label="Join the open call (currently disabled)">
+              Join the open call
+            </button>
           </div>
 
           <div class="dashboard-block block x-4 w-3 h-2 y-2">
@@ -195,7 +202,9 @@
               src="assets/img/wisdome-stockholm-exterior.jpg"
               alt="Wisdome Stockholm exterior view"
               loading="lazy"
-              decoding="async" />
+              decoding="async"
+              width="600"
+              height="400" />
             <figcaption class="image-caption">Wisdome Stockholm</figcaption>
           </div>
           <div class="dashboard-block block x-2 w-3 h-2 y-7">
@@ -203,7 +212,9 @@
               src="assets/img/wisdome-malmo-exterior.jpeg"
               alt="Wisdome Malmö exterior view"
               loading="lazy"
-              decoding="async" />
+              decoding="async"
+              width="600"
+              height="400" />
             <figcaption class="image-caption">Wisdome Malmö</figcaption>
           </div>
           <div class="dashboard-block block x-11 w-3 h-2 y-8">
@@ -211,7 +222,9 @@
               src="assets/img/wisdome-malmo-visuals.jpg"
               alt="Fulldome visuals at Wisdome Malmö"
               loading="lazy"
-              decoding="async" />
+              decoding="async"
+              width="600"
+              height="400" />
           </div>
           <div class="dashboard-block block x-9 w-4 h-2 y-3">
             <img
