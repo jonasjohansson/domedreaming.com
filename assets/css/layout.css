@@ -302,4 +302,10 @@ main > section.page-section:nth-of-type(3) {
   .break {
     break-before: auto;
   }
+
+  /* Responsive page-sections are 12 rows high on mobile */
+  .page-section:has(.responsive) {
+    height: calc(var(--row-height) * 12);
+    min-height: calc(var(--row-height) * 12);
+  }
 }

@@ -6,15 +6,18 @@
 import { getRowHeight } from "./utils.js";
 
 /**
- * Update responsive block heights - fixed to 10 row-heights
+ * Update responsive block heights - fixed to 10 row-heights (12 on mobile)
  */
 function updateResponsiveHeights() {
   const responsiveBlocks = document.querySelectorAll(".block.responsive");
   const rowHeight = getRowHeight();
-  const fixedHeight = rowHeight * 10; // Fixed 10 row-heights
+  // Use 12 rows on mobile, 10 on desktop
+  const isMobile = window.innerWidth <= 768;
+  const rowCount = isMobile ? 12 : 10;
+  const fixedHeight = rowHeight * rowCount;
 
   responsiveBlocks.forEach((block) => {
-    // Set fixed height to 10 row-heights
+    // Set fixed height based on screen size
     block.style.height = `${fixedHeight}px`;
     block.style.minHeight = `${fixedHeight}px`;
   });
