@@ -22,7 +22,7 @@ import { initASCIIDecorative } from "./ascii-decorative.js";
 import { initParallaxLayer } from "./parallax-layer.js";
 import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam } from "./3d/texture.js";
 import { textureRotationSettings } from "./settings.js";
-import { getRowHeight } from "./utils.js";
+import { getRowHeight, updateViewportHeightCSS } from "./utils.js";
 
 let animationFrameId = null;
 let lastTime = 0;
@@ -100,6 +100,9 @@ async function init() {
   // Load settings first
   await loadSettings();
 
+  // Update viewport height CSS for iOS Safari address bar fix
+  updateViewportHeightCSS();
+
   // Initialize UI elements first (non-blocking, critical for LCP)
   initScrollIncrement();
   initGridDotsSystem();
@@ -134,7 +137,25 @@ async function init() {
   }
 
   setCanvasHeight();
-  window.addEventListener("resize", setCanvasHeight);
+  
+  // Update viewport height on resize (important for iOS Safari address bar)
+  const handleResize = () => {
+    updateViewportHeightCSS();
+    setCanvasHeight();
+  };
+  window.addEventListener("resize", handleResize);
+  
+  // Also listen to visualViewport resize for iOS Safari
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", handleResize);
+  }
+  
+  // Listen to orientation change
+  window.addEventListener("orientationchange", () => {
+    // Delay to allow viewport to settle
+    setTimeout(handleResize, 100);
+  });
+  
   window.addEventListener("scroll", updateParallax, { passive: true });
   updateParallax();
   
@@ -223,7 +244,9 @@ function initDomeMode() {
     // Set canvas to full viewport height in dome mode
     const canvasContainer = document.getElementById("canvas-container");
     if (canvasContainer) {
-      canvasContainer.style.height = "100vh";
+      // Use the actual viewport height CSS variable
+      const actualVh = getComputedStyle(document.documentElement).getPropertyValue("--actual-vh");
+      canvasContainer.style.height = actualVh || "100vh";
       canvasContainer.style.width = "100vw";
     }
 

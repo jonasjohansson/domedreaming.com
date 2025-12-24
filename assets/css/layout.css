@@ -12,7 +12,7 @@
 #canvas-container {
   grid-column: 1 / -1;
   width: 100%;
-  height: 100vh;
+  height: var(--actual-vh);
   position: relative;
   opacity: 1;
   overflow: hidden;
@@ -103,7 +103,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   left: 0;
   width: 100%;
   max-width: 100%;
-  min-height: 100vh;
+  min-height: var(--actual-vh);
   pointer-events: none;
   z-index: 4;
   display: grid;
@@ -133,12 +133,12 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   top: 0;
   left: 0;
   width: 100vw;
-  height: calc(100vh * 5);
+  height: calc(var(--actual-vh) * 5);
   pointer-events: none;
   z-index: 5;
   display: grid;
   grid-template-columns: repeat(var(--grid-columns), 1fr);
-  grid-auto-rows: calc(100vh / 8);
+  grid-auto-rows: calc(var(--actual-vh) / 8);
   column-gap: var(--grid-gap);
   row-gap: 0;
   will-change: transform;
@@ -218,13 +218,13 @@ body.dome-mode .canvas-wrapper {
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: var(--actual-vh);
   z-index: 10000;
   transition: opacity var(--transition-normal);
 }
 
 body.dome-mode #canvas-container {
-  height: 100vh !important;
+  height: var(--actual-vh) !important;
   width: 100vw !important;
 }
 

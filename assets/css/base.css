@@ -22,7 +22,9 @@
   --grid-rows: 10; /* Fixed vertical grid divisions */
   --grid-gap: 0;
   --col-width: calc(100vw / var(--grid-columns));
-  --row-height: calc(100vh / var(--grid-rows));
+  /* Use actual viewport height (set via JS) or fallback to 100vh */
+  --actual-vh: 100vh;
+  --row-height: calc(var(--actual-vh) / var(--grid-rows));
   --half-row-height: calc(var(--row-height) / 2);
   --quarter-row-height: calc(var(--row-height) / 4);
   --third-row-height: calc(var(--row-height) / 3);
@@ -188,7 +190,7 @@ body::before {
   top: 0;
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: var(--actual-vh);
   background-image: radial-gradient(circle, var(--color-dot) 1px, transparent 1px);
   background-size: var(--col-width) var(--row-height);
   background-position: calc(var(--col-width) / 2) calc(var(--row-height) / 2);
@@ -204,7 +206,7 @@ body::before {
   left: 0;
   width: 100%;
   max-width: 100%;
-  min-height: 100vh;
+  min-height: var(--actual-vh);
   pointer-events: none;
   z-index: 10002; /* Above all page content and GUI */
   overflow: hidden;
