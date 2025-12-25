@@ -96,12 +96,7 @@ export function createColorGUI() {
     if (settings.pageColorSettings.textColor) {
       pageColorsObj.textColor = settings.pageColorSettings.textColor;
       updateCSSVariable("--color-text", settings.pageColorSettings.textColor);
-      const main = document.querySelector("main");
-      if (main) main.style.color = settings.pageColorSettings.textColor;
-      const intro = document.querySelector("section.intro");
-      if (intro) intro.style.color = settings.pageColorSettings.textColor;
-      const introText = document.querySelector(".intro-text");
-      if (introText) introText.style.color = settings.pageColorSettings.textColor;
+      // Color is set on body and will be inherited, no inline styles needed
     }
     if (settings.pageColorSettings.dotColor) {
       pageColorsObj.dotColor = settings.pageColorSettings.dotColor;
@@ -122,12 +117,7 @@ export function createColorGUI() {
   textColorControl.name("Text Color");
   textColorControl.onChange((value) => {
     updateCSSVariable("--color-text", value);
-    const main = document.querySelector("main");
-    if (main) main.style.color = value;
-    const intro = document.querySelector("section.intro");
-    if (intro) intro.style.color = value;
-    const introText = document.querySelector(".intro-text");
-    if (introText) introText.style.color = value;
+    // Color is set on body and will be inherited, no inline styles needed
     settings.pageColorSettings.textColor = value;
     settings.saveSettings(fbxMeshes, glbLights);
   });

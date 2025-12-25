@@ -136,6 +136,7 @@
 /* Images should not show pointer cursor */
 img {
   cursor: default;
+  border-radius: 16px;
 }
 
 html {

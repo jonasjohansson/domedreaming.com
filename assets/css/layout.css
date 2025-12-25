@@ -77,7 +77,6 @@ main {
 
 .grid-overlay .block p {
   font-size: var(--font-size-base);
-  color: var(--color-text);
   margin: 0;
   opacity: var(--opacity-muted);
   line-height: var(--line-height-base);
@@ -159,7 +158,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
 
 a:link,
 a:visited {
-  color: var(--color-text);
+  color: inherit;
   text-decoration: underline;
   cursor: pointer;
 }

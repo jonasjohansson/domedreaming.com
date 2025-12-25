@@ -319,12 +319,7 @@ export function applyPageColors() {
   document.documentElement.style.setProperty("--color-text", pageColorSettings.textColor);
   document.documentElement.style.setProperty("--color-dot", pageColorSettings.dotColor);
   document.body.style.backgroundColor = pageColorSettings.backgroundColor;
-  const main = document.querySelector("main");
-  if (main) main.style.color = pageColorSettings.textColor;
-  const intro = document.querySelector("section.intro");
-  if (intro) intro.style.color = pageColorSettings.textColor;
-  const introText = document.querySelector(".intro-text");
-  if (introText) introText.style.color = pageColorSettings.textColor;
+  // Color is set on body and will be inherited by all elements, no inline styles needed
   // Apply blend mode to canvas wrapper
   const canvasWrapper = document.querySelector(".canvas-wrapper");
   if (canvasWrapper && pageColorSettings.blendMode) {
