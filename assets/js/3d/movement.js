@@ -40,11 +40,12 @@ export function updateMovement() {
   if (keys["s"]) movement.add(forward.clone().multiplyScalar(-currentMoveSpeed));
   if (keys["a"]) movement.add(right.clone().multiplyScalar(-currentMoveSpeed));
   if (keys["d"]) movement.add(right.clone().multiplyScalar(currentMoveSpeed));
-  // Touch controls
-  if (touchMovement.forward) movement.add(forward.clone().multiplyScalar(currentMoveSpeed));
-  if (touchMovement.backward) movement.add(forward.clone().multiplyScalar(-currentMoveSpeed));
-  if (touchMovement.left) movement.add(right.clone().multiplyScalar(-currentMoveSpeed));
-  if (touchMovement.right) movement.add(right.clone().multiplyScalar(currentMoveSpeed));
+  // Touch controls - double speed for mobile
+  const touchMoveSpeed = currentMoveSpeed * 2;
+  if (touchMovement.forward) movement.add(forward.clone().multiplyScalar(touchMoveSpeed));
+  if (touchMovement.backward) movement.add(forward.clone().multiplyScalar(-touchMoveSpeed));
+  if (touchMovement.left) movement.add(right.clone().multiplyScalar(-touchMoveSpeed));
+  if (touchMovement.right) movement.add(right.clone().multiplyScalar(touchMoveSpeed));
 
   if (movement.length() === 0) return;
 

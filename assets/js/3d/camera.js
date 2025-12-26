@@ -100,8 +100,9 @@ export function setupCameraControls() {
       if (!document.body.classList.contains("dome-mode") || !modelLoaded) return;
       event.preventDefault();
       
-      // Single touch = camera rotation
-      if (event.touches.length === 1 && cameraTouchId !== null) {
+      // Camera rotation - works with single touch anywhere on screen
+      // Also allow rotation with first touch even when second touch is added (for moving forward)
+      if (cameraTouchId !== null) {
         const touch = Array.from(event.touches).find(t => t.identifier === cameraTouchId);
         if (touch) {
           const deltaX = touch.clientX - touchStartX;
