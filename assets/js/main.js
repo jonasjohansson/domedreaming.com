@@ -250,11 +250,22 @@ function initDomeMode() {
       canvasContainer.style.width = "100vw";
     }
 
-    if (shouldRequestPointerLock && canvas) {
+    // Only request pointer lock on desktop (not mobile)
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+                     ('ontouchstart' in window) || 
+                     (navigator.maxTouchPoints > 0);
+    
+    if (shouldRequestPointerLock && canvas && !isMobile) {
       const requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
       if (requestPointerLock) {
         requestPointerLock.call(canvas);
       }
+    }
+    
+    // On mobile, enable touch controls immediately
+    if (isMobile) {
+      // Touch controls are already set up in camera.js, just need to ensure they're active
+      // The touch event listeners check for dome-mode class, so they'll work now
     }
   }
 
@@ -287,8 +298,14 @@ function initDomeMode() {
   };
 
   if (enterDomeBtn && canvas) {
+    // Support both click and touch events
     enterDomeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
+      enterDomeMode(true);
+    });
+    enterDomeBtn.addEventListener("touchend", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
       enterDomeMode(true);
     });
   }
@@ -300,12 +317,17 @@ function initDomeMode() {
     }
   });
 
-  // Exit dome mode when pointer lock is released
+  // Exit dome mode when pointer lock is released (desktop only)
   function onPointerLockChange() {
     const isLocked =
       canvas &&
       (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas);
-    if (!isLocked && body.classList.contains("dome-mode")) {
+    // Only exit on pointer lock release if we're on desktop
+    // On mobile, we don't use pointer lock, so don't exit dome mode when it's released
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+                     ('ontouchstart' in window) || 
+                     (navigator.maxTouchPoints > 0);
+    if (!isLocked && body.classList.contains("dome-mode") && !isMobile) {
       exitDomeMode();
     }
   }

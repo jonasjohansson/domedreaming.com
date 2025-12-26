@@ -7,6 +7,14 @@ import { hotspots } from "./model.js";
 
 let navMeshQuery = null;
 
+// Touch movement state
+export let touchMovement = {
+  forward: false,
+  backward: false,
+  left: false,
+  right: false
+};
+
 export function setNavMeshQuery(query) {
   navMeshQuery = query;
 }
@@ -27,10 +35,16 @@ export function updateMovement() {
 
   const movement = new THREE.Vector3();
   const currentMoveSpeed = settings.moveSpeed;
+  // Keyboard controls
   if (keys["w"]) movement.add(forward.clone().multiplyScalar(currentMoveSpeed));
   if (keys["s"]) movement.add(forward.clone().multiplyScalar(-currentMoveSpeed));
   if (keys["a"]) movement.add(right.clone().multiplyScalar(-currentMoveSpeed));
   if (keys["d"]) movement.add(right.clone().multiplyScalar(currentMoveSpeed));
+  // Touch controls
+  if (touchMovement.forward) movement.add(forward.clone().multiplyScalar(currentMoveSpeed));
+  if (touchMovement.backward) movement.add(forward.clone().multiplyScalar(-currentMoveSpeed));
+  if (touchMovement.left) movement.add(right.clone().multiplyScalar(-currentMoveSpeed));
+  if (touchMovement.right) movement.add(right.clone().multiplyScalar(currentMoveSpeed));
 
   if (movement.length() === 0) return;
 
