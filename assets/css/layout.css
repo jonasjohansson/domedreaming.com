@@ -189,6 +189,12 @@ main button {
   border-radius: 16px;
 }
 
+/* Buttons with small text inside use column layout */
+main button:has(.small) {
+  flex-direction: column;
+  gap: 4px;
+}
+
 main button:hover {
   background-color: var(--color-text);
   color: var(--color-bg);
@@ -198,6 +204,28 @@ main button[disabled] {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+/* Buttons container for side-by-side layout */
+.button-group {
+  display: flex;
+  gap: var(--col-width);
+  justify-content: center;
+  align-items: stretch;
+}
+
+.button-group button {
+  flex: 1;
+  max-width: calc(var(--col-width) * 4);
+}
+
+main button .small {
+  font-size: calc(var(--font-size-base) * 0.875);
+  opacity: 0.7;
+  display: block;
+  line-height: 1.2;
+  text-transform: uppercase;
+  letter-spacing: var(--letter-spacing-wide);
 }
 
 body.dome-mode .dashboard-overlay {
@@ -249,13 +277,10 @@ main .block {
 }
 
 .page-section {
+  position: relative;
   height: calc(var(--row-height) * 10);
   min-height: calc(var(--row-height) * 10);
   background-color: inherit;
-}
-
-main > section.page-section:first-of-type {
-  background-color: rgba(70, 52, 52, 1);
 }
 
 main > section.page-section:first-of-type .page-content {
@@ -266,18 +291,6 @@ main > section.page-section:first-of-type .page-content {
 main > section.page-section:first-of-type .page-content p {
   line-height: 1.4;
   margin-bottom: calc(var(--font-size-base) * 1.4);
-}
-
-main > section.page-section:nth-of-type(2) {
-  background-color: #21272f;
-}
-
-main > section.page-section:nth-of-type(2) .page-content {
-  background-color: inherit;
-}
-
-main > section.page-section:nth-of-type(3) {
-  background-color: rgba(46, 47, 32, 1);
 }
 
 /* Color class for inheriting background color */
@@ -304,6 +317,10 @@ main > section.page-section:nth-of-type(3) {
 
 .bg-5 {
   background-color: #333333;
+}
+
+.bg-6 {
+  background-color: #1a1a1a;
 }
 
 /* Column count classes - for multi-column layout */

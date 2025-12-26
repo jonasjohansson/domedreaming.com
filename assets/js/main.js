@@ -111,13 +111,16 @@ async function init() {
   applyDomeDreamingFont();
 
   // Defer heavy 3D operations to avoid blocking main thread
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      setupLighting();
-      initPostProcessing();
-      setupCameraControls();
-      initParallaxLayer();
-    }, { timeout: 1000 });
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        setupLighting();
+        initPostProcessing();
+        setupCameraControls();
+        initParallaxLayer();
+      },
+      { timeout: 1000 }
+    );
   } else {
     setTimeout(() => {
       setupLighting();
@@ -137,35 +140,38 @@ async function init() {
   }
 
   setCanvasHeight();
-  
+
   // Update viewport height on resize (important for iOS Safari address bar)
   const handleResize = () => {
     updateViewportHeightCSS();
     setCanvasHeight();
   };
   window.addEventListener("resize", handleResize);
-  
+
   // Also listen to visualViewport resize for iOS Safari
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", handleResize);
   }
-  
+
   // Listen to orientation change
   window.addEventListener("orientationchange", () => {
     // Delay to allow viewport to settle
     setTimeout(handleResize, 100);
   });
-  
+
   window.addEventListener("scroll", updateParallax, { passive: true });
   updateParallax();
-  
+
   // Defer 3D model loading to avoid blocking initial render and improve LCP
   // Use requestIdleCallback if available, otherwise setTimeout
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      loadModel();
-      startRenderLoop();
-    }, { timeout: 2000 });
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        loadModel();
+        startRenderLoop();
+      },
+      { timeout: 2000 }
+    );
   } else {
     // Fallback: delay by one frame to let initial render complete
     requestAnimationFrame(() => {
@@ -251,17 +257,15 @@ function initDomeMode() {
     }
 
     // Only request pointer lock on desktop (not mobile)
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-                     ('ontouchstart' in window) || 
-                     (navigator.maxTouchPoints > 0);
-    
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
     if (shouldRequestPointerLock && canvas && !isMobile) {
       const requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
       if (requestPointerLock) {
         requestPointerLock.call(canvas);
       }
     }
-    
+
     // On mobile, enable touch controls immediately
     if (isMobile) {
       // Touch controls are already set up in camera.js, just need to ensure they're active
@@ -324,9 +328,7 @@ function initDomeMode() {
       (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas);
     // Only exit on pointer lock release if we're on desktop
     // On mobile, we don't use pointer lock, so don't exit dome mode when it's released
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-                     ('ontouchstart' in window) || 
-                     (navigator.maxTouchPoints > 0);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
     if (!isLocked && body.classList.contains("dome-mode") && !isMobile) {
       exitDomeMode();
     }

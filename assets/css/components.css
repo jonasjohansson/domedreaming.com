@@ -92,6 +92,7 @@ main strong {
 }
 
 .dome-dreaming-text {
+  font-family: "KovskijDisplay", var(--font-family);
   font-weight: normal;
   text-transform: uppercase;
 }
@@ -133,7 +134,7 @@ main strong {
 
 .image-caption {
   position: absolute;
-  bottom: calc(-1 * var(--quarter-row-height));
+  top: 100%;
   left: 0;
   mix-blend-mode: difference;
   font-size: 12px;
@@ -151,6 +152,7 @@ main strong {
 p.large,
 .large {
   font-size: calc(var(--font-size-base) * 1.5) !important;
+  line-height: 1.4; /* Relative line-height for better readability with larger text */
 }
 
 @media (max-width: 768px) {
