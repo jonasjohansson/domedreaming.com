@@ -17,14 +17,6 @@
   align-items: stretch;
 }
 
-#dashboard-overlay {
-  z-index: 15;
-}
-
-#page-2 .grid-overlay {
-  z-index: 20;
-}
-
 .dashboard-block {
   background-color: transparent;
   border-radius: 16px;
@@ -42,25 +34,6 @@
   opacity: 0.5;
   justify-self: stretch;
   align-self: stretch;
-}
-
-#page-2 .grid-overlay .dashboard-block {
-  z-index: 20;
-  opacity: 0.5;
-}
-
-#page-2 .grid-overlay .dashboard-block:hover {
-  z-index: 100;
-  opacity: 0.8;
-}
-
-#dashboard-overlay .dashboard-block {
-  opacity: 0.5;
-}
-
-#dashboard-overlay .dashboard-block:hover {
-  opacity: 0.7;
-  z-index: 100;
 }
 
 .dashboard-block:hover,
