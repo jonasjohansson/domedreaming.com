@@ -35,7 +35,8 @@ export function getRowHeight() {
   if (!isNaN(parsed) && parsed > 0) {
     return parsed;
   }
-  // Fallback: use actual viewport height instead of innerHeight
-  return getActualViewportHeight() / 10;
+  // Fallback: use actual viewport height divided by grid rows (16)
+  const gridRows = parseFloat(rootStyles.getPropertyValue("--grid-rows")) || 16;
+  return getActualViewportHeight() / gridRows;
 }
 
