@@ -312,7 +312,7 @@ main > section.page-section:first-of-type .page-content p {
   }
 
   .page-section:has(.responsive) {
-    height: calc(var(--row-height) * 12);
-    min-height: calc(var(--row-height) * 12);
+    height: calc(var(--row-height) * 14);
+    min-height: calc(var(--row-height) * 14);
   }
 }

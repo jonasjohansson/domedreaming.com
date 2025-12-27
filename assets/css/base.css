@@ -211,8 +211,8 @@ body::before {
   display: block;
   pointer-events: none !important;
   cursor: default;
-  animation: dotFade 2s ease-in-out infinite;
-  animation-delay: calc(var(--dot-delay, 0) * var(--dot-animation-delay-constant));
+  /* animation: dotFade 2s ease-in-out infinite;
+  animation-delay: calc(var(--dot-delay, 0) * var(--dot-animation-delay-constant)); */
 }
 
 .top {
