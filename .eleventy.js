@@ -12,9 +12,13 @@ module.exports = async function (eleventyConfig) {
       appType: "mpa",
       server: {
         middlewareMode: true,
+        fs: {
+          // Don't serve files from docs directory - it's the output directory
+          deny: ["**/docs/**"],
+        },
       },
       optimizeDeps: {
-        // Exclude modules that are loaded via import maps
+        // Exclude modules that are loaded via import maps from CDN
         exclude: [
           "three",
           "@recast-navigation/core",
@@ -22,6 +26,7 @@ module.exports = async function (eleventyConfig) {
           "@recast-navigation/generators",
           "@recast-navigation/three",
         ],
+        entries: [], // Don't scan dependencies from the output directory
       },
       // Set root to current directory so Vite resolves paths correctly
       root: __dirname,
@@ -48,59 +53,35 @@ module.exports = async function (eleventyConfig) {
           },
         },
       },
-      resolve: {
-        alias: [
-          // Use array format to ensure order - more specific first
-          {
-            find: /^three\/addons\/postprocessing\/(.*)$/,
-            replacement: path.resolve(__dirname, "assets/js/libs/three/addons/postprocessing/$1"),
+      plugins: [
+        // Plugin to mark three and recast-navigation as external (loaded via import maps from CDN)
+        {
+          name: "externalize-import-map-modules",
+          resolveId(id, importer) {
+            // Skip processing files in the output directory (docs)
+            if (importer && (importer.includes("/docs/") || importer.includes("\\docs\\"))) {
+              // Mark all external modules as external when importing from docs
+              if (id === "three" || id.startsWith("three/") || id.startsWith("@recast-navigation/")) {
+                return { id, external: true };
+              }
+            }
+            // Mark three and three/addons as external (loaded from CDN)
+            if (id === "three" || id.startsWith("three/")) {
+              return { id, external: true };
+            }
+            // Mark recast-navigation modules as external (loaded from CDN)
+            if (id.startsWith("@recast-navigation/")) {
+              return { id, external: true };
+            }
           },
-          {
-            find: /^three\/addons\/shaders\/(.*)$/,
-            replacement: path.resolve(__dirname, "assets/js/libs/three/addons/shaders/$1"),
+          load(id) {
+            // Don't process files in the docs directory - they're already built
+            if (id.includes("/docs/") || id.includes("\\docs\\")) {
+              return null;
+            }
           },
-          {
-            find: /^three\/addons\/lines\/(.*)$/,
-            replacement: path.resolve(__dirname, "assets/js/libs/three/addons/lines/$1"),
-          },
-          {
-            find: /^three\/addons\/utils\/(.*)$/,
-            replacement: path.resolve(__dirname, "assets/js/libs/utils/$1"),
-          },
-          {
-            find: "three/addons/loaders/GLTFLoader.js",
-            replacement: path.resolve(__dirname, "assets/js/libs/three/GLTFLoader.js"),
-          },
-          {
-            find: "three/addons/loaders/DRACOLoader.js",
-            replacement: path.resolve(__dirname, "assets/js/libs/three/loaders/DRACOLoader.js"),
-          },
-          {
-            find: /^three\/addons\/(.*)$/,
-            replacement: path.resolve(__dirname, "assets/js/libs/three/addons/$1"),
-          },
-          {
-            find: /^three$/,
-            replacement: path.resolve(__dirname, "assets/js/libs/three/three.module.js"),
-          },
-          {
-            find: "@recast-navigation/core",
-            replacement: path.resolve(__dirname, "assets/js/libs/recast-navigation/core/index.mjs"),
-          },
-          {
-            find: "@recast-navigation/wasm",
-            replacement: path.resolve(__dirname, "assets/js/libs/recast-navigation/core/recast-navigation.wasm-compat.js"),
-          },
-          {
-            find: "@recast-navigation/generators",
-            replacement: path.resolve(__dirname, "assets/js/libs/recast-navigation/generators/index.mjs"),
-          },
-          {
-            find: "@recast-navigation/three",
-            replacement: path.resolve(__dirname, "assets/js/libs/recast-navigation/three/index.mjs"),
-          },
-        ],
-      },
+        },
+      ],
     },
   });
 

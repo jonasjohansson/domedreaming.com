@@ -181,6 +181,7 @@ main button {
   align-items: center;
   justify-content: center;
   border-radius: 16px;
+  outline: none;
 }
 
 main button:has(.small) {
@@ -188,9 +189,11 @@ main button:has(.small) {
   gap: 4px;
 }
 
-main button:hover {
+main button:hover,
+main button:focus {
   background-color: var(--color-text);
   color: var(--color-bg);
+  outline: none;
 }
 
 main button[disabled] {

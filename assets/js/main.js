@@ -278,6 +278,15 @@ function initDomeMode() {
   }
 
   function exitDomeMode() {
+    // Exit pointer lock first if active
+    if (
+      canvas &&
+      (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas)
+    ) {
+      document.exitPointerLock();
+    }
+    
+    // Then exit dome mode
     if (body.classList.contains("dome-mode")) {
       body.classList.remove("dome-mode");
       document.documentElement.style.overflow = "auto";
@@ -288,12 +297,6 @@ function initDomeMode() {
         // Reset width to default (remove inline style to let CSS handle it)
         canvasContainer.style.width = "";
       }
-    }
-    if (
-      canvas &&
-      (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas)
-    ) {
-      document.exitPointerLock();
     }
   }
 
@@ -314,8 +317,18 @@ function initDomeMode() {
   }
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      exitDomeMode();
+    if (e.key === "Escape" && body.classList.contains("dome-mode")) {
+      // If pointer lock is active, ESC will exit it first, then onPointerLockChange will call exitDomeMode
+      // If pointer lock is not active, exit dome mode directly
+      if (!canvas || 
+          (document.pointerLockElement !== canvas && 
+           document.mozPointerLockElement !== canvas && 
+           document.webkitPointerLockElement !== canvas)) {
+        exitDomeMode();
+      } else {
+        // Pointer lock is active, exit it (which will trigger onPointerLockChange to exit dome mode)
+        document.exitPointerLock();
+      }
     }
   });
 
@@ -324,11 +337,10 @@ function initDomeMode() {
       canvas &&
       (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas);
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    // Only exit dome mode if pointer lock is lost AND we're still in dome mode
-    // Don't exit if user manually exited (body.classList won't have dome-mode)
+    // If pointer lock is lost while in dome mode (user pressed ESC), exit dome mode
     if (!isLocked && body.classList.contains("dome-mode") && !isMobile) {
-      // Don't auto-exit on pointer lock loss - let user exit with ESC
-      // exitDomeMode();
+      // Exit dome mode when pointer lock is lost (user pressed ESC)
+      exitDomeMode();
     }
   }
 
