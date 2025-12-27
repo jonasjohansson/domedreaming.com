@@ -1009,7 +1009,7 @@ if (typeof window !== "undefined") {
   window.GlowGradientEditor.applySettings = (obj, options) => applySettingsObject(obj, options);
   window.GlowGradientEditor.params = params;
   window.GlowGradientEditor.params2 = params2;
-  window.GlowGradientEditor.fetchAndApply = async function (url = "./assets/js/default-settings.json", fetchOptions = {}) {
+  window.GlowGradientEditor.fetchAndApply = async function (url = "./assets/js/core/default-settings.json", fetchOptions = {}) {
     if (typeof fetch !== "function") {
       throw new Error("Fetch API not available in this environment.");
     }

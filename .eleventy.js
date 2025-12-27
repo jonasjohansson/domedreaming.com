@@ -102,9 +102,8 @@ module.exports = async function (eleventyConfig) {
   // Ignore the old index.html since we're using index.njk
   eleventyConfig.ignores.add("index.html");
   
-  // Ignore README files in node_modules and library directories
+  // Ignore README files
   eleventyConfig.ignores.add("**/README.md");
-  eleventyConfig.ignores.add("assets/js/libs/**/README.md");
   
   // Copy static assets that Vite doesn't process
   // In dev mode, Vite needs source files; in build mode, Vite processes them

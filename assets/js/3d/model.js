@@ -3,7 +3,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { scene, camera } from "./scene.js";
 import { getMaterial, safeTraverse, pruneObjectChildren } from "./utils.js";
-import * as settings from "../settings.js";
+import * as settings from "../core/settings.js";
 import { euler, setModelLoaded } from "./camera.js";
 import { setScreenObject, loadDefaultScreenTexture, setupDragAndDrop } from "./texture.js";
 import { verifyNavmeshAtStartPosition, initNavmesh, getNavMeshQuery } from "./navmesh.js";

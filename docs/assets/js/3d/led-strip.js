@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import * as settingsModule from "../settings.js";
+import * as settingsModule from "../core/settings.js";
 
 let ledRimObject = null;
 let ledPixels = [];

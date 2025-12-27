@@ -5,7 +5,7 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { FXAAPass } from "three/addons/postprocessing/FXAAPass.js";
 import { scene, camera, renderer, setResizeHandler } from "./scene.js";
-import { bloomSettings } from "../settings.js";
+import { bloomSettings } from "../core/settings.js";
 
 let composer = null;
 let renderPass = null;

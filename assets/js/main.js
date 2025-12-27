@@ -12,22 +12,21 @@ import {
   startCameraPosition,
   startCameraRotation,
   saveSettings,
-} from "./settings.js";
+} from "./core/settings.js";
 import { updateLEDAnimation } from "./3d/led-strip.js";
-import { initScrollIncrement } from "./scroll-increment.js";
-import { initGridDotsSystem } from "./grid-dots.js";
-import { initDashboard } from "./dashboard.js";
-import { initResponsiveHeights } from "./responsive-height.js";
-import { initASCIIDecorative } from "./ascii-decorative.js";
+import { initScrollIncrement } from "./layout/scroll-increment.js";
+import { initGridDotsSystem } from "./layout/grid-dots.js";
+import { initDashboard } from "./ui/dashboard.js";
+import { initResponsiveHeights } from "./layout/responsive-height.js";
+import { initASCIIDecorative } from "./ui/ascii-decorative.js";
 import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam, loadImage, loadVideo } from "./3d/texture.js";
-import { textureRotationSettings } from "./settings.js";
-import { getRowHeight, updateViewportHeightCSS } from "./utils.js";
+import { textureRotationSettings } from "./core/settings.js";
+import { getRowHeight, updateViewportHeightCSS } from "./core/utils.js";
 
 let animationFrameId = null;
 let lastTime = 0;
 let lastCameraSaveTime = 0;
 const CAMERA_SAVE_INTERVAL = 2000;
-
 
 function setCanvasHeight() {
   // Canvas container height is now handled by CSS (100% of page-section)
@@ -71,7 +70,6 @@ function applyDomeDreamingFont() {
     parent.replaceChild(fragment, textNode);
   });
 }
-
 
 async function init() {
   await loadSettings();
@@ -152,7 +150,6 @@ async function init() {
     setTimeout(handleResize, 100);
   });
 
-
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
       () => {
@@ -215,9 +212,9 @@ function updateTextureRotation(deltaTime) {
         texture.center.set(0.5, 0.5);
       }
     }
-    
+
     texture.rotation -= textureRotationSettings.speed * deltaTime;
-    
+
     while (texture.rotation < 0) {
       texture.rotation += Math.PI * 2;
     }
@@ -244,7 +241,7 @@ function initDomeMode() {
       const actualVh = getComputedStyle(document.documentElement).getPropertyValue("--actual-vh");
       canvasContainer.style.height = actualVh || "100vh";
       canvasContainer.style.width = "100vw";
-      
+
       // Trigger resize to update canvas and camera
       setTimeout(() => {
         window.dispatchEvent(new Event("resize"));
@@ -276,7 +273,7 @@ function initDomeMode() {
     ) {
       document.exitPointerLock();
     }
-    
+
     // Then exit dome mode
     if (body.classList.contains("dome-mode")) {
       body.classList.remove("dome-mode");
@@ -311,10 +308,12 @@ function initDomeMode() {
     if (e.key === "Escape" && body.classList.contains("dome-mode")) {
       // If pointer lock is active, ESC will exit it first, then onPointerLockChange will call exitDomeMode
       // If pointer lock is not active, exit dome mode directly
-      if (!canvas || 
-          (document.pointerLockElement !== canvas && 
-           document.mozPointerLockElement !== canvas && 
-           document.webkitPointerLockElement !== canvas)) {
+      if (
+        !canvas ||
+        (document.pointerLockElement !== canvas &&
+          document.mozPointerLockElement !== canvas &&
+          document.webkitPointerLockElement !== canvas)
+      ) {
         exitDomeMode();
       } else {
         // Pointer lock is active, exit it (which will trigger onPointerLockChange to exit dome mode)

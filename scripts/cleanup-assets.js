@@ -31,8 +31,8 @@ const jsPath = path.join(docsPath, 'js');
 if (fs.existsSync(jsPath)) {
   // Vite processes JS and creates hashed files in /assets/
   // We can remove the original JS files since Vite bundles them
-  // But we need to keep the libs directory for import maps
-  const removeDirs = ['3d', 'shader'];
+  // But we need to keep core/ for default-settings.json and 3d/ for model files
+  const removeDirs = ['layout', 'ui', 'shader'];
   removeDirs.forEach(dir => {
     const dirPath = path.join(jsPath, dir);
     if (fs.existsSync(dirPath)) {
@@ -40,11 +40,11 @@ if (fs.existsSync(jsPath)) {
       console.log(`Removed ${dir} directory`);
     }
   });
-  
-  // Remove individual JS files in js root (but keep libs)
+
+  // Remove individual JS files in js root (but keep main.js and core/)
   const files = fs.readdirSync(jsPath);
   files.forEach(file => {
-    if (file.endsWith('.js') && file !== 'default-settings.json') {
+    if (file.endsWith('.js') && file !== 'main.js') {
       const filePath = path.join(jsPath, file);
       if (fs.statSync(filePath).isFile()) {
         fs.unlinkSync(filePath);
@@ -52,6 +52,20 @@ if (fs.existsSync(jsPath)) {
       }
     }
   });
+
+  // Keep core/ directory and default-settings.json
+  const corePath = path.join(jsPath, 'core');
+  if (fs.existsSync(corePath)) {
+    const coreFiles = fs.readdirSync(corePath);
+    coreFiles.forEach(file => {
+      // Keep default-settings.json, remove JS files
+      if (file.endsWith('.js')) {
+        const filePath = path.join(corePath, file);
+        fs.unlinkSync(filePath);
+        console.log(`Removed core/${file}`);
+      }
+    });
+  }
 }
 
 console.log('Cleanup complete');

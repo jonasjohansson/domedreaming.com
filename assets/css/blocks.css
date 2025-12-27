@@ -166,11 +166,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   gap: 0;
 }
 
-.page-content.responsive .dashboard-block {
-  z-index: 0;
-}
-
-.page-content.responsive .block:not(.dashboard-block) {
+.page-content.responsive .block {
   position: relative;
   z-index: 2;
 }
