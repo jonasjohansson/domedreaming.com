@@ -65,6 +65,29 @@ module.exports = async function (eleventyConfig) {
         },
       },
       plugins: [
+        // Plugin to preserve CNAME file during build
+        {
+          name: "preserve-cname",
+          buildStart() {
+            // Save CNAME before build starts (if it exists)
+            const fs = require("fs");
+            const path = require("path");
+            const cnamePath = path.join(__dirname, "docs", "CNAME");
+            if (fs.existsSync(cnamePath)) {
+              this.cnameContent = fs.readFileSync(cnamePath, "utf8");
+            }
+          },
+          writeBundle() {
+            // Restore CNAME after bundle is written (if it was saved)
+            if (this.cnameContent) {
+              const fs = require("fs");
+              const path = require("path");
+              const cnamePath = path.join(__dirname, "docs", "CNAME");
+              fs.writeFileSync(cnamePath, this.cnameContent, "utf8");
+              console.log("Preserved CNAME file");
+            }
+          },
+        },
         // Plugin to skip processing files in docs and mark external modules
         {
           name: "skip-docs-and-externalize",
