@@ -34,6 +34,8 @@ export function configureTexture(texture) {
   texture.wrapT = THREE.RepeatWrapping;
   texture.repeat.x = -1;
   texture.colorSpace = THREE.SRGBColorSpace;
+  // Set center to (0.5, 0.5) for rotation around center
+  texture.center.set(0.5, 0.5);
   texture.needsUpdate = true;
 }
 

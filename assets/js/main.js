@@ -225,8 +225,22 @@ function updateTextureRotation(deltaTime) {
   const texture = imageTexture || videoTexture;
 
   if (texture) {
-    const rotationSpeed = textureRotationSettings.speed * textureRotationSettings.direction;
-    texture.rotation += rotationSpeed * deltaTime;
+    // Ensure center is set for rotation around center (only once)
+    if (!texture.center || texture.center.x !== 0.5 || texture.center.y !== 0.5) {
+      if (!texture.center) {
+        texture.center = new THREE.Vector2(0.5, 0.5);
+      } else {
+        texture.center.set(0.5, 0.5);
+      }
+    }
+    
+    // Smooth counter-clockwise rotation using deltaTime for frame-rate independence
+    texture.rotation -= textureRotationSettings.speed * deltaTime;
+    
+    // Keep rotation in 0-2π range to prevent overflow (for counter-clockwise)
+    while (texture.rotation < 0) {
+      texture.rotation += Math.PI * 2;
+    }
   }
 }
 

@@ -24,9 +24,8 @@
       "defaultImage": "assets/img/background-text.jpg"
     },
     "textureRotationSettings": {
-      "enabled": false,
-      "speed": 0.1,
-      "direction": 1
+      "enabled": true,
+      "speed": 0.05
     },
     "pageColorSettings": {
       "backgroundColor": "#000000",

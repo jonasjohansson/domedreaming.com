@@ -77,9 +77,8 @@ export let screenSettings = {
 };
 
 export let textureRotationSettings = {
-  enabled: false,
-  speed: 0.1, // radians per second
-  direction: 1, // 1 for clockwise, -1 for counter-clockwise
+  enabled: true,
+  speed: 0.05, // radians per second - clockwise rotation
 };
 
 export let pageBackgroundSettings = {
