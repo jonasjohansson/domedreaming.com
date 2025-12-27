@@ -70,13 +70,13 @@ module.exports = async function (eleventyConfig) {
           name: "skip-docs-and-externalize",
           enforce: "pre", // Run before other plugins
           resolveId(id, importer) {
-            // If the file itself is in docs, don't process it
-            if (id.includes("/docs/") || id.includes("\\docs\\")) {
+            // If the file itself is in docs or _site, don't process it
+            if (id.includes("/docs/") || id.includes("\\docs\\") || id.includes("/_site/") || id.includes("\\_site\\")) {
               return { id, external: true };
             }
-            // Skip processing files in the output directory (docs) - mark all imports as external
-            if (importer && (importer.includes("/docs/") || importer.includes("\\docs\\"))) {
-              // For any import from docs, mark as external so Vite doesn't process
+            // Skip processing files in the output directory (docs or _site) - mark all imports as external
+            if (importer && ((importer.includes("/docs/") || importer.includes("\\docs\\")) || (importer.includes("/_site/") || importer.includes("\\_site\\")))) {
+              // For any import from docs or _site, mark as external so Vite doesn't process
               return { id, external: true };
             }
             // Mark three and three/addons as external (loaded from CDN)
@@ -89,8 +89,8 @@ module.exports = async function (eleventyConfig) {
             }
           },
           load(id) {
-            // Don't process files in the docs directory - they're already built
-            if (id.includes("/docs/") || id.includes("\\docs\\")) {
+            // Don't process files in the docs or _site directories - they're already built
+            if (id.includes("/docs/") || id.includes("\\docs\\") || id.includes("/_site/") || id.includes("\\_site\\")) {
               return null;
             }
           },
@@ -123,10 +123,14 @@ module.exports = async function (eleventyConfig) {
   // Copy other root files
   eleventyConfig.addPassthroughCopy("*.pdf");
 
+  // Use different output directories for dev vs build
+  // Default to _site for dev, use docs for production builds
+  const outputDir = process.env.ELEVENTY_OUTPUT_DIR || "_site";
+
   return {
     dir: {
       input: ".",
-      output: "docs",
+      output: outputDir,
       includes: "_includes",
       data: "_data"
     },
