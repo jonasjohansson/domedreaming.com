@@ -70,12 +70,22 @@ module.exports = async function (eleventyConfig) {
           name: "skip-docs-and-externalize",
           enforce: "pre", // Run before other plugins
           resolveId(id, importer) {
-            // If the file itself is in docs or _site, don't process it
-            if (id.includes("/docs/") || id.includes("\\docs\\") || id.includes("/_site/") || id.includes("\\_site\\")) {
+            // Allow CSS files to be processed even if they're in docs/_site (for @import resolution)
+            if (id.endsWith('.css')) {
+              // Resolve CSS imports relative to the source location
+              if (id.startsWith('./') && importer) {
+                // This is a relative CSS import - let Vite resolve it
+                return null; // Let Vite handle the resolution
+              }
+            }
+            
+            // If the file itself is in docs or _site, don't process it (except CSS)
+            if ((id.includes("/docs/") || id.includes("\\docs\\") || id.includes("/_site/") || id.includes("\\_site\\")) && !id.endsWith('.css')) {
               return { id, external: true };
             }
             // Skip processing files in the output directory (docs or _site) - mark all imports as external
-            if (importer && ((importer.includes("/docs/") || importer.includes("\\docs\\")) || (importer.includes("/_site/") || importer.includes("\\_site\\")))) {
+            // BUT allow CSS files to be processed
+            if (importer && ((importer.includes("/docs/") || importer.includes("\\docs\\")) || (importer.includes("/_site/") || importer.includes("\\_site\\"))) && !id.endsWith('.css')) {
               // For any import from docs or _site, mark as external so Vite doesn't process
               return { id, external: true };
             }
@@ -90,7 +100,8 @@ module.exports = async function (eleventyConfig) {
           },
           load(id) {
             // Don't process files in the docs or _site directories - they're already built
-            if (id.includes("/docs/") || id.includes("\\docs\\") || id.includes("/_site/") || id.includes("\\_site\\")) {
+            // BUT allow CSS files to be processed so @import statements are resolved
+            if ((id.includes("/docs/") || id.includes("\\docs\\") || id.includes("/_site/") || id.includes("\\_site\\")) && !id.endsWith('.css')) {
               return null;
             }
           },
