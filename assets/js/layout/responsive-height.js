@@ -25,12 +25,12 @@ function adjustResponsiveHeights() {
     const originalHeight = section.style.height;
     const originalMinHeight = section.style.minHeight;
     const originalGridRows = section.style.getPropertyValue("--section-grid-rows");
-    
+
     // Set section to auto height and clear the grid-rows variable to get true content measurement
     section.style.height = "auto";
     section.style.minHeight = "auto";
     section.style.removeProperty("--section-grid-rows");
-    
+
     // Force a reflow to ensure measurements are accurate
     section.offsetHeight;
 
@@ -46,12 +46,12 @@ function adjustResponsiveHeights() {
 
     // Calculate how many row-heights we need (round up, can be less than default grid-rows)
     let neededRows = Math.ceil(contentHeight / rowHeight);
-    
+
     // Ensure minimum of 1 row
     neededRows = Math.max(1, neededRows);
-    
+
     // Add one additional row-height for breathing room
-    neededRows++;
+    neededRows = neededRows + 2;
 
     // Set CSS variable for the number of grid rows needed
     section.style.setProperty("--section-grid-rows", neededRows.toString());
@@ -78,9 +78,9 @@ export function initResponsiveHeights() {
       adjustResponsiveHeights();
     }, 100);
   };
-  
+
   window.addEventListener("resize", handleResize);
-  
+
   // Also listen to orientation changes and visual viewport changes (for mobile)
   window.addEventListener("orientationchange", handleResize);
   if (window.visualViewport) {
