@@ -341,7 +341,7 @@ export async function loadSettings(forceFromJSON = false) {
 
 export async function applySettingsToScene() {
   // Apply colors to meshes
-  import("./3d/model.js").then((model) => {
+  import("../3d/model.js").then((model) => {
     if (window.savedColorSettings && model.fbxMeshes) {
       model.fbxMeshes.forEach((item) => {
         const material = getMaterial(item.mesh);
@@ -369,7 +369,7 @@ export async function applySettingsToScene() {
   });
 
   // Update bloom settings
-  import("./3d/postprocessing.js").then((postProc) => {
+  import("../3d/postprocessing.js").then((postProc) => {
     const bloomPass = postProc.getBloomPass();
     if (bloomPass) {
       // Enable/disable bloom based on settings
@@ -386,7 +386,7 @@ export async function applySettingsToScene() {
   });
 
   // Reload LED strip settings
-  import("./3d/led-strip.js").then((ledStrip) => {
+  import("../3d/led-strip.js").then((ledStrip) => {
     ledStrip.loadLEDStripSettings();
     // Apply rim visibility
     if (ledStripSettings.rimVisible !== undefined) {
