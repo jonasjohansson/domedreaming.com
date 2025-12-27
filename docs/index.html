@@ -73,15 +73,15 @@
 <link
   rel="icon"
   type="image/png"
-  href="/assets/png/favicon-96x96.BJpw2EHB.png"
+  href="assets/favicon/favicon-96x96.png"
   sizes="96x96" />
 <link
   rel="icon"
   type="image/svg+xml"
-  href="/assets/svg/favicon.CFM67zAX.svg" />
+  href="assets/favicon/favicon.svg" />
 <link
   rel="apple-touch-icon"
-  href="/assets/png/favicon-96x96.BJpw2EHB.png" />
+  href="assets/favicon/favicon-96x96.png" />
 
 <!-- Resource Hints -->
 <link
@@ -99,32 +99,32 @@
   href="https://fonts.gstatic.com" />
 <link
   rel="preload"
-  href="/assets/woff2/OffBit-Regular.BUl2rdng.woff2"
+  href="assets/fonts/OffBit-Regular.woff2"
   as="font"
   type="font/woff2"
   crossorigin="anonymous" />
 <link
   rel="preload"
-  href="/assets/woff2/OffBit-101Bold.JQCzxZZ0.woff2"
+  href="assets/fonts/OffBit-101Bold.woff2"
   as="font"
   type="font/woff2"
   crossorigin="anonymous" />
 <link
   rel="stylesheet"
-  href="data:text/css;base64,QGltcG9ydCAiLi9iYXNlLmNzcyI7CkBpbXBvcnQgIi4vZG90cy5jc3MiOwpAaW1wb3J0ICIuL2Jsb2Nrcy5jc3MiOwpAaW1wb3J0ICIuL2xheW91dC5jc3MiOwpAaW1wb3J0ICIuL2NvbXBvbmVudHMuY3NzIjsKQGltcG9ydCAiLi9kYXNoYm9hcmQuY3NzIjsK"
+  href="assets/css/main.css"
   media="all" />
+<link
+  rel="stylesheet"
+  href="assets/css/shader.css" />
 
 <!-- Preload LCP image -->
 <link
   rel="preload"
-  href="/assets/jpg/wisdome-stockholm-visuals.CrYrGyhx.jpg"
+  href="assets/img/wisdome-stockholm-visuals.jpg"
   as="image"
   fetchpriority="high" />
 
 <!-- Import map must come before modulepreload and module scripts -->
-
-
-<!-- Preload critical JavaScript modules -->
 <script type="importmap">
   {
     "imports": {
@@ -137,66 +137,68 @@
     }
   }
 </script>
+
+<!-- Preload critical JavaScript modules -->
 <link
   rel="modulepreload"
-  href="/assets/js/main.DcPjFMj7.js" />
+  href="assets/js/main.js" />
 
-    <script type="module" crossorigin src="/assets/js/index.MNkaCgxl.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/css/style.BQ_WivgK.css">
   </head>
   <body>
     <div id="shader_stage">
   <div id="shader_grain"></div>
 </div>
 <main class="grid">
-  <div class="canvas-wrapper grid">
-  <div class="block center x-5 w-8 y-4 h-2">
-    <p>
-      <span class="dome-dreaming-text">dome dreaming</span> fulldome film festival<br />
-      <a
-        href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome%20Dreaming%20Fulldome%20Film%20Festival%20-%20Stockholm&dates=20250507T150000Z/20250509T180000Z&details=Fulldome%20film%20festival%20at%20Tekniska%20Museet&location=Stockholm%2C%20Sweden"
-        target="_blank"
-        rel="noreferrer"
-        >Stockholm, 7–9 May</a
-      >
-      ·
-      <a
-        href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome%20Dreaming%20Fulldome%20Film%20Festival%20-%20Malm%C3%B6&dates=20250512T150000Z/20250513T190000Z&details=Fulldome%20film%20festival%20at%20Malm%C3%B6%20Museer&location=Malm%C3%B6%2C%20Sweden"
-        target="_blank"
-        rel="noreferrer"
-        >Malmö, TBA</a
-      >.<br />Programme announced in February<br />
-      <a href="mailto:info@domedreaming.com">info@domedreaming.com</a>
-    </p>
-  </div>
-  <div class="block center x-5 w-8 y-10 h-2">
-    <p>
-      Scroll to learn more, or enter our dome simulator. Before entering, you can
-      <a
-        href="#"
-        id="upload-file-link"
-        >drag and drop an image or video onto the dome</a
-      >, or
-      <a
-        href="#"
-        id="connect-webcam-link"
-        >connect your webcam</a
-      >. Use WASD keys to move and ESC to exit (desktop only).
-    </p>
-  </div>
-  <div class="block x-5 w-8 y-13 h-2">
-    <button
-      id="enter-dome-btn"
-      type="button"
-      aria-label="Enter the 3D dome simulator">
-      Enter the Dome
-    </button>
+  <section class="page-section grid">
+  <div class="page-content">
+    <div class="block center x-5 w-8 y-4 h-2">
+      <p>
+        <span class="dome-dreaming-text">dome dreaming</span> fulldome film festival<br />
+        <a
+          href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome%20Dreaming%20Fulldome%20Film%20Festival%20-%20Stockholm&dates=20250507T150000Z/20250509T180000Z&details=Fulldome%20film%20festival%20at%20Tekniska%20Museet&location=Stockholm%2C%20Sweden"
+          target="_blank"
+          rel="noreferrer"
+          >Stockholm, 7–9 May</a
+        >
+        ·
+        <a
+          href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome%20Dreaming%20Fulldome%20Film%20Festival%20-%20Malm%C3%B6&dates=20250512T150000Z/20250513T190000Z&details=Fulldome%20film%20festival%20at%20Malm%C3%B6%20Museer&location=Malm%C3%B6%2C%20Sweden"
+          target="_blank"
+          rel="noreferrer"
+          >Malmö, TBA</a
+        >.<br />Programme announced in February<br />
+        <a href="mailto:info@domedreaming.com">info@domedreaming.com</a>
+      </p>
+    </div>
+    <div class="block center x-5 w-8 y-10 h-2">
+      <p>
+        Scroll to learn more, or enter our dome simulator. Before entering, you can
+        <a
+          href="#"
+          id="upload-file-link"
+          >drag and drop an image or video onto the dome</a
+        >, or
+        <a
+          href="#"
+          id="connect-webcam-link"
+          >connect your webcam</a
+        >. Use WASD keys to move and ESC to exit (desktop only).
+      </p>
+    </div>
+    <div class="block x-5 w-8 y-13 h-2">
+      <button
+        id="enter-dome-btn"
+        type="button"
+        aria-label="Enter the 3D dome simulator">
+        Enter the Dome
+      </button>
+    </div>
   </div>
   <div id="canvas-container">
     <div id="drop-zone"></div>
     <div id="loading"><div class="spinner"></div></div>
   </div>
-</div>
+</section>
  <section class="page-section grid bg-1">
   <div class="page-content">
     <div class="block x-4 w-10 h-4 y-6 center large">
@@ -221,7 +223,7 @@
   <div class="page-content">
     <div class="block x-2 w-12 h-13 y-2">
       <img
-        src="/assets/jpg/wisdome-stockholm-exterior.WbaPytTk.jpg"
+        src="assets/img/wisdome-stockholm-exterior.jpg"
         alt="Wisdome Stockholm exterior view"
         loading="lazy"
         decoding="async" />
@@ -229,7 +231,7 @@
     </div>
     <div class="block x-3 w-13 h-13 y-3">
       <img
-        src="/assets/jpeg/wisdome-malmo-exterior.B47qGv2E.jpeg"
+        src="assets/img/wisdome-malmo-exterior.jpeg"
         alt="Wisdome Malmö exterior view"
         loading="lazy"
         decoding="async" />
@@ -289,7 +291,7 @@
   <div class="page-content">
     <div class="block x-2 w-2 h-14 y-2">
       <img
-        src="/assets/png/movie-drome.D8hn1xz_.png"
+        src="assets/img/movie-drome.png"
         alt="Movie-Drome"
         loading="lazy"
         decoding="async" />
@@ -297,7 +299,7 @@
     </div>
     <div class="block x-4 w-2 h-14 y-2">
       <img
-        src="/assets/jpg/la-sat-montreal.DtXeLWk6.jpg"
+        src="assets/img/la-sat-montreal.jpg"
         alt="La SAT Montreal"
         loading="lazy"
         decoding="async" />
@@ -305,7 +307,7 @@
     </div>
     <div class="block x-6 w-2 h-14 y-2">
       <img
-        src="/assets/jpg/the-new-infinity.BMQHd_J8.jpg"
+        src="assets/img/the-new-infinity.jpg"
         alt="The New Infinity"
         loading="lazy"
         decoding="async" />
@@ -314,7 +316,7 @@
 
     <div class="block x-8 w-2 h-14 y-2">
       <img
-        src="/assets/jpg/aavistus-festival.DKEqYVPu.jpg"
+        src="assets/img/aavistus-festival.jpg"
         alt="Aavistus Festival"
         loading="lazy"
         decoding="async"
@@ -324,7 +326,7 @@
     </div>
     <div class="block x-10 w-2 h-14 y-2">
       <img
-        src="/assets/jpg/baltic-analog-lab.CTTznnad.jpg"
+        src="assets/img/baltic-analog-lab.jpg"
         alt="Baltic Analog Lab"
         loading="lazy"
         decoding="async"
@@ -334,7 +336,7 @@
     </div>
     <div class="block x-12 w-2 h-14 y-2">
       <img
-        src="/assets/jpg/nonagon-festival.DrElKvL1.jpg"
+        src="assets/img/nonagon-festival.jpg"
         alt="Nonagon Festival"
         loading="lazy"
         decoding="async"
@@ -344,7 +346,7 @@
     </div>
     <div class="block x-14 w-2 h-14 y-2">
       <img
-        src="/assets/jpg/kokong-festival.C9bqU0uE.jpg"
+        src="assets/img/kokong-festival.jpg"
         alt="Kokong Festival"
         loading="lazy"
         decoding="async"
@@ -434,6 +436,10 @@
 </section>
 
 </main>
+ <script
+  type="module"
+  src="assets/js/main.js"
+  defer></script>
 
   </body>
 </html>
