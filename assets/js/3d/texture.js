@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { configureTexture, applyTextureToScreen, getMaterial } from "./utils.js";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
-import { screenSettings } from "../settings.js";
+import { screenSettings, textureRotationSettings } from "../settings.js";
 
 let screenObject = null;
 let currentVideoTexture = null;
@@ -70,6 +70,10 @@ export function loadImage(file) {
         texture.rotation = 0; // Reset rotation when loading new texture
         applyTextureToScreen(texture, screenObject);
         currentImageTexture = texture;
+        
+        // Disable auto-rotate and reset rotation when user uploads an image
+        textureRotationSettings.enabled = false;
+        if (currentImageTexture) currentImageTexture.rotation = 0;
 
         // Brief flash effect
         const material = getMaterial(screenObject);
@@ -121,6 +125,10 @@ export function loadVideo(file) {
     applyTextureToScreen(videoTexture, screenObject);
     currentVideoTexture = videoTexture;
     currentVideo = video;
+    
+    // Disable auto-rotate and reset rotation when user uploads a video
+    textureRotationSettings.enabled = false;
+    if (currentVideoTexture) currentVideoTexture.rotation = 0;
 
     // Brief flash effect
     const material = getMaterial(screenObject);
@@ -187,6 +195,10 @@ export function connectWebcam() {
         currentVideoTexture = videoTexture;
         currentVideo = video;
         currentWebcamStream = stream;
+        
+        // Disable auto-rotate and reset rotation when webcam is connected
+        textureRotationSettings.enabled = false;
+        if (currentVideoTexture) currentVideoTexture.rotation = 0;
 
         // Brief flash effect
         const material = getMaterial(screenObject);
