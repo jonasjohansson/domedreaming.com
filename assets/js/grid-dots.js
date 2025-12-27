@@ -52,7 +52,7 @@ function updateDotsSize() {
 }
 
 /**
- * Create dot elements grouped by rows - covers full document height
+ * Create dot elements - fixed 16x16 grid
  */
 function createDotElements() {
   if (!dotsContainer) return;
@@ -60,19 +60,9 @@ function createDotElements() {
   // Clear existing dots
   dotsContainer.innerHTML = "";
 
-  // Calculate full document height
-  const documentHeight = Math.max(
-    document.body.scrollHeight,
-    document.body.offsetHeight,
-    document.documentElement.clientHeight,
-    document.documentElement.scrollHeight,
-    document.documentElement.offsetHeight
-  );
+  const totalRows = 16; // Fixed 16 rows
 
-  // Calculate how many rows we need to cover the full document
-  const totalRows = Math.ceil(documentHeight / rowHeight);
-
-  // Create dots directly in the grid - covers full document
+  // Create exactly 16x16 dots (16 columns, 16 rows)
   for (let row = 0; row < totalRows; row++) {
     // Create dots for this row (one per column)
     for (let col = 0; col < gridColumns; col++) {
@@ -94,9 +84,6 @@ function createDotElements() {
       dotsContainer.appendChild(dot);
     }
   }
-
-  // Set container height to match the number of rows
-  dotsContainer.style.height = `${totalRows * rowHeight}px`;
 }
 
 /**
@@ -115,7 +102,7 @@ export function initGridDotsSystem() {
     }, 150); // Debounce resize events, especially important for iOS
   };
 
-  // Update on resize to recreate dots for new document size
+  // Update on resize to recalculate row height
   window.addEventListener("resize", handleResize);
   // Also listen to orientation change on mobile
   window.addEventListener("orientationchange", () => {
@@ -125,51 +112,4 @@ export function initGridDotsSystem() {
       createDotElements();
     }, 300);
   });
-
-  // Also update when content changes (e.g., images load, content added)
-  // Use a MutationObserver to watch for document height changes
-  let lastDocumentHeight = 0;
-
-  function checkDocumentHeight() {
-    const documentHeight = Math.max(
-      document.body.scrollHeight,
-      document.body.offsetHeight,
-      document.documentElement.clientHeight,
-      document.documentElement.scrollHeight,
-      document.documentElement.offsetHeight
-    );
-
-    // Only update if document height actually changed significantly
-    if (Math.abs(documentHeight - lastDocumentHeight) > rowHeight) {
-      lastDocumentHeight = documentHeight;
-      createDotElements();
-    }
-  }
-
-  const observer = new MutationObserver(() => {
-    // Debounce the update
-    if (window.dotsUpdateTimeout) {
-      clearTimeout(window.dotsUpdateTimeout);
-    }
-    window.dotsUpdateTimeout = setTimeout(() => {
-      checkDocumentHeight();
-    }, 500); // Longer debounce to avoid constant updates
-  });
-
-  // Observe body for changes that might affect document height
-  // Only watch for childList changes (elements added/removed), not style/class changes
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true,
-    // Don't watch attributes - they change too frequently
-  });
-
-  // Initialize last height
-  lastDocumentHeight = Math.max(
-    document.body.scrollHeight,
-    document.body.offsetHeight,
-    document.documentElement.clientHeight,
-    document.documentElement.scrollHeight,
-    document.documentElement.offsetHeight
-  );
 }
