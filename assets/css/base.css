@@ -52,6 +52,8 @@
   --transition-fast: 0.15s ease;
   --transition-normal: 0.3s ease;
   --transition-slow: 0.5s ease;
+
+  --dot-animation-delay-constant: 10ms;
 }
 
 @media (max-width: 768px) {
@@ -166,7 +168,7 @@ body::before {
   opacity: 0;
 }
 
-#grid-dots-container {
+#dots {
   position: absolute;
   top: 0;
   left: 0;
@@ -188,17 +190,29 @@ body::before {
   pointer-events: none;
 }
 
-.animated-dot {
+@keyframes dotFade {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.dot {
   width: 1px;
   height: 1px;
   border-radius: 50%;
   background-color: var(--color-dot);
   justify-self: start;
   align-self: start;
-  opacity: 1;
+  opacity: 0.5;
   display: block;
   pointer-events: none !important;
   cursor: default;
+  animation: dotFade 2s ease-in-out infinite;
+  animation-delay: calc(var(--dot-delay, 0) * var(--dot-animation-delay-constant));
 }
 
 .top {

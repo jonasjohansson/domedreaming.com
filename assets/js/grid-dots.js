@@ -13,14 +13,14 @@ let rowHeight = 0;
  */
 function initGridDots() {
   // Remove existing container if any
-  const existingContainer = document.getElementById("grid-dots-container");
+  const existingContainer = document.getElementById("dots");
   if (existingContainer) {
     existingContainer.remove();
   }
 
   // Create container
   dotsContainer = document.createElement("div");
-  dotsContainer.id = "grid-dots-container";
+  dotsContainer.id = "dots";
   document.body.appendChild(dotsContainer);
 
   updateDotsSize();
@@ -81,7 +81,7 @@ function createDotElements() {
     // Create dots for this row (one per column)
     for (let col = 0; col < gridColumns; col++) {
       const dot = document.createElement("div");
-      dot.className = "animated-dot";
+      dot.className = "dot";
       dot.dataset.col = col + 1; // 1-indexed
       dot.dataset.row = row + 1; // 1-indexed
       // Set grid position using data attributes
@@ -89,6 +89,11 @@ function createDotElements() {
       dot.style.gridRow = row + 1;
       // Disable pointer events to prevent hover
       dot.style.pointerEvents = "none";
+      // Set animation delay: data-col + ((data-row - 1) * number of cols)
+      const colNum = col + 1;
+      const rowNum = row + 1;
+      const delayValue = colNum + ((rowNum - 1) * gridColumns);
+      dot.style.setProperty("--dot-delay", delayValue);
 
       rowContainer.appendChild(dot);
     }

@@ -19,7 +19,6 @@ import { initGridDotsSystem } from "./grid-dots.js";
 import { initDashboard } from "./dashboard.js";
 import { initResponsiveHeights } from "./responsive-height.js";
 import { initASCIIDecorative } from "./ascii-decorative.js";
-import { initParallaxLayer } from "./parallax-layer.js";
 import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam } from "./3d/texture.js";
 import { textureRotationSettings } from "./settings.js";
 import { getRowHeight, updateViewportHeightCSS } from "./utils.js";
@@ -29,14 +28,6 @@ let lastTime = 0;
 let lastCameraSaveTime = 0;
 const CAMERA_SAVE_INTERVAL = 2000;
 
-function updateParallax() {
-  const scrollY = window.scrollY || window.pageYOffset || 0;
-  const items = document.querySelectorAll(".parallax-item");
-  items.forEach((item) => {
-    const factor = parseFloat(item.dataset.parallaxFactor || "0.4");
-    item.style.transform = `translateY(${scrollY * factor * -1}px)`;
-  });
-}
 
 function setCanvasHeight() {
   const canvasContainer = document.getElementById("canvas-container");
@@ -108,7 +99,6 @@ async function init() {
         setupLighting();
         initPostProcessing();
         setupCameraControls();
-        initParallaxLayer();
       },
       { timeout: 1000 }
     );
@@ -145,8 +135,6 @@ async function init() {
     setTimeout(handleResize, 100);
   });
 
-  window.addEventListener("scroll", updateParallax, { passive: true });
-  updateParallax();
 
   if ("requestIdleCallback" in window) {
     requestIdleCallback(

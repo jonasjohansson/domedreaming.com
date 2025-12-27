@@ -1,6 +1,5 @@
 import { getMaterial } from "./3d/utils.js";
 
-
 export let constants = {
   cameraHeight: 1.6,
   navmeshSearchBox: { x: 5, y: 10, z: 5 },
@@ -15,7 +14,6 @@ export let constants = {
   ledCount: 384,
   ledRadius: 0.03,
 };
-
 
 export let moveSpeed = 0.02;
 export let cameraSettings = {
@@ -78,7 +76,7 @@ export let screenSettings = {
 
 export let textureRotationSettings = {
   enabled: true,
-  speed: 0.05,
+  speed: 0.02,
 };
 
 export let pageBackgroundSettings = {
@@ -106,7 +104,6 @@ export function setBloomSettings(strength, radius, threshold) {
   bloomSettings.threshold = threshold;
 }
 
-
 async function loadDefaultSettings(forceReload = false) {
   try {
     // Use import.meta.url to get the current module's directory
@@ -116,7 +113,7 @@ async function loadDefaultSettings(forceReload = false) {
     const url = forceReload ? `${jsonUrl}?t=${Date.now()}` : jsonUrl;
     const response = await fetch(url);
     if (!response.ok) {
-      console.warn("Could not load default-settings.json, using hardcoded defaults");
+      console.warn("Could not load data.json, using hardcoded defaults");
       return false;
     }
     const defaultSettings = await response.json();
@@ -137,7 +134,6 @@ async function loadDefaultSettings(forceReload = false) {
     return false;
   }
 }
-
 
 function applySettings(settings) {
   if (settings.moveSpeed !== undefined) moveSpeed = settings.moveSpeed;
@@ -283,7 +279,6 @@ export function applyPageBackgrounds() {
   }
 }
 
-
 function applyVignette() {
   const canvasContainer = document.getElementById("canvas-container");
   if (!canvasContainer) return;
@@ -312,7 +307,6 @@ function applyVignette() {
   canvasContainer.style.webkitMaskComposite = "source-in";
 }
 
-
 export function applyPageColors() {
   document.documentElement.style.setProperty("--color-bg", pageColorSettings.backgroundColor);
   document.documentElement.style.setProperty("--color-text", pageColorSettings.textColor);
@@ -327,7 +321,6 @@ export function applyPageColors() {
   // Apply vignette
   applyVignette();
 }
-
 
 export function applyVignetteSettings() {
   applyVignette();
@@ -356,7 +349,7 @@ export async function loadSettings(forceFromJSON = false) {
       applyPageColors();
     }
   } else if (jsonLoaded) {
-    console.log("Loaded settings from default-settings.json");
+    console.log("Loaded settings from data.json");
     // Ensure page colors are applied after loading from JSON
     applyPageColors();
   }
@@ -364,7 +357,6 @@ export async function loadSettings(forceFromJSON = false) {
   // Apply page backgrounds after loading settings
   applyPageBackgrounds();
 }
-
 
 export async function applySettingsToScene() {
   // Apply colors to meshes
@@ -421,7 +413,6 @@ export async function applySettingsToScene() {
     }
   });
 }
-
 
 export async function reloadFromJSON() {
   await loadSettings(true);
@@ -482,7 +473,6 @@ export function saveSettings(fbxMeshes, glbLights) {
     console.warn("Failed to save settings:", error);
   }
 }
-
 
 export function exportSettingsFile(fbxMeshes, glbLights) {
   try {

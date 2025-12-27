@@ -112,6 +112,9 @@
       rel="stylesheet"
       href="assets/css/main.css"
       media="all" />
+    <link
+      rel="stylesheet"
+      href="assets/css/shader.css" />
 
     <!-- Preload LCP image -->
     <link
@@ -129,6 +132,11 @@
       href="assets/js/libs/three/three.module.js" />
   </head>
   <body>
+    <div id="shader_stage">
+      <canvas id="shader_canvas1"></canvas>
+      <canvas id="shader_canvas2"></canvas>
+      <div id="shader_grain"></div>
+    </div>
     <main class="grid">
       <div class="canvas-wrapper grid">
         <div id="canvas-container">
@@ -273,19 +281,19 @@
         <div class="page-content">
           <div class="block x-2 w-2 h-8 y-2">
             <img
-              src="assets/img/la-sat-montreal.jpg"
-              alt="La SAT Montreal"
-              loading="lazy"
-              decoding="async" />
-            <figcaption class="image-caption">La SAT Montreal</figcaption>
-          </div>
-          <div class="block x-4 w-2 h-8 y-2">
-            <img
               src="assets/img/movie-drome.png"
               alt="Movie-Drome"
               loading="lazy"
               decoding="async" />
             <figcaption class="image-caption">Movie-Drome</figcaption>
+          </div>
+          <div class="block x-4 w-2 h-8 y-2">
+            <img
+              src="assets/img/la-sat-montreal.jpg"
+              alt="La SAT Montreal"
+              loading="lazy"
+              decoding="async" />
+            <figcaption class="image-caption">La SAT Montreal</figcaption>
           </div>
           <div class="block x-6 w-2 h-8 y-2">
             <img
@@ -440,5 +448,20 @@
       type="module"
       src="assets/js/main.js"
       defer></script>
+    <script type="module">
+      await import("./assets/js/shader/shader.js");
+
+      try {
+        const response = await fetch("./assets/js/default-settings.json");
+        if (response.ok) {
+          const data = await response.json();
+          if (data.settings?.shaderSettings && window.GlowGradientEditor?.applySettings) {
+            window.GlowGradientEditor.applySettings(data.settings.shaderSettings);
+          }
+        }
+      } catch (err) {
+        console.warn("ViewerEditor: Failed to load shader settings from default-settings.json:", err);
+      }
+    </script>
   </body>
 </html>
