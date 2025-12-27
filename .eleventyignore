@@ -1,0 +1,18 @@
+# Ignore source files that shouldn't be processed
+assets/background.ai
+assets/models/*.blend
+node_modules/
+.git/
+.vscode/
+.idea/
+*.log
+.DS_Store
+
+# Ignore output directories
+_site/
+docs/
+.11ty-vite/
+
+# Ignore build artifacts
+*.map
+

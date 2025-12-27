@@ -1,11 +1,19 @@
 module.exports = function (eleventyConfig) {
+  // Use gitignore to avoid processing ignored files (performance optimization)
+  eleventyConfig.setUseGitIgnore(true);
+
   // Ignore the old index.html since we're using index.njk
   eleventyConfig.ignores.add("index.html");
   
   // Ignore README files
   eleventyConfig.ignores.add("**/README.md");
+
+  // Ignore source files that shouldn't be in output
+  eleventyConfig.ignores.add("assets/background.ai");
+  eleventyConfig.ignores.add("assets/models/*.blend");
   
   // Copy all static assets including JS/CSS
+  // Note: .blend and .ai source files are excluded via .eleventyignore
   eleventyConfig.addPassthroughCopy({
     "assets/img": "assets/img",
     "assets/fonts": "assets/fonts",
@@ -33,7 +41,9 @@ module.exports = function (eleventyConfig) {
     },
     templateFormats: ["njk", "html", "md"],
     htmlTemplateEngine: "njk",
-    markdownTemplateEngine: "njk"
+    markdownTemplateEngine: "njk",
+    // Performance optimizations
+    dataTemplateEngine: false, // Don't process data files as templates (faster)
   };
 };
 
