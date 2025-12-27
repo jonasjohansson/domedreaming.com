@@ -42,7 +42,7 @@ module.exports = async function (eleventyConfig) {
       // Set root to current directory so Vite resolves paths correctly
       root: __dirname,
       build: {
-        emptyOutDir: true,
+        emptyOutDir: true, // Clear directory before build
         minify: "esbuild", // Minify JS (esbuild is built-in, no extra dependency)
         cssMinify: true, // Minify CSS
         cssCodeSplit: false, // Combine all CSS into a single file

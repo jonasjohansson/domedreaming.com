@@ -3,6 +3,44 @@ const path = require('path');
 
 const docsPath = path.join(__dirname, '../docs');
 const assetsPath = path.join(docsPath, 'assets');
+const sourceAssetsPath = path.join(__dirname, '../assets');
+
+// Copy models directory (Vite's emptyOutDir removes it, so we restore it)
+const sourceModelsPath = path.join(sourceAssetsPath, 'models');
+const destModelsPath = path.join(assetsPath, 'models');
+if (fs.existsSync(sourceModelsPath) && !fs.existsSync(destModelsPath)) {
+  fs.mkdirSync(destModelsPath, { recursive: true });
+  const modelsFiles = fs.readdirSync(sourceModelsPath);
+  modelsFiles.forEach(file => {
+    const sourceFile = path.join(sourceModelsPath, file);
+    const destFile = path.join(destModelsPath, file);
+    if (fs.statSync(sourceFile).isFile()) {
+      fs.copyFileSync(sourceFile, destFile);
+    }
+  });
+  console.log('Restored models directory');
+}
+
+// Copy core directory with default-settings.json (Vite's emptyOutDir removes it, so we restore it)
+const sourceCorePath = path.join(sourceAssetsPath, 'js', 'core');
+const destCorePath = path.join(assetsPath, 'js', 'core');
+if (fs.existsSync(sourceCorePath)) {
+  if (!fs.existsSync(destCorePath)) {
+    fs.mkdirSync(destCorePath, { recursive: true });
+  }
+  const coreFiles = fs.readdirSync(sourceCorePath);
+  coreFiles.forEach(file => {
+    // Only copy JSON files and other non-JS files (JS files are bundled by Vite)
+    if (!file.endsWith('.js')) {
+      const sourceFile = path.join(sourceCorePath, file);
+      const destFile = path.join(destCorePath, file);
+      if (fs.statSync(sourceFile).isFile()) {
+        fs.copyFileSync(sourceFile, destFile);
+        console.log(`Restored core/${file}`);
+      }
+    }
+  });
+}
 
 // Remove individual CSS source files (Vite processes and bundles them)
 // Vite outputs hashed files like style.BQ_WivgK.css (with dot separator)
@@ -63,12 +101,12 @@ if (fs.existsSync(jsPath)) {
     }
   });
 
-  // Keep core/ directory and default-settings.json
+  // Keep core/ directory and default-settings.json (needed at runtime)
   const corePath = path.join(jsPath, 'core');
   if (fs.existsSync(corePath)) {
     const coreFiles = fs.readdirSync(corePath);
     coreFiles.forEach(file => {
-      // Keep default-settings.json, remove JS files
+      // Keep default-settings.json and other non-JS files, remove JS files
       if (file.endsWith('.js')) {
         const filePath = path.join(corePath, file);
         fs.unlinkSync(filePath);
@@ -76,6 +114,21 @@ if (fs.existsSync(jsPath)) {
       }
     });
   }
+  
+  // Keep 3d/ directory for model files (needed at runtime)
+  const threeDPath = path.join(jsPath, '3d');
+  if (fs.existsSync(threeDPath)) {
+    // Don't remove 3d directory - it may contain model files or other assets
+    console.log('Preserved 3d/ directory');
+  }
+}
+
+// Ensure models directory exists (needed for GLB files)
+const modelsPath = path.join(assetsPath, 'models');
+if (!fs.existsSync(modelsPath)) {
+  console.warn('Models directory not found - models may not be copied correctly');
+} else {
+  console.log('Models directory preserved');
 }
 
 console.log('Cleanup complete');
