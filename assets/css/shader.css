@@ -6,13 +6,10 @@
   width: 100vw;
   overflow: hidden;
   isolation: isolate;
-  transform: scale(1.15) translate(2vw, -2vw);
   z-index: 9999;
   pointer-events: none;
 }
 
-#shader_canvas1,
-#shader_canvas2,
 #shader_grain {
   position: absolute;
   top: 0;
@@ -20,19 +17,6 @@
   width: 100vw;
   height: 100vh;
   display: block;
-}
-
-#shader_canvas1 {
-  z-index: 1;
-  pointer-events: none;
-}
-
-#shader_canvas2 {
-  z-index: 2;
-  pointer-events: none;
-}
-
-#shader_grain {
   z-index: 3;
   pointer-events: none;
   opacity: 0;
@@ -41,4 +25,3 @@
   background-repeat: repeat;
   mix-blend-mode: overlay;
 }
-

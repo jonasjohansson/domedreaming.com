@@ -133,8 +133,6 @@
   </head>
   <body>
     <div id="shader_stage">
-      <canvas id="shader_canvas1"></canvas>
-      <canvas id="shader_canvas2"></canvas>
       <div id="shader_grain"></div>
     </div>
     <main class="grid">
@@ -166,7 +164,12 @@
           </div>
           <div class="block v-center x-5 w-7 y-7 h-1">
             <p>
-              Scroll to learn more, or enter our dome simulator. Before entering, you can drag and drop an image or video onto the dome, or
+              Scroll to learn more, or enter our dome simulator. Before entering, you can
+              <a
+                href="#"
+                id="upload-file-link"
+                >drag and drop an image or video onto the dome</a
+              >, or
               <a
                 href="#"
                 id="connect-webcam-link"
@@ -448,20 +451,5 @@
       type="module"
       src="assets/js/main.js"
       defer></script>
-    <script type="module">
-      await import("./assets/js/shader/shader.js");
-
-      try {
-        const response = await fetch("./assets/js/default-settings.json");
-        if (response.ok) {
-          const data = await response.json();
-          if (data.settings?.shaderSettings && window.GlowGradientEditor?.applySettings) {
-            window.GlowGradientEditor.applySettings(data.settings.shaderSettings);
-          }
-        }
-      } catch (err) {
-        console.warn("ViewerEditor: Failed to load shader settings from default-settings.json:", err);
-      }
-    </script>
   </body>
 </html>

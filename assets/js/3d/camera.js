@@ -43,12 +43,6 @@ export function setupCameraControls() {
   document.addEventListener("mozpointerlockchange", onPointerLockChange);
   document.addEventListener("webkitpointerlockchange", onPointerLockChange);
 
-  canvas.addEventListener("click", () => {
-    // Enter dome mode (fade overlays, request pointer lock, disable scroll)
-    if (!isPointerLocked && window.enterDomeModeFromCanvas) {
-      window.enterDomeModeFromCanvas();
-    }
-  });
 
   // Mouse movement
   function onMouseMove(event) {

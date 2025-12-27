@@ -19,7 +19,7 @@ import { initGridDotsSystem } from "./grid-dots.js";
 import { initDashboard } from "./dashboard.js";
 import { initResponsiveHeights } from "./responsive-height.js";
 import { initASCIIDecorative } from "./ascii-decorative.js";
-import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam } from "./3d/texture.js";
+import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam, loadImage, loadVideo } from "./3d/texture.js";
 import { textureRotationSettings } from "./settings.js";
 import { getRowHeight, updateViewportHeightCSS } from "./utils.js";
 
@@ -116,6 +116,32 @@ async function init() {
     webcamLink.addEventListener("click", (e) => {
       e.preventDefault();
       connectWebcam();
+    });
+  }
+
+  const uploadFileLink = document.getElementById("upload-file-link");
+  if (uploadFileLink) {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*,video/*";
+    fileInput.style.display = "none";
+    document.body.appendChild(fileInput);
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        if (file.type.startsWith("image/")) {
+          loadImage(file);
+        } else if (file.type.startsWith("video/")) {
+          loadVideo(file);
+        }
+      }
+      fileInput.value = "";
+    });
+
+    uploadFileLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      fileInput.click();
     });
   }
 
