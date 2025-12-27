@@ -1,17 +1,14 @@
 :root {
-  /* Grid system */
   --grid-columns: 15;
-  --grid-rows: 10; /* Fixed vertical grid divisions */
+  --grid-rows: 10;
   --grid-gap: 0;
   --col-width: calc(100vw / var(--grid-columns));
-  /* Use actual viewport height (set via JS) or fallback to 100vh */
   --actual-vh: 100vh;
   --row-height: calc(var(--actual-vh) / var(--grid-rows));
   --half-row-height: calc(var(--row-height) / 2);
   --quarter-row-height: calc(var(--row-height) / 4);
   --third-row-height: calc(var(--row-height) / 3);
 
-  /* Colors */
   --color-bg: #000000;
   --color-text: #ffecde;
   --color-dot: #ffffff;
@@ -19,52 +16,44 @@
   --line-opacity: 0.3;
   --color-bar: #333333;
 
-  /* Typography - consistent 16px */
   --font-family: "OffBit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   --font-size-base: 16px;
   --font-size-small: 16px;
   --font-size-xs: 16px;
   --font-size-intro: 16px;
-  --line-height-base: 24px; /* Fixed line-height */
+  --line-height-base: 24px;
   --letter-spacing-tight: 0px;
   --letter-spacing-normal: 0.5px;
   --letter-spacing-wide: 2px;
 
-  /* Font weights */
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-bold: 700;
 
-  /* Spacing */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
 
-  /* Border radius */
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-full: 50%;
 
-  /* Z-index layers */
   --z-base: 1;
   --z-dropzone: 10;
   --z-header: 10000;
   --z-dots: 9999;
   --z-loading: 200;
 
-  /* Opacity */
   --opacity-muted: 0.9;
   --opacity-light: 0.3;
 
-  /* Transitions */
   --transition-fast: 0.15s ease;
   --transition-normal: 0.3s ease;
   --transition-slow: 0.5s ease;
 }
 
-/* Mobile: reduce font sizes */
 @media (max-width: 768px) {
   :root {
     --font-size-base: 14px;
@@ -74,7 +63,6 @@
   }
 }
 
-/* Large displays: increase font sizes significantly */
 @media (min-width: 1200px) {
   :root {
     --font-size-base: 20px;
@@ -84,7 +72,6 @@
   }
 }
 
-/* Font faces */
 @font-face {
   font-family: "OffBit";
   src: url("../fonts/OffBit-Regular.woff2") format("woff2");
@@ -127,7 +114,6 @@ html {
   scrollbar-width: none;
   -ms-overflow-style: none;
   height: 100%;
-  /* iOS Safari fix: prevent horizontal scrolling */
   width: 100%;
   max-width: 100%;
   position: relative;
@@ -152,14 +138,13 @@ body {
   padding: 0;
   min-height: 300vh;
   scroll-behavior: auto;
-  /* iOS Safari fix: prevent horizontal scrolling */
   width: 100%;
   max-width: 100%;
 }
 
 @media (max-width: 768px) {
   body {
-    line-height: 1.4; /* Relative line-height on mobile */
+    line-height: 1.4;
   }
 }
 
@@ -182,7 +167,6 @@ body::before {
   opacity: 0;
 }
 
-/* Grid dots - DOM elements */
 #grid-dots-container {
   position: absolute;
   top: 0;
@@ -191,7 +175,7 @@ body::before {
   max-width: 100%;
   min-height: var(--actual-vh);
   pointer-events: none;
-  z-index: 10002; /* Above all page content and GUI */
+  z-index: 10002;
   overflow: hidden;
   display: grid;
   grid-template-columns: repeat(15, 1fr);
@@ -372,7 +356,6 @@ body::before {
   max-width: calc(var(--col-width) * var(--max-cols, 4));
 }
 
-/* Max-width utilities using column widths */
 .mw-1 {
   max-width: calc(var(--col-width) * 1);
 }
@@ -419,7 +402,6 @@ body::before {
   max-width: calc(var(--col-width) * 15);
 }
 
-/* Row utility classes */
 .y-1 {
   grid-row-start: 1;
 }

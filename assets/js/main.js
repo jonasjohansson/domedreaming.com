@@ -27,7 +27,7 @@ import { getRowHeight, updateViewportHeightCSS } from "./utils.js";
 let animationFrameId = null;
 let lastTime = 0;
 let lastCameraSaveTime = 0;
-const CAMERA_SAVE_INTERVAL = 2000; // Save camera position every 2 seconds
+const CAMERA_SAVE_INTERVAL = 2000;
 
 function updateParallax() {
   const scrollY = window.scrollY || window.pageYOffset || 0;
@@ -66,20 +66,16 @@ function applyDomeDreamingFont() {
     }
   }
 
-  // Process each text node
   textNodes.forEach((textNode) => {
     const parent = textNode.parentNode;
     if (!parent) return;
 
     const text = textNode.textContent;
-    // Case-insensitive split that preserves the original case
     const regex = /(dome\s+dreaming)/gi;
     const parts = text.split(regex);
 
-    // Create document fragment with wrapped text
     const fragment = document.createDocumentFragment();
     parts.forEach((part) => {
-      // Check if this part matches "dome dreaming" (case-insensitive)
       if (part && /^dome\s+dreaming$/i.test(part)) {
         const span = document.createElement("span");
         span.className = "dome-dreaming-text";
@@ -90,27 +86,22 @@ function applyDomeDreamingFont() {
       }
     });
 
-    // Replace the original text node with the fragment
     parent.replaceChild(fragment, textNode);
   });
 }
 
-// Initialize everything
+
 async function init() {
-  // Load settings first
   await loadSettings();
 
-  // Update viewport height CSS for iOS Safari address bar fix
   updateViewportHeightCSS();
 
-  // Initialize UI elements first (non-blocking, critical for LCP)
   initScrollIncrement();
   initGridDotsSystem();
   initResponsiveHeights();
   initDashboard();
   applyDomeDreamingFont();
 
-  // Defer heavy 3D operations to avoid blocking main thread
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
       () => {
@@ -130,7 +121,6 @@ async function init() {
     }, 50);
   }
 
-  // Setup webcam link
   const webcamLink = document.getElementById("connect-webcam-link");
   if (webcamLink) {
     webcamLink.addEventListener("click", (e) => {
@@ -141,29 +131,23 @@ async function init() {
 
   setCanvasHeight();
 
-  // Update viewport height on resize (important for iOS Safari address bar)
   const handleResize = () => {
     updateViewportHeightCSS();
     setCanvasHeight();
   };
   window.addEventListener("resize", handleResize);
 
-  // Also listen to visualViewport resize for iOS Safari
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", handleResize);
   }
 
-  // Listen to orientation change
   window.addEventListener("orientationchange", () => {
-    // Delay to allow viewport to settle
     setTimeout(handleResize, 100);
   });
 
   window.addEventListener("scroll", updateParallax, { passive: true });
   updateParallax();
 
-  // Defer 3D model loading to avoid blocking initial render and improve LCP
-  // Use requestIdleCallback if available, otherwise setTimeout
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
       () => {
@@ -173,7 +157,6 @@ async function init() {
       { timeout: 2000 }
     );
   } else {
-    // Fallback: delay by one frame to let initial render complete
     requestAnimationFrame(() => {
       setTimeout(() => {
         loadModel();
@@ -183,7 +166,6 @@ async function init() {
   }
 }
 
-// Render loop
 function animate(currentTime) {
   animationFrameId = requestAnimationFrame(animate);
 
@@ -210,13 +192,9 @@ function animate(currentTime) {
   updateLEDAnimation(deltaTime);
   updateTextureRotation(deltaTime);
 
-  // Update post-processing and render
   updatePostProcessing();
 }
 
-/**
- * Update texture rotation if enabled
- */
 function updateTextureRotation(deltaTime) {
   if (!textureRotationSettings.enabled) return;
 
@@ -225,7 +203,6 @@ function updateTextureRotation(deltaTime) {
   const texture = imageTexture || videoTexture;
 
   if (texture) {
-    // Ensure center is set for rotation around center (only once)
     if (!texture.center || texture.center.x !== 0.5 || texture.center.y !== 0.5) {
       if (!texture.center) {
         texture.center = new THREE.Vector2(0.5, 0.5);
@@ -234,10 +211,8 @@ function updateTextureRotation(deltaTime) {
       }
     }
     
-    // Smooth counter-clockwise rotation using deltaTime for frame-rate independence
     texture.rotation -= textureRotationSettings.speed * deltaTime;
     
-    // Keep rotation in 0-2π range to prevent overflow (for counter-clockwise)
     while (texture.rotation < 0) {
       texture.rotation += Math.PI * 2;
     }
@@ -249,7 +224,6 @@ function startRenderLoop() {
   animate(lastTime);
 }
 
-// Dome mode functionality
 function initDomeMode() {
   const enterDomeBtn = document.getElementById("enter-dome-btn");
   const body = document.body;
@@ -258,19 +232,15 @@ function initDomeMode() {
     if (body.classList.contains("dome-mode")) return;
 
     body.classList.add("dome-mode");
-    // Prevent scrolling when in dome mode
     document.documentElement.style.overflow = "hidden";
 
-    // Set canvas to full viewport height in dome mode
     const canvasContainer = document.getElementById("canvas-container");
     if (canvasContainer) {
-      // Use the actual viewport height CSS variable
       const actualVh = getComputedStyle(document.documentElement).getPropertyValue("--actual-vh");
       canvasContainer.style.height = actualVh || "100vh";
       canvasContainer.style.width = "100vw";
     }
 
-    // Only request pointer lock on desktop (not mobile)
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
     if (shouldRequestPointerLock && canvas && !isMobile) {
@@ -280,10 +250,7 @@ function initDomeMode() {
       }
     }
 
-    // On mobile, enable touch controls immediately
     if (isMobile) {
-      // Touch controls are already set up in camera.js, just need to ensure they're active
-      // The touch event listeners check for dome-mode class, so they'll work now
     }
   }
 
@@ -292,14 +259,11 @@ function initDomeMode() {
       body.classList.remove("dome-mode");
       document.documentElement.style.overflow = "auto";
 
-      // Reset canvas height to row-height based size
       const canvasContainer = document.getElementById("canvas-container");
       if (canvasContainer) {
-        // Recalculate based on row-heights
         setCanvasHeight();
       }
     }
-    // Exit pointer lock if active
     if (
       canvas &&
       (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas)
@@ -308,15 +272,11 @@ function initDomeMode() {
     }
   }
 
-  // Expose a global hook so canvas clicks can enter dome mode too
-  // This behaves exactly like clicking the "Enter the dome" button:
-  // fade out overlays, lock pointer, disable scrolling.
   window.enterDomeModeFromCanvas = () => {
     enterDomeMode(true);
   };
 
   if (enterDomeBtn && canvas) {
-    // Support both click and touch events
     enterDomeBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       enterDomeMode(true);
@@ -328,20 +288,16 @@ function initDomeMode() {
     });
   }
 
-  // Exit dome mode on Escape key
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
       exitDomeMode();
     }
   });
 
-  // Exit dome mode when pointer lock is released (desktop only)
   function onPointerLockChange() {
     const isLocked =
       canvas &&
       (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas);
-    // Only exit on pointer lock release if we're on desktop
-    // On mobile, we don't use pointer lock, so don't exit dome mode when it's released
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
     if (!isLocked && body.classList.contains("dome-mode") && !isMobile) {
       exitDomeMode();
@@ -353,7 +309,6 @@ function initDomeMode() {
   document.addEventListener("webkitpointerlockchange", onPointerLockChange);
 }
 
-// Initialize when DOM is ready
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     init();

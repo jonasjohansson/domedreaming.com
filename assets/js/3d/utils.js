@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
 
-// Apply texture to screen material
+
 export function applyTextureToScreen(texture, screenObject) {
   if (!screenObject) return;
 
@@ -27,7 +27,7 @@ export function applyTextureToScreen(texture, screenObject) {
   material.needsUpdate = true;
 }
 
-// Configure texture settings
+
 export function configureTexture(texture) {
   texture.flipY = true;
   texture.wrapS = THREE.RepeatWrapping;
@@ -39,12 +39,12 @@ export function configureTexture(texture) {
   texture.needsUpdate = true;
 }
 
-// Get material from mesh (handles arrays)
+
 export function getMaterial(mesh) {
   return Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
 }
 
-// Color to hex string
+
 export function colorToHex(color) {
   return `#${Math.floor(color.r * 255)
     .toString(16)
@@ -55,14 +55,14 @@ export function colorToHex(color) {
     .padStart(2, "0")}`;
 }
 
-// Recursively prune null/undefined children to avoid traverse errors
+
 export function pruneObjectChildren(obj) {
   if (!obj || !obj.children) return;
   obj.children = obj.children.filter(Boolean);
   obj.children.forEach((child) => pruneObjectChildren(child));
 }
 
-// Safe traverse utility that skips invalid children and prunes them out
+
 export function safeTraverse(obj, callback) {
   if (!obj) return;
   const stack = [obj];

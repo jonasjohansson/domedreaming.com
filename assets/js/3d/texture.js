@@ -33,7 +33,7 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     imagePath,
     (texture) => {
       configureTexture(texture);
-      texture.rotation = 0; // Reset rotation when loading new texture
+      texture.rotation = 0;
       applyTextureToScreen(texture, screenObject);
       currentImageTexture = texture;
     },
@@ -51,7 +51,6 @@ export function loadImage(file) {
     textureLoader.load(
       e.target.result,
       (texture) => {
-        // Cleanup
         if (currentVideoTexture) {
           currentVideoTexture.dispose();
           currentVideoTexture = null;
@@ -67,15 +66,13 @@ export function loadImage(file) {
         }
 
         configureTexture(texture);
-        texture.rotation = 0; // Reset rotation when loading new texture
+        texture.rotation = 0;
         applyTextureToScreen(texture, screenObject);
         currentImageTexture = texture;
         
-        // Disable auto-rotate and reset rotation when user uploads an image
         textureRotationSettings.enabled = false;
         if (currentImageTexture) currentImageTexture.rotation = 0;
 
-        // Brief flash effect
         const material = getMaterial(screenObject);
         if (material) {
           setTimeout(() => {
@@ -104,7 +101,6 @@ export function loadVideo(file) {
   video.addEventListener("loadedmetadata", () => {
     video.play();
 
-    // Cleanup
     if (currentVideoTexture) currentVideoTexture.dispose();
     if (currentVideo) {
       currentVideo.pause();
@@ -120,17 +116,15 @@ export function loadVideo(file) {
     configureTexture(videoTexture);
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
-    videoTexture.rotation = 0; // Reset rotation when loading new texture
+    videoTexture.rotation = 0;
 
     applyTextureToScreen(videoTexture, screenObject);
     currentVideoTexture = videoTexture;
     currentVideo = video;
     
-    // Disable auto-rotate and reset rotation when user uploads a video
     textureRotationSettings.enabled = false;
     if (currentVideoTexture) currentVideoTexture.rotation = 0;
 
-    // Brief flash effect
     const material = getMaterial(screenObject);
     if (material) {
       setTimeout(() => {
@@ -146,17 +140,14 @@ export function loadVideo(file) {
 export function connectWebcam() {
   if (!screenObject) return;
 
-  // Check if getUserMedia is available
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
     alert("Webcam access is not available in your browser.");
     return;
   }
 
-  // Request webcam access
   navigator.mediaDevices
     .getUserMedia({ video: true, audio: false })
     .then((stream) => {
-      // Cleanup previous sources
       if (currentVideoTexture) {
         currentVideoTexture.dispose();
         currentVideoTexture = null;
@@ -175,7 +166,6 @@ export function connectWebcam() {
         currentWebcamStream = null;
       }
 
-      // Create video element for webcam stream
       const video = document.createElement("video");
       video.srcObject = stream;
       video.autoplay = true;
@@ -196,11 +186,9 @@ export function connectWebcam() {
         currentVideo = video;
         currentWebcamStream = stream;
         
-        // Disable auto-rotate and reset rotation when webcam is connected
         textureRotationSettings.enabled = false;
         if (currentVideoTexture) currentVideoTexture.rotation = 0;
 
-        // Brief flash effect
         const material = getMaterial(screenObject);
         if (material) {
           setTimeout(() => {
@@ -234,8 +222,6 @@ export function disconnectWebcam() {
     currentVideo.srcObject = null;
     currentVideo = null;
   }
-  // Optionally load default texture when disconnecting
-  // loadDefaultScreenTexture();
 }
 
 export function setupDragAndDrop() {

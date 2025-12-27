@@ -1,6 +1,6 @@
 import { getMaterial } from "./3d/utils.js";
 
-// Constants loaded from default-settings.json
+
 export let constants = {
   cameraHeight: 1.6,
   navmeshSearchBox: { x: 5, y: 10, z: 5 },
@@ -16,7 +16,7 @@ export let constants = {
   ledRadius: 0.03,
 };
 
-// State variables that need to be shared
+
 export let moveSpeed = 0.02;
 export let cameraSettings = {
   sensitivity: 0.002,
@@ -27,7 +27,7 @@ export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
 export let bloomSettings = {
-  enabled: true, // Bloom enabled by default
+  enabled: true,
   strength: 1.5,
   radius: 0.4,
   threshold: 0.85,
@@ -35,10 +35,10 @@ export let bloomSettings = {
 export let ledStripSettings = {
   pulseSpeed: 2.0,
   pulseWidth: 0.3,
-  baseIntensity: 0.0, // Off when not pulsing
+  baseIntensity: 0.0,
   maxIntensity: 4.0,
   mirrored: false,
-  rimVisible: false, // Hidden by default
+  rimVisible: false,
   hueStart: 0.5,
   hueRange: 0.3,
   saturation: 1.0,
@@ -50,8 +50,8 @@ export let pageColorSettings = {
   dotColor: "#ffffff",
   sidebarColor: "#333333",
   sidebarVisible: true,
-  headerIslandVisible: false, // Hidden by default
-  blendMode: "normal", // Normal blending mode for better performance
+  headerIslandVisible: false,
+  blendMode: "normal",
   vignette: {
     enabled: false,
     size: 8, // percentage
@@ -59,17 +59,17 @@ export let pageColorSettings = {
   },
 };
 export let scrollSettings = {
-  enabled: true, // Enabled for tactile row-height snapping
-  scrollTimeout: 25, // Delay in ms before allowing next scroll
-  touchThreshold: 30, // Minimum touch movement in pixels to trigger scroll
-  snapThreshold: 0.5, // Minimum distance in pixels to trigger scroll
-  initialSnapThreshold: 1, // Threshold for initial snap on page load
-  gridColumns: 15, // Number of grid columns (should match CSS --grid-columns)
-  gridRows: 10, // Number of grid rows (should match CSS --grid-rows)
+  enabled: true,
+  scrollTimeout: 25,
+  touchThreshold: 30,
+  snapThreshold: 0.5,
+  initialSnapThreshold: 1,
+  gridColumns: 15,
+  gridRows: 10,
 };
 
 export let canvasSettings = {
-  rows: 8, // Fixed number of rows for canvas height
+  rows: 8,
 };
 
 export let screenSettings = {
@@ -78,13 +78,13 @@ export let screenSettings = {
 
 export let textureRotationSettings = {
   enabled: true,
-  speed: 0.05, // radians per second - clockwise rotation
+  speed: 0.05,
 };
 
 export let pageBackgroundSettings = {
   canvas: {
     backgroundColor: "#000000",
-    backgroundImage: null, // Data URL or path
+    backgroundImage: null,
   },
   about: {
     backgroundColor: "#463434",
@@ -106,7 +106,7 @@ export function setBloomSettings(strength, radius, threshold) {
   bloomSettings.threshold = threshold;
 }
 
-// Load default settings from JSON file
+
 async function loadDefaultSettings(forceReload = false) {
   try {
     // Use import.meta.url to get the current module's directory
@@ -138,7 +138,7 @@ async function loadDefaultSettings(forceReload = false) {
   }
 }
 
-// Apply settings object to state variables
+
 function applySettings(settings) {
   if (settings.moveSpeed !== undefined) moveSpeed = settings.moveSpeed;
 
@@ -283,7 +283,7 @@ export function applyPageBackgrounds() {
   }
 }
 
-// Apply vignette mask to canvas container
+
 function applyVignette() {
   const canvasContainer = document.getElementById("canvas-container");
   if (!canvasContainer) return;
@@ -312,7 +312,7 @@ function applyVignette() {
   canvasContainer.style.webkitMaskComposite = "source-in";
 }
 
-// Apply page colors to CSS variables
+
 export function applyPageColors() {
   document.documentElement.style.setProperty("--color-bg", pageColorSettings.backgroundColor);
   document.documentElement.style.setProperty("--color-text", pageColorSettings.textColor);
@@ -328,7 +328,7 @@ export function applyPageColors() {
   applyVignette();
 }
 
-// Export applyVignette for use in GUI
+
 export function applyVignetteSettings() {
   applyVignette();
 }
@@ -365,7 +365,7 @@ export async function loadSettings(forceFromJSON = false) {
   applyPageBackgrounds();
 }
 
-// Apply settings to scene elements (colors, lights, etc.)
+
 export async function applySettingsToScene() {
   // Apply colors to meshes
   import("./3d/model.js").then((model) => {
@@ -422,7 +422,7 @@ export async function applySettingsToScene() {
   });
 }
 
-// Reload settings from JSON file (ignoring localStorage)
+
 export async function reloadFromJSON() {
   await loadSettings(true);
   await applySettingsToScene();
@@ -483,7 +483,7 @@ export function saveSettings(fbxMeshes, glbLights) {
   }
 }
 
-// Generate and download settings file
+
 export function exportSettingsFile(fbxMeshes, glbLights) {
   try {
     const colorSettings = {};
