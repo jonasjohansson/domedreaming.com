@@ -29,6 +29,7 @@ module.exports = async function (eleventyConfig) {
         emptyOutDir: true,
         minify: "esbuild", // Minify JS (esbuild is built-in, no extra dependency)
         cssMinify: true, // Minify CSS
+        cssCodeSplit: false, // Combine all CSS into a single file
         rollupOptions: {
           // Externalize modules that are loaded via import maps at runtime
           external: [
