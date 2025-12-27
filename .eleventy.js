@@ -47,7 +47,7 @@ module.exports = async function (eleventyConfig) {
         cssMinify: true, // Minify CSS
         cssCodeSplit: false, // Combine all CSS into a single file
         // Optimize asset handling
-        assetsInlineLimit: 4096, // Inline assets smaller than 4kb
+        assetsInlineLimit: 0, // Don't inline CSS - let Vite process @imports properly
         rollupOptions: {
           // Externalize modules that are loaded via import maps at runtime
           external: [
