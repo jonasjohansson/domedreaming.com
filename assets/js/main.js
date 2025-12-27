@@ -276,6 +276,8 @@ function initDomeMode() {
       const canvasContainer = document.getElementById("canvas-container");
       if (canvasContainer) {
         setCanvasHeight();
+        // Reset width to default (remove inline style to let CSS handle it)
+        canvasContainer.style.width = "";
       }
     }
     if (

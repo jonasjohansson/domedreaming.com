@@ -3,9 +3,10 @@
   overflow: visible;
   height: 100%;
   min-height: 0;
+  z-index: 1;
 }
 
-.block.v-center {
+.block.center {
   align-self: center;
   display: flex;
   flex-direction: column;
@@ -110,7 +111,7 @@ main strong {
   cursor: default;
 }
 
-.block.v-center:has(img):not(:has(.image-caption)) {
+.block.center:has(img):not(:has(.image-caption)) {
   justify-content: stretch;
   align-items: stretch;
 }
