@@ -263,6 +263,6 @@ body:not(.dome-mode) .grid-overlay {
 @media (min-width: 769px) {
   .page-section.responsive .block {
     column-count: 2;
-    column-gap: var(--col-width);
+    column-gap: calc(var(--col-width) / 2);
   }
 }

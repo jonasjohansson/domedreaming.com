@@ -22,9 +22,8 @@ const MIN_SWIPE_DISTANCE = 30; // Minimum distance in pixels to trigger first sc
  */
 function getNearestRowIncrement(scrollTop) {
   const rowHeight = getRowHeight();
-  // On mobile, use 2x row-height for scroll increment
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
-  const scrollIncrement = isMobile ? rowHeight * 2 : rowHeight;
+  // Use 2x row-height for scroll increment on all devices
+  const scrollIncrement = rowHeight * 2;
   // Round to nearest increment
   return Math.round(scrollTop / scrollIncrement) * scrollIncrement;
 }
@@ -89,9 +88,8 @@ function scrollToRowIncrement(scrollDirection) {
   const rowHeight = getRowHeight();
   const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
 
-  // On mobile, use 2x row-height for scroll increment
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
-  const scrollIncrement = isMobile ? rowHeight * 2 : rowHeight;
+  // Use 2x row-height for scroll increment on all devices
+  const scrollIncrement = rowHeight * 2;
 
   if (scrollDirection !== 0) {
     const currentRow = Math.round(currentScroll / scrollIncrement);

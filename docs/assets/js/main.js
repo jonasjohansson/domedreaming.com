@@ -28,10 +28,8 @@ let lastTime = 0;
 let lastCameraSaveTime = 0;
 const CAMERA_SAVE_INTERVAL = 2000;
 
-function setCanvasHeight() {
-  // Canvas container height is now handled by CSS (100% of page-section)
-  // No JavaScript height setting needed
-}
+// Canvas container height is now handled by CSS (100% of page-section)
+// No JavaScript height setting needed
 
 function applyDomeDreamingFont() {
   const mainElement = document.querySelector("main");
@@ -134,11 +132,8 @@ async function init() {
     });
   }
 
-  setCanvasHeight();
-
   const handleResize = () => {
     updateViewportHeightCSS();
-    setCanvasHeight();
   };
   window.addEventListener("resize", handleResize);
 
@@ -281,7 +276,6 @@ function initDomeMode() {
 
       const canvasContainer = document.getElementById("canvas-container");
       if (canvasContainer) {
-        setCanvasHeight();
         // Reset width to default (remove inline style to let CSS handle it)
         canvasContainer.style.width = "";
       }

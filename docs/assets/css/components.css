@@ -78,8 +78,8 @@ main strong {
 }
 
 .dome-dreaming-text {
-  font-family: "KovskijDisplay", var(--font-family);
   font-weight: normal;
+  letter-spacing: var(--letter-spacing-wide);
   text-transform: uppercase;
 }
 
