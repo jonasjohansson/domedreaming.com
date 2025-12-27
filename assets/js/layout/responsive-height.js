@@ -12,7 +12,6 @@ function adjustResponsiveHeights() {
   const rootStyles = getComputedStyle(document.documentElement);
   const gridRows = parseFloat(rootStyles.getPropertyValue("--grid-rows")) || 16;
   const rowHeight = getRowHeight();
-  const minHeight = gridRows * rowHeight;
 
   // Check all page sections for responsive blocks
   const allSections = document.querySelectorAll(".page-section");
