@@ -65,13 +65,11 @@ export function loadImage(file) {
           currentImageTexture.dispose();
         }
 
+        textureRotationSettings.enabled = false;
         configureTexture(texture);
         texture.rotation = 0;
         applyTextureToScreen(texture, screenObject);
         currentImageTexture = texture;
-        
-        textureRotationSettings.enabled = false;
-        if (currentImageTexture) currentImageTexture.rotation = 0;
 
         const material = getMaterial(screenObject);
         if (material) {
@@ -112,6 +110,7 @@ export function loadVideo(file) {
       currentImageTexture = null;
     }
 
+    textureRotationSettings.enabled = false;
     const videoTexture = new THREE.VideoTexture(video);
     configureTexture(videoTexture);
     videoTexture.minFilter = THREE.LinearFilter;
@@ -121,9 +120,6 @@ export function loadVideo(file) {
     applyTextureToScreen(videoTexture, screenObject);
     currentVideoTexture = videoTexture;
     currentVideo = video;
-    
-    textureRotationSettings.enabled = false;
-    if (currentVideoTexture) currentVideoTexture.rotation = 0;
 
     const material = getMaterial(screenObject);
     if (material) {
@@ -166,6 +162,7 @@ export function connectWebcam() {
         currentWebcamStream = null;
       }
 
+      textureRotationSettings.enabled = false;
       const video = document.createElement("video");
       video.srcObject = stream;
       video.autoplay = true;
@@ -185,9 +182,6 @@ export function connectWebcam() {
         currentVideoTexture = videoTexture;
         currentVideo = video;
         currentWebcamStream = stream;
-        
-        textureRotationSettings.enabled = false;
-        if (currentVideoTexture) currentVideoTexture.rotation = 0;
 
         const material = getMaterial(screenObject);
         if (material) {

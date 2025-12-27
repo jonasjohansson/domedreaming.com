@@ -102,7 +102,6 @@
   box-sizing: border-box;
 }
 
-/* Images should not show pointer cursor */
 img {
   cursor: default;
   border-radius: 16px;
@@ -351,7 +350,6 @@ body::before {
   grid-row-end: span 14;
 }
 
-/* Max-width utility: set max width in column units via --max-cols */
 .max-w {
   max-width: calc(var(--col-width) * var(--max-cols, 4));
 }

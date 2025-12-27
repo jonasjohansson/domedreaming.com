@@ -12,7 +12,7 @@
   pointer-events: none;
   padding: 0;
   box-sizing: border-box;
-  z-index: 15; /* Above canvas (z-index: 10) but below footer text (z-index: 100) */
+  z-index: 15;
   justify-items: stretch;
   align-items: stretch;
 }
@@ -91,7 +91,7 @@
 
 .page-content {
   position: relative;
-  z-index: 1; /* Lower z-index so images can be on top */
+  z-index: 1;
   padding: 0;
   display: grid;
   grid-column: 1 / -1;
@@ -103,14 +103,13 @@
   gap: 0;
 }
 
-/* About section: images behind text blocks */
 .page-content.responsive .dashboard-block {
-  z-index: 0; /* Behind text blocks */
+  z-index: 0;
 }
 
 .page-content.responsive .block:not(.dashboard-block) {
   position: relative;
-  z-index: 2; /* Text blocks in front of images */
+  z-index: 2;
 }
 
 .page-content .block img {
@@ -165,7 +164,7 @@
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
   margin: 0;
-  margin-bottom: 24px; /* Fixed margin matching line-height */
+  margin-bottom: 24px;
 }
 
 .page-content p:last-child {
@@ -174,8 +173,8 @@
 
 @media (max-width: 768px) {
   .page-content p {
-    line-height: 1.4; /* Relative line-height on mobile */
-    margin-bottom: calc(var(--font-size-base) * 1.4); /* Margin based on line-height */
+    line-height: 1.4;
+    margin-bottom: calc(var(--font-size-base) * 1.4);
   }
 }
 
@@ -196,8 +195,7 @@
   }
 }
 
-/* Desktop: allow responsive blocks to grow beyond default height */
 .page-content.responsive .block.responsive {
   height: auto;
-  min-height: calc(var(--row-height) * 10); /* Minimum 10 rows */
+  min-height: calc(var(--row-height) * 10);
 }

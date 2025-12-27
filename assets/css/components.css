@@ -66,7 +66,7 @@ main p {
   font-weight: var(--font-weight-normal);
   letter-spacing: var(--letter-spacing-normal);
   margin: 0;
-  margin-bottom: 24px; /* Fixed margin matching line-height */
+  margin-bottom: 24px;
 }
 
 main p:last-child {
@@ -77,8 +77,8 @@ main p:last-child {
 
 @media (max-width: 768px) {
   main p {
-    line-height: 1.4; /* Relative line-height on mobile */
-    margin-bottom: calc(var(--font-size-base) * 1.4); /* Margin based on line-height */
+    line-height: 1.4;
+    margin-bottom: calc(var(--font-size-base) * 1.4);
   }
 }
 
@@ -152,7 +152,7 @@ main strong {
 p.large,
 .large {
   font-size: calc(var(--font-size-base) * 1.5) !important;
-  line-height: 1.4; /* Relative line-height for better readability with larger text */
+  line-height: 1.4;
 }
 
 @media (max-width: 768px) {
@@ -168,10 +168,9 @@ p.small,
 .small {
   font-size: calc(var(--font-size-base) * 0.875) !important;
   opacity: 0.5;
-  line-height: 1.5; /* Increased line-height for better readability */
+  line-height: 1.5;
 }
 
-/* Footer credits - even smaller text */
 .page-section:last-of-type p.small {
   font-size: calc(var(--font-size-base) * 0.75) !important;
 }
@@ -181,7 +180,7 @@ p.small,
   p.small,
   .small {
     font-size: calc(var(--font-size-base) * 0.8) !important;
-    line-height: 1.4; /* Increased line-height for better readability on mobile */
+    line-height: 1.4;
   }
   .page-section:last-of-type p.small {
     font-size: calc(var(--font-size-base) * 0.7) !important;

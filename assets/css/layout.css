@@ -83,19 +83,16 @@ main {
   text-align: center;
 }
 
-/* First page section uses relative line-height */
 main > section.page-section:first-of-type .grid-overlay .block p {
   line-height: 1.4;
 }
 
-/* Mobile uses relative line-height */
 @media (max-width: 768px) {
   .grid-overlay .block p {
     line-height: 1.4;
   }
 }
 
-/* ASCII decorative layer - displays ASCII symbols in each row */
 #ascii-decorative-layer {
   position: absolute;
   top: 0;
@@ -126,7 +123,6 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   user-select: none;
 }
 
-/* Parallax layer - 15 cols, 40 rows high, sits below main */
 #parallax-layer {
   position: fixed;
   top: 0;
@@ -189,7 +185,6 @@ main button {
   border-radius: 16px;
 }
 
-/* Buttons with small text inside use column layout */
 main button:has(.small) {
   flex-direction: column;
   gap: 4px;
@@ -206,7 +201,6 @@ main button[disabled] {
   pointer-events: none;
 }
 
-/* Buttons container for side-by-side layout */
 .button-group {
   display: flex;
   gap: var(--col-width);
@@ -293,12 +287,10 @@ main > section.page-section:first-of-type .page-content p {
   margin-bottom: calc(var(--font-size-base) * 1.4);
 }
 
-/* Color class for inheriting background color */
 .color {
   background-color: inherit;
 }
 
-/* Color palette classes */
 .bg-1 {
   background-color: rgba(70, 52, 52, 1);
 }
@@ -323,7 +315,6 @@ main > section.page-section:first-of-type .page-content p {
   background-color: #1a1a1a;
 }
 
-/* Column count classes - for multi-column layout */
 .col-2 {
   column-count: 2;
   column-gap: var(--col-width);
@@ -334,12 +325,10 @@ main > section.page-section:first-of-type .page-content p {
   column-gap: var(--col-width);
 }
 
-/* Break class - column break (not on mobile) */
 .break {
   break-before: column;
 }
 
-/* On mobile, single column and no breaks */
 @media (max-width: 768px) {
   .col-2,
   .col-3 {
@@ -350,7 +339,6 @@ main > section.page-section:first-of-type .page-content p {
     break-before: auto;
   }
 
-  /* Responsive page-sections are 12 rows high on mobile */
   .page-section:has(.responsive) {
     height: calc(var(--row-height) * 12);
     min-height: calc(var(--row-height) * 12);
