@@ -5,6 +5,14 @@ const docsPath = path.join(__dirname, '../docs');
 const assetsPath = path.join(docsPath, 'assets');
 const sourceAssetsPath = path.join(__dirname, '../assets');
 
+// Copy CNAME from root to docs (Vite's emptyOutDir removes it, so we restore it)
+const sourceCnamePath = path.join(__dirname, '../CNAME');
+const destCnamePath = path.join(docsPath, 'CNAME');
+if (fs.existsSync(sourceCnamePath) && !fs.existsSync(destCnamePath)) {
+  fs.copyFileSync(sourceCnamePath, destCnamePath);
+  console.log('Copied CNAME to docs');
+}
+
 // Copy models directory (Vite's emptyOutDir removes it, so we restore it)
 const sourceModelsPath = path.join(sourceAssetsPath, 'models');
 const destModelsPath = path.join(assetsPath, 'models');
