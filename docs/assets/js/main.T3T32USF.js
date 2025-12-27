@@ -1,0 +1,350 @@
+import { scene, camera, renderer, canvas } from "./3d/scene.js";
+import { setupLighting } from "./3d/lighting.js";
+import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js";
+import { setupCameraControls } from "./3d/camera.js";
+import { updateMovement } from "./3d/movement.js";
+import { loadModel, fbxMeshes, glbLights } from "./3d/model.js";
+import {
+  loadSettings,
+  canvasSettings,
+  currentCameraPosition,
+  currentCameraRotation,
+  startCameraPosition,
+  startCameraRotation,
+  saveSettings,
+} from "./core/settings.js";
+import { updateLEDAnimation } from "./3d/led-strip.js";
+import { initScrollIncrement } from "./layout/scroll-increment.js";
+import { initGridDotsSystem } from "./layout/grid-dots.js";
+import { initDashboard } from "./ui/dashboard.js";
+import { initResponsiveHeights } from "./layout/responsive-height.js";
+import { initASCIIDecorative } from "./ui/ascii-decorative.js";
+import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam, loadImage, loadVideo } from "./3d/texture.js";
+import { textureRotationSettings } from "./core/settings.js";
+import { getRowHeight, updateViewportHeightCSS } from "./core/utils.js";
+
+let animationFrameId = null;
+let lastTime = 0;
+let lastCameraSaveTime = 0;
+const CAMERA_SAVE_INTERVAL = 2000;
+
+function setCanvasHeight() {
+  // Canvas container height is now handled by CSS (100% of page-section)
+  // No JavaScript height setting needed
+}
+
+function applyDomeDreamingFont() {
+  const mainElement = document.querySelector("main");
+  if (!mainElement) return;
+
+  const walker = document.createTreeWalker(mainElement, NodeFilter.SHOW_TEXT, null, false);
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement?.classList.contains("dome-dreaming-text")) continue;
+    if (/dome\s+dreaming/i.test(node.textContent)) {
+      textNodes.push(node);
+    }
+  }
+
+  textNodes.forEach((textNode) => {
+    const parent = textNode.parentNode;
+    if (!parent) return;
+
+    const text = textNode.textContent;
+    const regex = /(dome\s+dreaming)/gi;
+    const parts = text.split(regex);
+
+    const fragment = document.createDocumentFragment();
+    parts.forEach((part) => {
+      if (part && /^dome\s+dreaming$/i.test(part)) {
+        const span = document.createElement("span");
+        span.className = "dome-dreaming-text";
+        span.textContent = part;
+        fragment.appendChild(span);
+      } else if (part) {
+        fragment.appendChild(document.createTextNode(part));
+      }
+    });
+
+    parent.replaceChild(fragment, textNode);
+  });
+}
+
+async function init() {
+  await loadSettings();
+
+  updateViewportHeightCSS();
+
+  initScrollIncrement();
+  initGridDotsSystem();
+  initResponsiveHeights();
+  initDashboard();
+  applyDomeDreamingFont();
+
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        setupLighting();
+        initPostProcessing();
+        setupCameraControls();
+      },
+      { timeout: 1000 }
+    );
+  } else {
+    setTimeout(() => {
+      setupLighting();
+      initPostProcessing();
+      setupCameraControls();
+      initParallaxLayer();
+    }, 50);
+  }
+
+  const webcamLink = document.getElementById("connect-webcam-link");
+  if (webcamLink) {
+    webcamLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      connectWebcam();
+    });
+  }
+
+  const uploadFileLink = document.getElementById("upload-file-link");
+  if (uploadFileLink) {
+    const fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = "image/*,video/*";
+    fileInput.style.display = "none";
+    document.body.appendChild(fileInput);
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        if (file.type.startsWith("image/")) {
+          loadImage(file);
+        } else if (file.type.startsWith("video/")) {
+          loadVideo(file);
+        }
+      }
+      fileInput.value = "";
+    });
+
+    uploadFileLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      fileInput.click();
+    });
+  }
+
+  setCanvasHeight();
+
+  const handleResize = () => {
+    updateViewportHeightCSS();
+    setCanvasHeight();
+  };
+  window.addEventListener("resize", handleResize);
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", handleResize);
+  }
+
+  window.addEventListener("orientationchange", () => {
+    setTimeout(handleResize, 100);
+  });
+
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        loadModel();
+        startRenderLoop();
+      },
+      { timeout: 2000 }
+    );
+  } else {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        loadModel();
+        startRenderLoop();
+      }, 100);
+    });
+  }
+}
+
+function animate(currentTime) {
+  animationFrameId = requestAnimationFrame(animate);
+
+  const deltaTime = (currentTime - lastTime) / 1000;
+  lastTime = currentTime;
+
+  updateMovement();
+
+  currentCameraPosition.x = camera.position.x;
+  currentCameraPosition.y = camera.position.y;
+  currentCameraPosition.z = camera.position.z;
+  currentCameraRotation.x = camera.rotation.x;
+  currentCameraRotation.y = camera.rotation.y;
+  currentCameraRotation.z = camera.rotation.z;
+
+  const timeSinceLastSave = currentTime - lastCameraSaveTime;
+  if (timeSinceLastSave >= CAMERA_SAVE_INTERVAL) {
+    Object.assign(startCameraPosition, currentCameraPosition);
+    Object.assign(startCameraRotation, currentCameraRotation);
+    saveSettings(fbxMeshes, glbLights);
+    lastCameraSaveTime = currentTime;
+  }
+
+  updateLEDAnimation(deltaTime);
+  updateTextureRotation(deltaTime);
+
+  updatePostProcessing();
+}
+
+function updateTextureRotation(deltaTime) {
+  if (!textureRotationSettings.enabled) return;
+
+  const imageTexture = getCurrentImageTexture();
+  const videoTexture = getCurrentVideoTexture();
+  const texture = imageTexture || videoTexture;
+
+  if (texture) {
+    if (!texture.center || texture.center.x !== 0.5 || texture.center.y !== 0.5) {
+      if (!texture.center) {
+        texture.center = new THREE.Vector2(0.5, 0.5);
+      } else {
+        texture.center.set(0.5, 0.5);
+      }
+    }
+
+    texture.rotation -= textureRotationSettings.speed * deltaTime;
+
+    while (texture.rotation < 0) {
+      texture.rotation += Math.PI * 2;
+    }
+  }
+}
+
+function startRenderLoop() {
+  lastTime = performance.now();
+  animate(lastTime);
+}
+
+function initDomeMode() {
+  const enterDomeBtn = document.getElementById("enter-dome-btn");
+  const body = document.body;
+
+  function enterDomeMode(shouldRequestPointerLock = false) {
+    if (body.classList.contains("dome-mode")) return;
+
+    body.classList.add("dome-mode");
+    document.documentElement.style.overflow = "hidden";
+
+    const canvasContainer = document.getElementById("canvas-container");
+    if (canvasContainer) {
+      const actualVh = getComputedStyle(document.documentElement).getPropertyValue("--actual-vh");
+      canvasContainer.style.height = actualVh || "100vh";
+      canvasContainer.style.width = "100vw";
+
+      // Trigger resize to update canvas and camera
+      setTimeout(() => {
+        window.dispatchEvent(new Event("resize"));
+      }, 0);
+    }
+
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+    if (shouldRequestPointerLock && canvas && !isMobile) {
+      // Request pointer lock after a small delay to ensure canvas is ready
+      // Browsers require user interaction, so this should be called from a click handler
+      setTimeout(() => {
+        const requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
+        if (requestPointerLock) {
+          requestPointerLock.call(canvas);
+        }
+      }, 100);
+    }
+
+    if (isMobile) {
+    }
+  }
+
+  function exitDomeMode() {
+    // Exit pointer lock first if active
+    if (
+      canvas &&
+      (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas)
+    ) {
+      document.exitPointerLock();
+    }
+
+    // Then exit dome mode
+    if (body.classList.contains("dome-mode")) {
+      body.classList.remove("dome-mode");
+      document.documentElement.style.overflow = "auto";
+
+      const canvasContainer = document.getElementById("canvas-container");
+      if (canvasContainer) {
+        setCanvasHeight();
+        // Reset width to default (remove inline style to let CSS handle it)
+        canvasContainer.style.width = "";
+      }
+    }
+  }
+
+  window.enterDomeModeFromCanvas = () => {
+    enterDomeMode(true);
+  };
+
+  if (enterDomeBtn && canvas) {
+    enterDomeBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      enterDomeMode(true);
+    });
+    enterDomeBtn.addEventListener("touchend", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      enterDomeMode(true);
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && body.classList.contains("dome-mode")) {
+      // If pointer lock is active, ESC will exit it first, then onPointerLockChange will call exitDomeMode
+      // If pointer lock is not active, exit dome mode directly
+      if (
+        !canvas ||
+        (document.pointerLockElement !== canvas &&
+          document.mozPointerLockElement !== canvas &&
+          document.webkitPointerLockElement !== canvas)
+      ) {
+        exitDomeMode();
+      } else {
+        // Pointer lock is active, exit it (which will trigger onPointerLockChange to exit dome mode)
+        document.exitPointerLock();
+      }
+    }
+  });
+
+  function onPointerLockChange() {
+    const isLocked =
+      canvas &&
+      (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas);
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
+    // If pointer lock is lost while in dome mode (user pressed ESC), exit dome mode
+    if (!isLocked && body.classList.contains("dome-mode") && !isMobile) {
+      // Exit dome mode when pointer lock is lost (user pressed ESC)
+      exitDomeMode();
+    }
+  }
+
+  document.addEventListener("pointerlockchange", onPointerLockChange);
+  document.addEventListener("mozpointerlockchange", onPointerLockChange);
+  document.addEventListener("webkitpointerlockchange", onPointerLockChange);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    init();
+    initDomeMode();
+  });
+} else {
+  init();
+  initDomeMode();
+}

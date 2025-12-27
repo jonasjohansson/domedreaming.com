@@ -1,16 +1,20 @@
 const fs = require('fs');
 const path = require('path');
 
-const docsPath = path.join(__dirname, '../docs/assets');
+const docsPath = path.join(__dirname, '../docs');
+const assetsPath = path.join(docsPath, 'assets');
 
 // Remove individual CSS source files (Vite processes and bundles them)
-const cssPath = path.join(docsPath, 'css');
+// Vite outputs hashed files like style.BQ_WivgK.css (with dot separator)
+// We should keep files with hash patterns (containing a dot before the extension)
+const cssPath = path.join(assetsPath, 'css');
 if (fs.existsSync(cssPath)) {
   const files = fs.readdirSync(cssPath);
   files.forEach(file => {
-    // Keep only Vite-processed files (they have hashes in the name)
-    // Remove all source CSS files
-    if (file.endsWith('.css') && !file.match(/-[A-Za-z0-9]+\.css$/)) {
+    // Keep Vite-processed files (they have hashes: name.hash.css or name-hash.css)
+    // Remove source CSS files that don't have hash patterns
+    const hasHash = file.match(/\.([A-Za-z0-9_-]+)\.css$/) || file.match(/-([A-Za-z0-9_-]+)\.css$/);
+    if (file.endsWith('.css') && !hasHash) {
       const filePath = path.join(cssPath, file);
       fs.unlinkSync(filePath);
       console.log(`Removed ${file}`);
@@ -27,7 +31,7 @@ if (fs.existsSync(cssPath)) {
 }
 
 // Remove JS source files that Vite has processed
-const jsPath = path.join(docsPath, 'js');
+const jsPath = path.join(assetsPath, 'js');
 if (fs.existsSync(jsPath)) {
   // Vite processes JS and creates hashed files in /assets/
   // We can remove the original JS files since Vite bundles them
@@ -41,14 +45,20 @@ if (fs.existsSync(jsPath)) {
     }
   });
 
-  // Remove individual JS files in js root (but keep main.js and core/)
+  // Remove individual JS source files (but keep Vite-processed hashed files and core/)
+  // Vite outputs hashed files like main.T3T32USF.js or index.CZdWWh6m.js (with dot separator)
   const files = fs.readdirSync(jsPath);
   files.forEach(file => {
-    if (file.endsWith('.js') && file !== 'main.js') {
-      const filePath = path.join(jsPath, file);
-      if (fs.statSync(filePath).isFile()) {
-        fs.unlinkSync(filePath);
-        console.log(`Removed ${file}`);
+    if (file.endsWith('.js')) {
+      // Keep Vite-processed files (they have hashes: name.hash.js or name-hash.js)
+      const hasHash = file.match(/\.([A-Za-z0-9_-]+)\.js$/) || file.match(/-([A-Za-z0-9_-]+)\.js$/);
+      // Keep core directory
+      if (!hasHash && file !== 'main.js') {
+        const filePath = path.join(jsPath, file);
+        if (fs.statSync(filePath).isFile()) {
+          fs.unlinkSync(filePath);
+          console.log(`Removed ${file}`);
+        }
       }
     }
   });
