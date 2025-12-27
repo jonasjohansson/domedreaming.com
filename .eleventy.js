@@ -10,12 +10,21 @@ module.exports = async function (eleventyConfig) {
     viteOptions: {
       clearScreen: false,
       appType: "mpa",
+      base: "/", // Base path for assets
       server: {
         middlewareMode: true,
         fs: {
-          // Don't serve files from docs directory - it's the output directory
-          deny: ["**/docs/**"],
+          // Allow serving from project root (includes docs directory)
+          allow: [__dirname],
         },
+        // Don't pre-transform files in docs directory
+        hmr: {
+          overlay: false, // Disable error overlay for these warnings
+        },
+      },
+      // Don't pre-transform files in docs
+      ssr: {
+        noExternal: [], // Don't externalize anything for SSR (we're not using SSR)
       },
       optimizeDeps: {
         // Exclude modules that are loaded via import maps from CDN
@@ -27,6 +36,8 @@ module.exports = async function (eleventyConfig) {
           "@recast-navigation/three",
         ],
         entries: [], // Don't scan dependencies from the output directory
+        // Don't scan the docs directory
+        include: [],
       },
       // Set root to current directory so Vite resolves paths correctly
       root: __dirname,
@@ -54,16 +65,19 @@ module.exports = async function (eleventyConfig) {
         },
       },
       plugins: [
-        // Plugin to mark three and recast-navigation as external (loaded via import maps from CDN)
+        // Plugin to skip processing files in docs and mark external modules
         {
-          name: "externalize-import-map-modules",
+          name: "skip-docs-and-externalize",
+          enforce: "pre", // Run before other plugins
           resolveId(id, importer) {
-            // Skip processing files in the output directory (docs)
+            // If the file itself is in docs, don't process it
+            if (id.includes("/docs/") || id.includes("\\docs\\")) {
+              return { id, external: true };
+            }
+            // Skip processing files in the output directory (docs) - mark all imports as external
             if (importer && (importer.includes("/docs/") || importer.includes("\\docs\\"))) {
-              // Mark all external modules as external when importing from docs
-              if (id === "three" || id.startsWith("three/") || id.startsWith("@recast-navigation/")) {
-                return { id, external: true };
-              }
+              // For any import from docs, mark as external so Vite doesn't process
+              return { id, external: true };
             }
             // Mark three and three/addons as external (loaded from CDN)
             if (id === "three" || id.startsWith("three/")) {

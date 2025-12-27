@@ -1,0 +1,144 @@
+{
+  "version": "1.0.0",
+  "constants": {
+    "cameraHeight": 1.6,
+    "navmeshSearchBox": {
+      "x": 5,
+      "y": 10,
+      "z": 5
+    },
+    "screenMaterialSettings": {
+      "emissive": [1, 1, 1],
+      "emissiveIntensity": 1,
+      "color": [1, 1, 1],
+      "toneMapped": false,
+      "transparent": false,
+      "opacity": 1
+    },
+    "ledCount": 384,
+    "ledRadius": 0.03
+  },
+  "settings": {
+    "moveSpeed": 0.02,
+    "screenSettings": {
+      "defaultImage": "assets/img/background-text.jpg"
+    },
+    "textureRotationSettings": {
+      "enabled": true,
+      "speed": 0.02
+    },
+    "pageColorSettings": {
+      "backgroundColor": "#000000",
+      "textColor": "#ffffff",
+      "dotColor": "#ffffff",
+      "sidebarColor": "#333333",
+      "sidebarVisible": false,
+      "headerIslandVisible": false,
+      "blendMode": "normal",
+      "vignette": {
+        "enabled": false,
+        "size": 8,
+        "fadeWidth": 2
+      }
+    },
+    "scrollSettings": {
+      "enabled": true,
+      "scrollTimeout": 100,
+      "touchThreshold": 20,
+      "snapThreshold": 0.5,
+      "initialSnapThreshold": 1,
+      "gridColumns": 15,
+      "gridRows": 10
+    },
+    "canvasSettings": {
+      "rows": 8
+    },
+    "cameraSettings": {
+      "sensitivity": 0.002,
+      "rotationSpeed": 120
+    },
+    "startCameraPosition": {
+      "x": 0,
+      "y": 5.4,
+      "z": -4.3
+    },
+    "startCameraRotation": {
+      "x": -3,
+      "y": 0,
+      "z": 3.121154018741333
+    },
+    "bloomSettings": {
+      "enabled": true,
+      "strength": 0.9,
+      "radius": 0.4,
+      "threshold": 2
+    },
+    "ledStripSettings": {
+      "pulseSpeed": 2,
+      "pulseWidth": 0.3,
+      "baseIntensity": 0,
+      "maxIntensity": 4,
+      "mirrored": false,
+      "rimVisible": false,
+      "hueStart": 0.5,
+      "hueRange": 0.3,
+      "saturation": 1,
+      "lightness": 0.5
+    },
+    "colorSettings": {
+      "Main_Structure": {
+        "r": 0.271000474691391,
+        "g": 0.35101011395454407,
+        "b": 0.4892086386680603
+      },
+      "Chairs": {
+        "r": 0.42058899998664856,
+        "g": 0.5899280309677124,
+        "b": 0.34801509976387024
+      },
+      "Floor": {
+        "r": 0.41801148653030396,
+        "g": 0.43884891271591187,
+        "b": 0.23047460615634918
+      },
+      "Hotspot001": {
+        "r": 1,
+        "g": 1,
+        "b": 1
+      },
+      "Unnamed": {
+        "r": 1,
+        "g": 1,
+        "b": 1
+      }
+    },
+    "lightSettings": {
+      "Point": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "intensity": 0
+      },
+      "Point001": {
+        "r": 1,
+        "g": 1,
+        "b": 1,
+        "intensity": 0
+      }
+    },
+    "pageBackgroundSettings": {
+      "canvas": {
+        "backgroundColor": "#000000",
+        "backgroundImage": null
+      },
+      "about": {
+        "backgroundColor": "#463434",
+        "backgroundImage": null
+      },
+      "team": {
+        "backgroundColor": "#000000",
+        "backgroundImage": null
+      }
+    }
+  }
+}
