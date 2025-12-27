@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Dome Dreaming fulldome film festival website",
   "scripts": {
-    "build": "eleventy && node scripts/minify-css.js && node scripts/cleanup-assets.js",
+    "build": "eleventy && node scripts/cleanup-assets.js",
     "serve": "eleventy --serve",
     "dev": "eleventy --serve --watch"
   },

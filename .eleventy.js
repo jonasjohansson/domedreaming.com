@@ -30,6 +30,8 @@ module.exports = async function (eleventyConfig) {
         minify: "esbuild", // Minify JS (esbuild is built-in, no extra dependency)
         cssMinify: true, // Minify CSS
         cssCodeSplit: false, // Combine all CSS into a single file
+        // Optimize asset handling
+        assetsInlineLimit: 4096, // Inline assets smaller than 4kb
         rollupOptions: {
           // Externalize modules that are loaded via import maps at runtime
           external: [
@@ -37,6 +39,13 @@ module.exports = async function (eleventyConfig) {
             /^three\/addons\/.*/,
             /^@recast-navigation\/.*/,
           ],
+          output: {
+            // Better chunking strategy
+            manualChunks: undefined, // Let Vite handle chunking automatically
+            assetFileNames: "assets/[ext]/[name].[hash][extname]",
+            chunkFileNames: "assets/js/[name].[hash].js",
+            entryFileNames: "assets/js/[name].[hash].js",
+          },
         },
       },
       resolve: {
@@ -102,11 +111,20 @@ module.exports = async function (eleventyConfig) {
   eleventyConfig.ignores.add("**/README.md");
   eleventyConfig.ignores.add("assets/js/libs/**/README.md");
   
-  // Copy assets - Vite will process CSS/JS during build
-  eleventyConfig.addPassthroughCopy("assets");
-  
-  // Copy CNAME for GitHub Pages
-  eleventyConfig.addPassthroughCopy("CNAME");
+  // Copy static assets that Vite doesn't process
+  // In dev mode, Vite needs source files; in build mode, Vite processes them
+  // So we copy everything, but Vite will handle CSS/JS processing
+  eleventyConfig.addPassthroughCopy({
+    "assets/img": "assets/img",
+    "assets/fonts": "assets/fonts",
+    "assets/favicon": "assets/favicon",
+    "assets/models": "assets/models",
+    "assets/media": "assets/media",
+    // Copy JS source files for dev mode (Vite processes them)
+    "assets/js": "assets/js",
+    // Copy CSS source files for dev mode (Vite processes them)
+    "assets/css": "assets/css"
+  });
   
   // Copy other root files
   eleventyConfig.addPassthroughCopy("*.pdf");
