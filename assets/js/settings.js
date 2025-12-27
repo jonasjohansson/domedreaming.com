@@ -62,8 +62,8 @@ export let scrollSettings = {
   touchThreshold: 30,
   snapThreshold: 0.5,
   initialSnapThreshold: 1,
-  gridColumns: 15,
-  gridRows: 10,
+  gridColumns: 16,
+  gridRows: 16,
 };
 
 export let canvasSettings = {

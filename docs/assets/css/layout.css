@@ -284,8 +284,8 @@ main .block {
 
 .page-section {
   position: relative;
-  height: calc(var(--row-height) * 10);
-  min-height: calc(var(--row-height) * 10);
+  height: calc(var(--row-height) * var(--grid-rows));
+  min-height: calc(var(--row-height) * var(--grid-rows));
   background-color: inherit;
 }
 

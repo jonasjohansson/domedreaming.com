@@ -183,7 +183,7 @@ function createASCIIElements() {
 
   const rowHeight = getRowHeight();
   const totalRows = Math.ceil(documentHeight / rowHeight);
-  const gridColumns = 15; // Match the grid column count
+  const gridColumns = 16; // Match the grid column count
 
   // Create one ASCII symbol per row, positioned in a spiral pattern
   // Spiral: left-to-right, then right-to-left, alternating
