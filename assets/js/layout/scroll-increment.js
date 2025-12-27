@@ -22,8 +22,11 @@ const MIN_SWIPE_DISTANCE = 30; // Minimum distance in pixels to trigger first sc
  */
 function getNearestRowIncrement(scrollTop) {
   const rowHeight = getRowHeight();
-  // Round to nearest row-height increment
-  return Math.round(scrollTop / rowHeight) * rowHeight;
+  // On mobile, use 2x row-height for scroll increment
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+  const scrollIncrement = isMobile ? rowHeight * 2 : rowHeight;
+  // Round to nearest increment
+  return Math.round(scrollTop / scrollIncrement) * scrollIncrement;
 }
 
 /**
@@ -86,10 +89,14 @@ function scrollToRowIncrement(scrollDirection) {
   const rowHeight = getRowHeight();
   const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
 
+  // On mobile, use 2x row-height for scroll increment
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth <= 768;
+  const scrollIncrement = isMobile ? rowHeight * 2 : rowHeight;
+
   if (scrollDirection !== 0) {
-    const currentRow = Math.round(currentScroll / rowHeight);
+    const currentRow = Math.round(currentScroll / scrollIncrement);
     const targetRow = currentRow + scrollDirection;
-    const targetScroll = targetRow * rowHeight;
+    const targetScroll = targetRow * scrollIncrement;
 
     // Clamp to valid scroll range
     const maxScroll = Math.max(document.body.scrollHeight - window.innerHeight, document.documentElement.scrollHeight - window.innerHeight);
@@ -177,7 +184,9 @@ function handleTouchMove(e) {
 
   // Check if we've accumulated enough movement for a scroll increment
   const rowHeight = getRowHeight();
-  const scrollThreshold = rowHeight * 0.3; // Trigger scroll at 30% of row height
+  // On mobile, use 2x row-height for scroll increment
+  const scrollIncrement = rowHeight * 2;
+  const scrollThreshold = scrollIncrement * 0.3; // Trigger scroll at 30% of scroll increment
 
   if (Math.abs(touchScrollAccumulator) >= scrollThreshold) {
     // Determine scroll direction

@@ -4,7 +4,6 @@
   align-self: start;
   overflow: visible;
   height: 100%;
-  min-height: 0;
   z-index: 1;
 }
 
@@ -102,8 +101,7 @@ body:not(.dome-mode) .page-section:has(#canvas-container) .block {
 
 .page-section {
   position: relative;
-  height: calc(var(--row-height) * var(--grid-rows));
-  min-height: calc(var(--row-height) * var(--grid-rows));
+  height: calc(var(--row-height) * var(--section-grid-rows, var(--grid-rows)));
   background-color: inherit;
 }
 
@@ -117,12 +115,15 @@ main > section.page-section:first-of-type .page-content p {
   margin-bottom: calc(var(--font-size-base) * 1.4);
 }
 
-@media (max-width: 768px) {
-  .page-section:has(.responsive) {
-    height: calc(var(--row-height) * 14);
-    min-height: calc(var(--row-height) * 14);
-  }
-}
+/* All sections can use dynamic grid-rows variable set by JavaScript */
+/* The --section-grid-rows variable is set by JavaScript when a section contains .block.responsive */
+
+/* Responsive section page-content styling
+.page-section.responsive .page-content {
+  grid-auto-rows: min-content;
+  grid-column: 1 / span 15;
+  grid-row-start: 2;
+} */
 
 /* Grid overlay blocks */
 
@@ -166,7 +167,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   gap: 0;
 }
 
-.page-content.responsive .block {
+.page-section.responsive .page-content .block {
   position: relative;
   z-index: 2;
 }
@@ -216,23 +217,21 @@ main > section.page-section:first-of-type .grid-overlay .block p {
     margin-bottom: calc(var(--font-size-base) * 1.4);
   }
 
-  .page-content.responsive {
-    grid-auto-rows: min-content;
+  /*.page-section.responsive .page-content {
     grid-column: 2 / span 13;
-    grid-row-start: 2;
   }
 
-  .page-content.responsive .block.responsive {
+  .page-section.responsive .page-content .block.responsive {
     grid-column: 1 / -1;
     grid-row: auto;
     grid-row-start: auto;
     height: auto;
     min-height: 0;
     margin: 0;
-  }
+  }*/
 }
 
-.page-content.responsive .block.responsive {
+.page-section.responsive .page-content .block.responsive {
   height: auto;
   min-height: calc(var(--row-height) * 10);
 }
@@ -275,4 +274,3 @@ p.small,
     font-size: calc(var(--font-size-base) * 0.7) !important;
   }
 }
-

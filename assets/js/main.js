@@ -1,7 +1,3 @@
-// Import CSS so Vite processes and bundles it
-import "../css/main.css";
-import "../css/shader.css";
-
 import { scene, camera, renderer, canvas } from "./3d/scene.js";
 import { setupLighting } from "./3d/lighting.js";
 import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js";

@@ -106,13 +106,11 @@ export function setBloomSettings(strength, radius, threshold) {
 
 async function loadDefaultSettings(forceReload = false) {
   try {
-    // Use import.meta.url to get the current module's directory
-    // After bundling, import.meta.url points to the bundled JS file, not the original location
-    // So we need to use an absolute path to the JSON file
-    const jsonUrl = new URL("/assets/js/core/default-settings.json", window.location.origin);
-    console.log("Loading default-settings.json from:", jsonUrl.href);
+    // Use relative path - works both locally and on GitHub Pages
+    const jsonPath = "assets/js/core/default-settings.json";
+    console.log("Loading default-settings.json from:", jsonPath);
     // Add cache busting if forcing reload
-    const url = forceReload ? `${jsonUrl}?t=${Date.now()}` : jsonUrl;
+    const url = forceReload ? `${jsonPath}?t=${Date.now()}` : jsonPath;
     const response = await fetch(url);
     if (!response.ok) {
       console.warn("Could not load default-settings.json, using hardcoded defaults");

@@ -3,15 +3,14 @@
   "version": "1.0.0",
   "description": "Dome Dreaming fulldome film festival website",
   "scripts": {
+    "dev": "eleventy --serve --watch",
     "build": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js",
-    "serve": "eleventy --serve",
-    "dev": "eleventy --serve --watch"
+    "serve": "eleventy --serve"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@11ty/eleventy": "^3.0.0",
-    "@11ty/eleventy-plugin-vite": "^7.0.0"
+    "@11ty/eleventy": "^3.0.0"
   }
 }
