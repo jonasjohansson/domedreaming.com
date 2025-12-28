@@ -28,9 +28,18 @@ export function getCurrentImageTexture() {
 export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage || "assets/media/background.jpg") {
   if (!screenObject) return;
 
+  // Dispose of previous texture to prevent memory leaks
+  if (currentImageTexture) {
+    currentImageTexture.dispose();
+    currentImageTexture = null;
+  }
+
   const textureLoader = new THREE.TextureLoader();
+  // Add cache-busting query parameter to force reload of updated images
+  const cacheBustUrl = imagePath + (imagePath.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  
   textureLoader.load(
-    imagePath,
+    cacheBustUrl,
     (texture) => {
       configureTexture(texture);
       texture.rotation = 0;

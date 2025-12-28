@@ -71,7 +71,7 @@ export let canvasSettings = {
 };
 
 export let screenSettings = {
-  defaultImage: "assets/img/background-text.jpg",
+  defaultImage: "assets/img/background.jpg",
 };
 
 export let textureRotationSettings = {
