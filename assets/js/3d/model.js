@@ -8,6 +8,7 @@ import { euler, setModelLoaded } from "./camera.js";
 import { setScreenObject, loadDefaultScreenTexture, setupDragAndDrop } from "./texture.js";
 import { verifyNavmeshAtStartPosition, initNavmesh, getNavMeshQuery } from "./navmesh.js";
 import { findLEDRim, createLEDStrip } from "./led-strip.js";
+import { initScreenLighting } from "./screen-lighting.js";
 
 export let wisdomeModel = null;
 export let fbxMeshes = [];
@@ -267,6 +268,20 @@ export function loadModel() {
       initNavmesh();
       loadDefaultScreenTexture();
       setupDragAndDrop(); // Initialize drag and drop for texture updates
+      
+      // Initialize screen-based lighting that samples colors from the texture
+      // The screen object is already set via setScreenObject, so we can initialize lighting
+      // We'll find it from the scene or use a small delay to ensure it's set
+      setTimeout(() => {
+        const screenObj = object.children.find(child => {
+          const name = child.name?.toLowerCase() || "";
+          return name.includes("screen") || name.includes("monitor") || name.includes("panel") || 
+                 name.includes("projection") || name.includes("canvas");
+        });
+        if (screenObj) {
+          initScreenLighting(screenObj);
+        }
+      }, 100);
     },
     undefined,
     (error) => {

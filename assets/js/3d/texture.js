@@ -13,6 +13,10 @@ export function setScreenObject(obj) {
   screenObject = obj;
 }
 
+export function getScreenObject() {
+  return screenObject;
+}
+
 export function getCurrentVideoTexture() {
   return currentVideoTexture;
 }

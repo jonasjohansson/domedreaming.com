@@ -22,6 +22,7 @@ import { initASCIIDecorative } from "./ui/ascii-decorative.js";
 import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam, loadImage, loadVideo } from "./3d/texture.js";
 import { textureRotationSettings } from "./core/settings.js";
 import { getRowHeight, updateViewportHeightCSS } from "./core/utils.js";
+import { updateScreenLighting } from "./3d/screen-lighting.js";
 
 let animationFrameId = null;
 let lastTime = 0;
@@ -188,6 +189,7 @@ function animate(currentTime) {
 
   updateLEDAnimation(deltaTime);
   updateTextureRotation(deltaTime);
+  updateScreenLighting(currentTime);
 
   updatePostProcessing();
 }
