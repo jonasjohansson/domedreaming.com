@@ -158,7 +158,6 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   z-index: 1;
   padding: 0;
   display: grid;
-  mix-blend-mode: difference;
   grid-column: 1 / -1;
   width: 100%;
   grid-template-columns: repeat(var(--grid-columns), 1fr);
@@ -166,6 +165,10 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   column-gap: 0;
   row-gap: 0;
   gap: 0;
+}
+
+.page-content p {
+  mix-blend-mode: difference;
 }
 
 .page-section.responsive .page-content .block {
