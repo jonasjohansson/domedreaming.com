@@ -75,6 +75,7 @@ main.grid {
 
   main.grid > .page-section.grid {
     display: grid !important;
+    --section-grid-rows: 16 !important;
   }
 }
 
