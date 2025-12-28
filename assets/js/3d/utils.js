@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
 
-
 export function applyTextureToScreen(texture, screenObject) {
   if (!screenObject) return;
 
@@ -27,23 +26,21 @@ export function applyTextureToScreen(texture, screenObject) {
   material.needsUpdate = true;
 }
 
-
 export function configureTexture(texture) {
   texture.flipY = true;
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.repeat.x = -1;
+  texture.repeat.x = 1; // Flip on X axis (horizontal flip)
+  texture.repeat.y = -1; // Keep Y axis normal
   texture.colorSpace = THREE.SRGBColorSpace;
   // Set center to (0.5, 0.5) for rotation around center
   texture.center.set(0.5, 0.5);
   texture.needsUpdate = true;
 }
 
-
 export function getMaterial(mesh) {
   return Array.isArray(mesh.material) ? mesh.material[0] : mesh.material;
 }
-
 
 export function colorToHex(color) {
   return `#${Math.floor(color.r * 255)
@@ -55,13 +52,11 @@ export function colorToHex(color) {
     .padStart(2, "0")}`;
 }
 
-
 export function pruneObjectChildren(obj) {
   if (!obj || !obj.children) return;
   obj.children = obj.children.filter(Boolean);
   obj.children.forEach((child) => pruneObjectChildren(child));
 }
-
 
 export function safeTraverse(obj, callback) {
   if (!obj) return;
