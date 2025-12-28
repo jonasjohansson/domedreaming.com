@@ -167,7 +167,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   gap: 0;
 }
 
-.page-content p {
+section:first-of-type .page-content {
   mix-blend-mode: difference;
 }
 
