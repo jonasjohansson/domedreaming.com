@@ -21,30 +21,119 @@
     </div>
     <div class="block center x-5 w-8 y-10 h-2">
       <p>
-        Scroll to learn more, or enter our dome simulator. Before entering, you can
+        Try our
         <a
           href="#"
-          id="upload-file-link"
-          >drag and drop an image or video onto the dome</a
-        >, or
-        <a
-          href="#"
-          id="connect-webcam-link"
-          >connect your webcam</a
-        >. On desktop; use WASD keys to move and ESC to exit. On mobile; touch to look, and two-finger touch to move forward.
+          id="enter-dome-btn"
+          aria-label="Enter the 3D dome simulator"
+          >dome simulator</a
+        >
+        or continue to learn more about the festival.
+        <br />
       </p>
     </div>
-    <div class="block x-5 w-8 y-13 h-2">
+    q
+    <div class="block x-1 w-1 y-13 h-1 wasd-keyboard keep-visible">
       <button
-        id="enter-dome-btn"
-        type="button"
-        aria-label="Enter the 3D dome simulator">
-        Enter the Dome
+        class="wasd-key-btn"
+        data-key="q"
+        type="button">
+        Q
+      </button>
+    </div>
+    <div class="block x-2 w-1 y-13 h-1 wasd-keyboard keep-visible">
+      <button
+        class="wasd-key-btn"
+        data-key="w"
+        type="button">
+        W
+      </button>
+    </div>
+    <div class="block x-3 w-1 y-13 h-1 wasd-keyboard keep-visible">
+      <button
+        class="wasd-key-btn"
+        data-key="e"
+        type="button">
+        E
+      </button>
+    </div>
+    <div class="block x-1 w-1 y-14 h-1 wasd-keyboard keep-visible">
+      <button
+        class="wasd-key-btn"
+        data-key="a"
+        type="button">
+        A
+      </button>
+    </div>
+    <div class="block x-2 w-1 y-14 h-1 wasd-keyboard keep-visible">
+      <button
+        class="wasd-key-btn"
+        data-key="s"
+        type="button">
+        S
+      </button>
+    </div>
+    <div class="block x-3 w-1 y-14 h-1 wasd-keyboard keep-visible">
+      <button
+        class="wasd-key-btn"
+        data-key="d"
+        type="button">
+        D
+      </button>
+    </div>
+    <div class="block x-1 w-3 y-15 h-1 wasd-keyboard keep-visible">
+      <button
+        id="keyboard-upload-btn"
+        class="wasd-key-btn wasd-action-btn"
+        type="button">
+        image/video
+      </button>
+    </div>
+    <div class="block x-1 w-3 y-16 h-1 wasd-keyboard keep-visible">
+      <button
+        id="keyboard-camera-btn"
+        class="wasd-key-btn wasd-action-btn"
+        type="button">
+        camera
       </button>
     </div>
   </div>
   <div id="canvas-container">
     <div id="drop-zone"></div>
     <div id="loading"><div class="spinner"></div></div>
+
+    <!-- Mobile WASD Controls -->
+    <div
+      id="mobile-wasd-controls"
+      class="mobile-wasd-controls">
+      <div class="wasd-row">
+        <button
+          class="wasd-btn"
+          data-key="w"
+          type="button">
+          W
+        </button>
+      </div>
+      <div class="wasd-row">
+        <button
+          class="wasd-btn"
+          data-key="a"
+          type="button">
+          A
+        </button>
+        <button
+          class="wasd-btn"
+          data-key="s"
+          type="button">
+          S
+        </button>
+        <button
+          class="wasd-btn"
+          data-key="d"
+          type="button">
+          D
+        </button>
+      </div>
+    </div>
   </div>
 </section>

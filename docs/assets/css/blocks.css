@@ -83,18 +83,21 @@ body.dome-mode .page-section:has(#canvas-container) {
   width: 100vw;
   height: var(--actual-vh);
   z-index: 10000;
-  transition: opacity var(--transition-normal);
 }
 
 body.dome-mode .page-section:has(#canvas-container) .block {
   opacity: 0;
-  transition: opacity var(--transition-normal);
   pointer-events: none;
+}
+
+body.dome-mode .page-section:has(#canvas-container) .block.keep-visible {
+  opacity: 1;
+  pointer-events: auto;
+  z-index: 100;
 }
 
 body:not(.dome-mode) .page-section:has(#canvas-container) .block {
   opacity: 1;
-  transition: opacity var(--transition-normal);
 }
 
 /* Page sections */

@@ -19,7 +19,7 @@
     "ledRadius": 0.03
   },
   "settings": {
-    "moveSpeed": 0.02,
+    "moveSpeed": 0.04,
     "screenSettings": {
       "defaultImage": "assets/img/background.jpg"
     },

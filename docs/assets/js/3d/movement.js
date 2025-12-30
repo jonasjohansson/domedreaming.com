@@ -12,7 +12,9 @@ export let touchMovement = {
   forward: false,
   backward: false,
   left: false,
-  right: false
+  right: false,
+  rotateLeft: false,  // Q key
+  rotateRight: false  // E key
 };
 
 export function setNavMeshQuery(query) {
@@ -106,17 +108,32 @@ export function constrainToNavmesh() {
 
 export function updateRotation(deltaTime) {
   // Q/E rotation
+  // Q/E keyboard rotation (Q = right, E = left)
   if (keys["q"] || keys["Q"]) {
-    setQeRotationSpeed(-settings.cameraSettings.rotationSpeed * (Math.PI / 180));
-  } else if (keys["e"] || keys["E"]) {
     setQeRotationSpeed(settings.cameraSettings.rotationSpeed * (Math.PI / 180));
+  } else if (keys["e"] || keys["E"]) {
+    setQeRotationSpeed(-settings.cameraSettings.rotationSpeed * (Math.PI / 180));
   } else {
     setQeRotationSpeed(0);
   }
 
+  // Q/E keyboard rotation
   if (qeRotationSpeed !== 0 && modelLoaded) {
     euler.y += qeRotationSpeed * deltaTime;
     camera.quaternion.setFromEuler(euler);
+  }
+  
+  // Q/E touch/button rotation
+  if (modelLoaded) {
+    const rotationSpeed = 1.5; // Rotation speed in radians per second
+    if (touchMovement.rotateLeft) {
+      euler.y += rotationSpeed * deltaTime; // Rotate right (increase y) - Q button
+      camera.quaternion.setFromEuler(euler);
+    }
+    if (touchMovement.rotateRight) {
+      euler.y -= rotationSpeed * deltaTime; // Rotate left (decrease y) - E button
+      camera.quaternion.setFromEuler(euler);
+    }
   }
 }
 

@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import { getMaterial } from "../3d/utils.js";
 
 export let constants = {
@@ -15,7 +16,7 @@ export let constants = {
   ledRadius: 0.03,
 };
 
-export let moveSpeed = 0.02;
+export let moveSpeed = 0.04;
 export let cameraSettings = {
   sensitivity: 0.002,
   rotationSpeed: 120,
@@ -338,16 +339,66 @@ export async function loadSettings(forceFromJSON = false) {
   applyPageBackgrounds();
 }
 
+/**
+ * Generate a random muted color within the same palette as the current interior colors
+ * Returns RGB values between 0 and 1
+ */
+function generateRandomMutedColor() {
+  // Generate random hue (0-1)
+  const hue = Math.random();
+  
+  // Keep saturation low (0.2-0.4) for muted look
+  const saturation = 0.2 + Math.random() * 0.2;
+  
+  // Keep lightness medium (0.3-0.5) to match current palette
+  const lightness = 0.3 + Math.random() * 0.2;
+  
+  // Use Three.js Color for clean HSL to RGB conversion
+  const color = new THREE.Color();
+  color.setHSL(hue, saturation, lightness);
+  
+  return {
+    r: color.r,
+    g: color.g,
+    b: color.b
+  };
+}
+
 export async function applySettingsToScene() {
   // Apply colors to meshes
   import("../3d/model.js").then((model) => {
-    if (window.savedColorSettings && model.fbxMeshes) {
+    if (model.fbxMeshes && model.fbxMeshes.length > 0) {
+      // Ensure savedColorSettings exists
+      if (!window.savedColorSettings) {
+        window.savedColorSettings = {};
+      }
+      
       model.fbxMeshes.forEach((item) => {
         const material = getMaterial(item.mesh);
-        if (material && window.savedColorSettings[item.name]) {
-          const saved = window.savedColorSettings[item.name];
-          material.color.setRGB(saved.r, saved.g, saved.b);
-          material.needsUpdate = true;
+        if (material) {
+          let colorToApply;
+          
+          // Generate random muted color for Main_Structure (interior) and Floor on each load
+          if (item.name === "Main_Structure" || item.name === "Floor") {
+            colorToApply = generateRandomMutedColor();
+            // Update saved settings so it persists for this session
+            window.savedColorSettings[item.name] = colorToApply;
+            console.log(`Applied random muted color to ${item.name}:`, colorToApply);
+          } else if (window.savedColorSettings[item.name]) {
+            colorToApply = window.savedColorSettings[item.name];
+          } else {
+            // If no saved color, use original color
+            colorToApply = item.originalColor ? {
+              r: item.originalColor.r,
+              g: item.originalColor.g,
+              b: item.originalColor.b
+            } : null;
+          }
+          
+          if (colorToApply) {
+            material.color.setRGB(colorToApply.r, colorToApply.g, colorToApply.b);
+            material.needsUpdate = true;
+          }
         }
       });
     }

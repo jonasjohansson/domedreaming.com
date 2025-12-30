@@ -178,17 +178,49 @@ export function setupCameraControls() {
     { passive: false }
   );
 
+  // Helper function to update button visual state
+  function updateButtonState(key, isActive) {
+    const keyLower = key.toLowerCase();
+    if (["q", "w", "a", "s", "d", "e"].includes(keyLower)) {
+      const buttons = document.querySelectorAll(`[data-key="${keyLower}"]`);
+      buttons.forEach((btn) => {
+        if (isActive) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+    }
+  }
+
   // Keyboard controls
   window.addEventListener("keydown", (e) => {
-    keys[e.key.toLowerCase()] = true;
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    
+    // Update button visual state
+    updateButtonState(e.key, true);
+    
     if (e.key === "c" || e.key === "C") {
       console.log("Camera Position:", camera.position);
       console.log("Camera Rotation:", camera.rotation);
     }
+    // Q and E for camera rotation
+    if (e.key === "q" || e.key === "Q") {
+      setQeRotationSpeed(1.5); // Rotate right
+    }
+    if (e.key === "e" || e.key === "E") {
+      setQeRotationSpeed(-1.5); // Rotate left
+    }
   });
 
   window.addEventListener("keyup", (e) => {
-    keys[e.key.toLowerCase()] = false;
+    const key = e.key.toLowerCase();
+    keys[key] = false;
+    
+    // Update button visual state
+    updateButtonState(e.key, false);
+    
     if (e.key === "q" || e.key === "Q" || e.key === "e" || e.key === "E") {
       qeRotationSpeed = 0;
     }

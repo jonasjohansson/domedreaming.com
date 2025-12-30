@@ -9,6 +9,7 @@ import { setScreenObject, loadDefaultScreenTexture, setupDragAndDrop } from "./t
 import { verifyNavmeshAtStartPosition, initNavmesh, getNavMeshQuery } from "./navmesh.js";
 import { findLEDRim, createLEDStrip } from "./led-strip.js";
 import { initScreenLighting } from "./screen-lighting.js";
+import { initDiscoBall } from "./disco-ball.js";
 
 export let wisdomeModel = null;
 export let fbxMeshes = [];
@@ -260,6 +261,35 @@ export function loadModel() {
 
       setModelLoaded(true);
 
+      // Find "Disco" Empty object in the model to position the disco ball
+      let discoPosition = { x: 0, y: 7.5, z: 0 }; // Default position
+      let discoEmpty = null;
+      
+      safeTraverse(object, (child) => {
+        if (child.name === "Disco" || child.name === "disco") {
+          discoEmpty = child;
+          const worldPosition = new THREE.Vector3();
+          child.getWorldPosition(worldPosition);
+          discoPosition = { x: worldPosition.x, y: worldPosition.y, z: worldPosition.z };
+          console.log(`Found Disco Empty at position:`, discoPosition);
+        }
+      });
+
+      if (!discoEmpty) {
+        console.warn("Disco Empty not found in model, using default position");
+      }
+
+      // Initialize disco ball at the Disco Empty position (or default)
+      // Temporarily hidden
+      // initDiscoBall({
+      //   radius: 1.08, // 1.5x larger (0.72 * 1.5)
+      //   position: discoPosition, // Use position from Disco Empty
+      //   lightCount: 4, // Fewer but brighter, wider lights work better
+      //   lightRadius: 3.0,
+      //   rotationSpeed: 1.0, // Increased from 0.5 for faster rotation
+      //   lightRotationSpeed: 1.2,
+      // });
+
       const navMeshQuery = getNavMeshQuery();
       if (navMeshQuery) {
         verifyNavmeshAtStartPosition();
@@ -268,6 +298,11 @@ export function loadModel() {
       initNavmesh();
       loadDefaultScreenTexture();
       setupDragAndDrop(); // Initialize drag and drop for texture updates
+      
+      // Apply settings to scene (including random interior color) after model is loaded
+      import("../core/settings.js").then((settings) => {
+        settings.applySettingsToScene();
+      });
       
       // Initialize screen-based lighting that samples colors from the texture
       // The screen object is already set via setScreenObject, so we can initialize lighting

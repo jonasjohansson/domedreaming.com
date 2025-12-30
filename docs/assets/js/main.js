@@ -2,7 +2,7 @@ import { scene, camera, renderer, canvas } from "./3d/scene.js";
 import { setupLighting } from "./3d/lighting.js";
 import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js";
 import { setupCameraControls } from "./3d/camera.js";
-import { updateMovement } from "./3d/movement.js";
+import { updateMovement, updateRotation } from "./3d/movement.js";
 import { loadModel, fbxMeshes, glbLights } from "./3d/model.js";
 import {
   loadSettings,
@@ -23,6 +23,8 @@ import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam, loadImag
 import { textureRotationSettings } from "./core/settings.js";
 import { getRowHeight, updateViewportHeightCSS } from "./core/utils.js";
 import { updateScreenLighting } from "./3d/screen-lighting.js";
+import { updateDiscoBall } from "./3d/disco-ball.js";
+import { touchMovement } from "./3d/movement.js";
 
 let animationFrameId = null;
 let lastTime = 0;
@@ -99,6 +101,32 @@ async function init() {
     }, 50);
   }
 
+  // Create file input for uploads (reusable)
+  let fileInput = null;
+  function getFileInput() {
+    if (!fileInput) {
+      fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = "image/*,video/*";
+      fileInput.style.display = "none";
+      document.body.appendChild(fileInput);
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          if (file.type.startsWith("image/")) {
+            loadImage(file);
+          } else if (file.type.startsWith("video/")) {
+            loadVideo(file);
+          }
+        }
+        fileInput.value = "";
+      });
+    }
+    return fileInput;
+  }
+
+  // Handle links outside dome mode
   const webcamLink = document.getElementById("connect-webcam-link");
   if (webcamLink) {
     webcamLink.addEventListener("click", (e) => {
@@ -109,29 +137,117 @@ async function init() {
 
   const uploadFileLink = document.getElementById("upload-file-link");
   if (uploadFileLink) {
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = "image/*,video/*";
-    fileInput.style.display = "none";
-    document.body.appendChild(fileInput);
-
-    fileInput.addEventListener("change", (e) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        if (file.type.startsWith("image/")) {
-          loadImage(file);
-        } else if (file.type.startsWith("video/")) {
-          loadVideo(file);
-        }
-      }
-      fileInput.value = "";
-    });
-
     uploadFileLink.addEventListener("click", (e) => {
       e.preventDefault();
-      fileInput.click();
+      getFileInput().click();
     });
   }
+
+
+  // Handle keyboard layout buttons
+  const keyboardUploadBtn = document.getElementById("keyboard-upload-btn");
+  if (keyboardUploadBtn) {
+    keyboardUploadBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      getFileInput().click();
+    });
+  }
+
+  const keyboardCameraBtn = document.getElementById("keyboard-camera-btn");
+  if (keyboardCameraBtn) {
+    keyboardCameraBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      connectWebcam();
+    });
+  }
+
+  const keyboardExitBtn = document.getElementById("keyboard-exit-btn");
+  if (keyboardExitBtn) {
+    keyboardExitBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      // Trigger ESC key to exit dome mode
+      const escEvent = new KeyboardEvent("keydown", {
+        key: "Escape",
+        code: "Escape",
+        keyCode: 27,
+        which: 27,
+        bubbles: true,
+      });
+      document.dispatchEvent(escEvent);
+    });
+  }
+
+  // WASD button controls (both mobile overlay and keyboard layout)
+  const wasdButtons = document.querySelectorAll(".wasd-btn, .wasd-key-btn");
+  
+  wasdButtons.forEach((btn) => {
+      const key = btn.getAttribute("data-key");
+      if (!key) return;
+
+      // Touch start
+      btn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.add("active");
+        if (key === "w") touchMovement.forward = true;
+        if (key === "s") touchMovement.backward = true;
+        if (key === "a") touchMovement.left = true;
+        if (key === "d") touchMovement.right = true;
+        if (key === "q") touchMovement.rotateLeft = true;
+        if (key === "e") touchMovement.rotateRight = true;
+      });
+
+      // Touch end
+      btn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+
+      // Mouse events for testing
+      btn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.add("active");
+        if (key === "w") touchMovement.forward = true;
+        if (key === "s") touchMovement.backward = true;
+        if (key === "a") touchMovement.left = true;
+        if (key === "d") touchMovement.right = true;
+        if (key === "q") touchMovement.rotateLeft = true;
+        if (key === "e") touchMovement.rotateRight = true;
+      });
+
+      btn.addEventListener("mouseup", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+
+      btn.addEventListener("mouseleave", () => {
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+    });
 
   const handleResize = () => {
     updateViewportHeightCSS();
@@ -171,6 +287,7 @@ function animate(currentTime) {
   lastTime = currentTime;
 
   updateMovement();
+  updateRotation(deltaTime);
 
   currentCameraPosition.x = camera.position.x;
   currentCameraPosition.y = camera.position.y;
@@ -190,6 +307,7 @@ function animate(currentTime) {
   updateLEDAnimation(deltaTime);
   updateTextureRotation(deltaTime);
   updateScreenLighting(currentTime);
+  updateDiscoBall(deltaTime);
 
   updatePostProcessing();
 }
@@ -225,6 +343,7 @@ function startRenderLoop() {
 
 function initDomeMode() {
   const enterDomeBtn = document.getElementById("enter-dome-btn");
+  const keyboardExitBtn = document.getElementById("keyboard-exit-btn");
   const body = document.body;
 
   function enterDomeMode(shouldRequestPointerLock = false) {
@@ -297,6 +416,39 @@ function initDomeMode() {
       e.stopPropagation();
       e.preventDefault();
       enterDomeMode(true);
+    });
+  }
+
+  // Keyboard exit button
+  if (keyboardExitBtn) {
+    keyboardExitBtn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      keyboardExitBtn.classList.add("active");
+    });
+    
+    keyboardExitBtn.addEventListener("mouseup", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      keyboardExitBtn.classList.remove("active");
+      exitDomeMode();
+    });
+    
+    keyboardExitBtn.addEventListener("mouseleave", () => {
+      keyboardExitBtn.classList.remove("active");
+    });
+    
+    keyboardExitBtn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      keyboardExitBtn.classList.add("active");
+    });
+    
+    keyboardExitBtn.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      keyboardExitBtn.classList.remove("active");
+      exitDomeMode();
     });
   }
 

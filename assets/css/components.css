@@ -142,3 +142,229 @@ main strong {
 .pad-r-10 {
   padding-right: var(--col-width);
 }
+
+/* Dome Instructions Panel */
+.dome-instructions {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1000;
+  display: none;
+  pointer-events: none;
+}
+
+body.dome-mode .dome-instructions {
+  display: block;
+  pointer-events: auto;
+}
+
+.dome-instructions-content {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 16px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #ffffff;
+  max-width: 200px;
+  backdrop-filter: blur(4px);
+}
+
+.dome-instructions-content h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dome-instructions-section {
+  margin-bottom: 16px;
+}
+
+.dome-instructions-section p {
+  margin: 0 0 8px 0;
+  font-size: 13px;
+}
+
+.dome-instructions-section p:last-child {
+  margin-bottom: 0;
+}
+
+.dome-instructions-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dome-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: var(--font-family);
+  cursor: pointer;
+  text-align: center;
+}
+
+.dome-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.5);
+}
+
+.dome-btn:active {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobile WASD Controls */
+.mobile-wasd-controls {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 1000;
+  display: none;
+  pointer-events: none;
+}
+
+body.dome-mode .mobile-wasd-controls {
+  display: block;
+  pointer-events: auto;
+}
+
+@media (min-width: 769px) {
+  .mobile-wasd-controls {
+    display: none !important;
+  }
+}
+
+.wasd-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.wasd-row:last-child {
+  margin-bottom: 0;
+}
+
+.wasd-btn {
+  width: 50px;
+  height: 50px;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-size: 18px;
+  font-family: var(--font-family);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.wasd-btn:active,
+.wasd-btn.active {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* WASD Keyboard Layout in Block */
+.wasd-keyboard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wasd-keyboard-layout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+}
+
+/* Q W R row */
+.wasd-keyboard-row:first-child {
+  grid-row: 1;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* A S D row */
+.wasd-keyboard-row:nth-child(2) {
+  grid-row: 2;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+/* Action buttons row */
+.wasd-keyboard-row.wasd-keyboard-actions {
+  grid-row: 3;
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+}
+
+.wasd-keyboard-actions {
+  width: 100%;
+}
+
+.wasd-action-btn {
+  font-size: 12px;
+  padding: 8px 12px;
+  min-width: 0;
+  max-width: none;
+  flex: 1;
+  width: 100%;
+}
+
+/* Hide exit button when not in dome mode */
+#keyboard-exit-btn {
+  display: none;
+}
+
+body.dome-mode #keyboard-exit-btn {
+  display: flex;
+}
+
+.wasd-key-btn {
+  width: 100%;
+  height: 100%;
+  min-height: var(--row-height);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-size: 16px;
+  font-family: var(--font-family);
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.wasd-key-btn:hover,
+.wasd-key-btn:active,
+.wasd-key-btn.active {
+  background: rgba(255, 255, 255, 0.3);
+  border-color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 768px) {
+  .wasd-key-btn {
+    min-width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+}
