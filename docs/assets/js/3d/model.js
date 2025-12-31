@@ -7,7 +7,6 @@ import * as settings from "../core/settings.js";
 import { euler, setModelLoaded } from "./camera.js";
 import { setScreenObject, loadDefaultScreenTexture, setupDragAndDrop } from "./texture.js";
 import { verifyNavmeshAtStartPosition, initNavmesh, getNavMeshQuery } from "./navmesh.js";
-import { findLEDRim, createLEDStrip } from "./led-strip.js";
 import { initScreenLighting } from "./screen-lighting.js";
 
 export let wisdomeModel = null;
@@ -124,26 +123,10 @@ export function loadModel() {
         }
       });
 
-      // Find and create LED strip for LED_Rim
-      const ledRim = findLEDRim(object);
-      if (ledRim) {
-        // Load LED strip settings before creating
-        import("./led-strip.js").then((ledStrip) => {
-          ledStrip.loadLEDStripSettings();
-        });
-        createLEDStrip(ledRim);
-      } else {
-      }
-
       // Process meshes
       safeTraverse(object, (child) => {
         if (child.isMesh) {
           const name = child.name.toLowerCase();
-
-          // Skip LED_Rim and LED strip objects from mesh processing
-          if (name.includes("led_rim") || name.includes("led_strip") || name.startsWith("led_")) {
-            return; // Don't add to fbxMeshes
-          }
 
           if (
             name.includes("screen") ||

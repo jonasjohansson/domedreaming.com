@@ -12,7 +12,6 @@ import {
   startCameraRotation,
   saveSettings,
 } from "./core/settings.js";
-import { updateLEDAnimation } from "./3d/led-strip.js";
 import { initScrollIncrement } from "./layout/scroll-increment.js";
 import { initGridDotsSystem } from "./layout/grid-dots.js";
 import { initDashboard } from "./ui/dashboard.js";
@@ -402,7 +401,6 @@ function animate(currentTime) {
     lastCameraSaveTime = currentTime;
   }
 
-  updateLEDAnimation(deltaTime);
   updateTextureRotation(deltaTime);
   updateScreenLighting(currentTime);
 

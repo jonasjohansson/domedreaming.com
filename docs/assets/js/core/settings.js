@@ -12,8 +12,6 @@ export let constants = {
     transparent: false,
     opacity: 1.0,
   },
-  ledCount: 384,
-  ledRadius: 0.03,
 };
 
 export let moveSpeed = 0.04;
@@ -30,18 +28,6 @@ export let bloomSettings = {
   strength: 1.5,
   radius: 0.4,
   threshold: 0.85,
-};
-export let ledStripSettings = {
-  pulseSpeed: 2.0,
-  pulseWidth: 0.3,
-  baseIntensity: 0.0,
-  maxIntensity: 4.0,
-  mirrored: false,
-  rimVisible: false,
-  hueStart: 0.5,
-  hueRange: 0.3,
-  saturation: 1.0,
-  lightness: 0.5,
 };
 export let pageColorSettings = {
   backgroundColor: "#000000",
@@ -166,9 +152,6 @@ function applySettings(settings) {
     Object.assign(bloomSettings, settings.bloomSettings);
   }
 
-  if (settings.ledStripSettings) {
-    Object.assign(ledStripSettings, settings.ledStripSettings);
-  }
 
   if (settings.pageColorSettings) {
     // Merge page color settings, including nested vignette object
@@ -359,15 +342,135 @@ function generateRandomMutedColor() {
   };
 }
 
+/**
+ * Create a darker version of a color
+ * @param {Object} color - Color object with r, g, b values (0-1)
+ * @param {number} darkenFactor - Factor to darken by (0-1, lower = darker)
+ * @returns {Object} Darker color object
+ */
+function darkenColor(color, darkenFactor = 0.5) {
+  return {
+    r: color.r * darkenFactor,
+    g: color.g * darkenFactor,
+    b: color.b * darkenFactor
+  };
+}
+
+/**
+ * Mute a color by reducing saturation
+ * @param {Object} color - Color object with r, g, b values (0-1)
+ * @param {number} saturationFactor - Factor to reduce saturation by (0-1, lower = more muted)
+ * @returns {Object} Muted color object
+ */
+function muteColor(color, saturationFactor = 0.3) {
+  // Convert RGB to HSL, reduce saturation, convert back
+  const threeColor = new THREE.Color(color.r, color.g, color.b);
+  const hsl = { h: 0, s: 0, l: 0 };
+  threeColor.getHSL(hsl);
+  
+  // Reduce saturation
+  hsl.s = hsl.s * saturationFactor;
+  
+  // Convert back to RGB
+  threeColor.setHSL(hsl.h, hsl.s, hsl.l);
+  
+  return {
+    r: threeColor.r,
+    g: threeColor.g,
+    b: threeColor.b
+  };
+}
+
+/**
+ * Apply random colors to background sections (bg-1 to bg-6)
+ * bg-1, bg-2, bg-3 use muted versions of 3D scene colors (Main_Structure, Floor, Screen)
+ * bg-4, bg-5, bg-6 are darker versions of bg-1, bg-2, bg-3
+ */
+function applyBackgroundColors() {
+  // Ensure savedColorSettings exists
+  if (!window.savedColorSettings) {
+    window.savedColorSettings = {};
+  }
+
+  // Get colors from 3D scene meshes
+  const sceneColors = {
+    'bg-1': window.savedColorSettings['Main_Structure'],
+    'bg-2': window.savedColorSettings['Floor'],
+    'bg-3': window.savedColorSettings['Screen']
+  };
+
+  // If scene colors don't exist yet, generate them
+  if (!sceneColors['bg-1']) {
+    sceneColors['bg-1'] = generateRandomMutedColor();
+    window.savedColorSettings['Main_Structure'] = sceneColors['bg-1'];
+  }
+  if (!sceneColors['bg-2']) {
+    sceneColors['bg-2'] = generateRandomMutedColor();
+    window.savedColorSettings['Floor'] = sceneColors['bg-2'];
+  }
+  if (!sceneColors['bg-3']) {
+    sceneColors['bg-3'] = generateRandomMutedColor();
+    window.savedColorSettings['Screen'] = sceneColors['bg-3'];
+  }
+
+  // Apply bg-1, bg-2, bg-3 (muted versions of 3D scene colors)
+  ['bg-1', 'bg-2', 'bg-3'].forEach((bgClass, index) => {
+    const colorKey = ['Main_Structure', 'Floor', 'Screen'][index];
+    // Use the scene color if available, otherwise use the generated fallback
+    const sceneColor = window.savedColorSettings[colorKey] || sceneColors[bgClass];
+    
+    // Ensure the color is saved for the 3D scene mesh
+    if (!window.savedColorSettings[colorKey]) {
+      window.savedColorSettings[colorKey] = sceneColor;
+    }
+    
+    // Mute the color for CSS backgrounds (reduce saturation to 30% of original)
+    const mutedColor = muteColor(sceneColor, 0.3);
+    window.savedColorSettings[bgClass] = mutedColor;
+    
+    // Convert RGB (0-1) to RGB (0-255) for CSS
+    const r = Math.round(mutedColor.r * 255);
+    const g = Math.round(mutedColor.g * 255);
+    const b = Math.round(mutedColor.b * 255);
+    
+    // Apply color to all elements with this class
+    const elements = document.querySelectorAll(`.${bgClass}`);
+    elements.forEach((element) => {
+      element.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    });
+  });
+
+  // Apply bg-4, bg-5, bg-6 (darker versions of bg-1, bg-2, bg-3)
+  ['bg-4', 'bg-5', 'bg-6'].forEach((bgClass, index) => {
+    const sourceBgClass = ['bg-1', 'bg-2', 'bg-3'][index];
+    const sourceColor = window.savedColorSettings[sourceBgClass];
+    
+    // Create darker version (50% darker)
+    const darkerColor = darkenColor(sourceColor, 0.5);
+    window.savedColorSettings[bgClass] = darkerColor;
+    
+    // Convert RGB (0-1) to RGB (0-255) for CSS
+    const r = Math.round(darkerColor.r * 255);
+    const g = Math.round(darkerColor.g * 255);
+    const b = Math.round(darkerColor.b * 255);
+    
+    // Apply color to all elements with this class
+    const elements = document.querySelectorAll(`.${bgClass}`);
+    elements.forEach((element) => {
+      element.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    });
+  });
+}
+
 export async function applySettingsToScene() {
+  // Ensure savedColorSettings exists
+  if (!window.savedColorSettings) {
+    window.savedColorSettings = {};
+  }
+  
   // Apply colors to meshes
   import("../3d/model.js").then((model) => {
     if (model.fbxMeshes && model.fbxMeshes.length > 0) {
-      // Ensure savedColorSettings exists
-      if (!window.savedColorSettings) {
-        window.savedColorSettings = {};
-      }
-      
       model.fbxMeshes.forEach((item) => {
         const material = getMaterial(item.mesh);
         if (material) {
@@ -396,6 +499,9 @@ export async function applySettingsToScene() {
         }
       });
     }
+    
+    // Apply background colors after mesh colors are set
+    applyBackgroundColors();
 
     // Apply light settings
     if (window.savedLightSettings && model.glbLights) {
@@ -429,14 +535,6 @@ export async function applySettingsToScene() {
     }
   });
 
-  // Reload LED strip settings
-  import("../3d/led-strip.js").then((ledStrip) => {
-    ledStrip.loadLEDStripSettings();
-    // Apply rim visibility
-    if (ledStripSettings.rimVisible !== undefined) {
-      ledStrip.setRimVisible(ledStripSettings.rimVisible);
-    }
-  });
 }
 
 export async function reloadFromJSON() {
@@ -483,7 +581,6 @@ export function saveSettings(fbxMeshes, glbLights) {
       colorSettings,
       lightSettings,
       bloomSettings,
-      ledStripSettings,
       pageColorSettings,
       scrollSettings,
       canvasSettings,
@@ -536,7 +633,6 @@ export function exportSettingsFile(fbxMeshes, glbLights) {
         startCameraPosition,
         startCameraRotation,
         bloomSettings,
-        ledStripSettings,
         colorSettings,
         lightSettings,
         screenSettings,

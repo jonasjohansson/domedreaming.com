@@ -14,14 +14,12 @@
       "toneMapped": false,
       "transparent": false,
       "opacity": 1
-    },
-    "ledCount": 384,
-    "ledRadius": 0.03
+    }
   },
   "settings": {
     "moveSpeed": 0.04,
     "screenSettings": {
-      "defaultImage": "assets/img/background.png"
+      "defaultImage": "assets/img/background.jpg"
     },
     "textureRotationSettings": {
       "enabled": true,
@@ -72,18 +70,6 @@
       "strength": 0.9,
       "radius": 0.4,
       "threshold": 4
-    },
-    "ledStripSettings": {
-      "pulseSpeed": 2,
-      "pulseWidth": 0.3,
-      "baseIntensity": 0,
-      "maxIntensity": 4,
-      "mirrored": false,
-      "rimVisible": false,
-      "hueStart": 0.5,
-      "hueRange": 0.3,
-      "saturation": 1,
-      "lightness": 0.5
     },
     "colorSettings": {
       "Main_Structure": {
