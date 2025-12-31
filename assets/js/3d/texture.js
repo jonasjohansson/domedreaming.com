@@ -29,8 +29,10 @@ export function getCurrentImageTexture() {
   return currentImageTexture;
 }
 
-export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage || "assets/media/background.jpg") {
-  if (!screenObject) return;
+export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage || "assets/media/background.png") {
+  if (!screenObject) {
+    return Promise.resolve();
+  }
 
   // Dispose of previous texture to prevent memory leaks
   if (currentImageTexture) {
@@ -38,21 +40,27 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     currentImageTexture = null;
   }
 
-  const textureLoader = new THREE.TextureLoader();
-  // Add cache-busting query parameter to force reload of updated images
-  const cacheBustUrl = imagePath + (imagePath.includes('?') ? '&' : '?') + '_t=' + Date.now();
-  
-  textureLoader.load(
-    cacheBustUrl,
-    (texture) => {
-      configureTexture(texture);
-      texture.rotation = 0;
-      applyTextureToScreen(texture, screenObject);
-      currentImageTexture = texture;
-    },
-    undefined,
-    () => {}
-  );
+  return new Promise((resolve, reject) => {
+    const textureLoader = new THREE.TextureLoader();
+    // Add cache-busting query parameter to force reload of updated images
+    const cacheBustUrl = imagePath + (imagePath.includes('?') ? '&' : '?') + '_t=' + Date.now();
+    
+    textureLoader.load(
+      cacheBustUrl,
+      (texture) => {
+        configureTexture(texture);
+        texture.rotation = 0;
+        applyTextureToScreen(texture, screenObject);
+        currentImageTexture = texture;
+        resolve(texture);
+      },
+      undefined,
+      (error) => {
+        console.warn("Error loading default texture:", error);
+        reject(error);
+      }
+    );
+  });
 }
 
 export function loadImage(file) {

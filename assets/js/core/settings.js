@@ -72,7 +72,7 @@ export let canvasSettings = {
 };
 
 export let screenSettings = {
-  defaultImage: "assets/img/background.jpg",
+  defaultImage: "assets/img/background.png",
 };
 
 export let textureRotationSettings = {

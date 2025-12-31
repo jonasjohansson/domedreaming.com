@@ -1,7 +1,7 @@
-import { scene, camera, renderer, canvas } from "./3d/scene.js";
+import { scene, camera, renderer, canvas, resetCamera } from "./3d/scene.js";
 import { setupLighting } from "./3d/lighting.js";
 import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js";
-import { setupCameraControls } from "./3d/camera.js";
+import { setupCameraControls, euler } from "./3d/camera.js";
 import { updateMovement, updateRotation } from "./3d/movement.js";
 import { loadModel, fbxMeshes, glbLights } from "./3d/model.js";
 import {
@@ -19,7 +19,7 @@ import { initGridDotsSystem } from "./layout/grid-dots.js";
 import { initDashboard } from "./ui/dashboard.js";
 import { initResponsiveHeights } from "./layout/responsive-height.js";
 import { initASCIIDecorative } from "./ui/ascii-decorative.js";
-import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam, loadImage, loadVideo } from "./3d/texture.js";
+import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam, loadImage, loadVideo, disconnectWebcam, loadDefaultScreenTexture } from "./3d/texture.js";
 import { textureRotationSettings } from "./core/settings.js";
 import { getRowHeight, updateViewportHeightCSS } from "./core/utils.js";
 import { updateScreenLighting } from "./3d/screen-lighting.js";
@@ -154,34 +154,121 @@ async function init() {
     });
   }
 
-  const keyboardCameraBtn = document.getElementById("keyboard-camera-btn");
-  if (keyboardCameraBtn) {
-    keyboardCameraBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      connectWebcam();
-    });
-  }
+  // Reset function: reset camera, clear textures, stop webcam
+  window.resetToDefaults = function() {
+    console.log("Resetting to defaults...");
+    
+    try {
+      // Disconnect webcam if active
+      disconnectWebcam();
+      
+      // Load default texture (this will dispose of current textures internally)
+      loadDefaultScreenTexture();
+      
+      // Reset camera to original position and rotation
+      resetCamera(startCameraPosition, startCameraRotation, euler);
+      
+      // Update current camera position/rotation tracking
+      Object.assign(currentCameraPosition, startCameraPosition);
+      Object.assign(currentCameraRotation, startCameraRotation);
+      
+      console.log("Reset complete - camera position:", startCameraPosition, "rotation:", startCameraRotation);
+    } catch (error) {
+      console.error("Error during reset:", error);
+    }
+  };
 
-  const keyboardExitBtn = document.getElementById("keyboard-exit-btn");
-  if (keyboardExitBtn) {
-    keyboardExitBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      // Trigger ESC key to exit dome mode
-      const escEvent = new KeyboardEvent("keydown", {
-        key: "Escape",
-        code: "Escape",
-        keyCode: 27,
-        which: 27,
-        bubbles: true,
-      });
-      document.dispatchEvent(escEvent);
-    });
+  // Set up reset button handler
+  function setupResetButton() {
+    const resetBtn = document.getElementById("keyboard-reset-btn");
+    if (resetBtn) {
+      console.log("✓ Reset button FOUND");
+      
+      const handleReset = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        console.log("Reset button clicked");
+        if (window.resetToDefaults) {
+          window.resetToDefaults();
+        }
+        return false;
+      };
+      
+      // Remove ALL existing event listeners by cloning and replacing
+      const newBtn = resetBtn.cloneNode(true);
+      resetBtn.parentNode.replaceChild(newBtn, resetBtn);
+      
+      // Set inline onclick (highest priority)
+      newBtn.onclick = handleReset;
+      
+      // Add event listeners with capture phase
+      newBtn.addEventListener("click", handleReset, { capture: true, passive: false });
+      newBtn.addEventListener("touchend", handleReset, { capture: true, passive: false });
+      
+      return true;
+    } else {
+      console.warn("Reset button (keyboard-reset-btn) not found");
+      return false;
+    }
   }
+  
+  // Set up camera button handler - asks for permission
+  function setupCameraButton() {
+    const cameraBtn = document.getElementById("keyboard-camera-btn");
+    if (cameraBtn) {
+      console.log("✓ Camera button FOUND");
+      
+      const handleCamera = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        console.log("Camera button clicked");
+        
+        // Ask user if they want to connect webcam
+        if (confirm("Do you want to connect your webcam to the screen?")) {
+          connectWebcam();
+        }
+        return false;
+      };
+      
+      // Remove ALL existing event listeners by cloning and replacing
+      const newBtn = cameraBtn.cloneNode(true);
+      cameraBtn.parentNode.replaceChild(newBtn, cameraBtn);
+      
+      // Set inline onclick
+      newBtn.onclick = handleCamera;
+      
+      // Add event listeners
+      newBtn.addEventListener("click", handleCamera, { capture: true, passive: false });
+      newBtn.addEventListener("touchend", handleCamera, { capture: true, passive: false });
+      
+      return true;
+    } else {
+      console.warn("Camera button (keyboard-camera-btn) not found");
+      return false;
+    }
+  }
+  
+  // Set up both buttons
+  console.log("Setting up reset and camera buttons...");
+  setupResetButton();
+  setupCameraButton();
+  
+  // Retry if not found
+  setTimeout(() => {
+    if (!document.getElementById("keyboard-reset-btn")) {
+      setupResetButton();
+    }
+    if (!document.getElementById("keyboard-camera-btn")) {
+      setupCameraButton();
+    }
+  }, 500);
 
-  // WASD button controls (both mobile overlay and keyboard layout)
-  const wasdButtons = document.querySelectorAll(".wasd-btn, .wasd-key-btn");
+  // keyboardExitBtn is now handled in initDomeMode() to support both enter and exit
+
+  // WASD button controls (keyboard layout)
+  const wasdButtons = document.querySelectorAll(".wasd-key-btn");
   
   wasdButtons.forEach((btn) => {
       const key = btn.getAttribute("data-key");
@@ -200,8 +287,21 @@ async function init() {
         if (key === "e") touchMovement.rotateRight = true;
       });
 
-      // Touch end
+      // Touch end - always remove active state
       btn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+
+      // Touch cancel - also remove active state
+      btn.addEventListener("touchcancel", (e) => {
         e.preventDefault();
         e.stopPropagation();
         btn.classList.remove("active");
@@ -226,6 +326,7 @@ async function init() {
         if (key === "e") touchMovement.rotateRight = true;
       });
 
+      // Mouse up - always remove active state
       btn.addEventListener("mouseup", (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -236,6 +337,22 @@ async function init() {
         if (key === "d") touchMovement.right = false;
         if (key === "q") touchMovement.rotateLeft = false;
         if (key === "e") touchMovement.rotateRight = false;
+      });
+
+      // Mouse leave - remove active state if mouse leaves button
+      btn.addEventListener("mouseleave", (e) => {
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+
+      // Click - ensure active state is removed
+      btn.addEventListener("click", (e) => {
+        btn.classList.remove("active");
       });
 
       btn.addEventListener("mouseleave", () => {
@@ -342,15 +459,40 @@ function startRenderLoop() {
 }
 
 function initDomeMode() {
-  const enterDomeBtn = document.getElementById("enter-dome-btn");
   const keyboardExitBtn = document.getElementById("keyboard-exit-btn");
   const body = document.body;
+
+  function isMobile() {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
+           "ontouchstart" in window || 
+           navigator.maxTouchPoints > 0;
+  }
+
+  function updateEnterExitButton() {
+    if (keyboardExitBtn) {
+      if (body.classList.contains("dome-mode")) {
+        if (isMobile()) {
+          // On mobile, show "exit" button
+          keyboardExitBtn.textContent = "exit";
+          keyboardExitBtn.style.display = "flex";
+        } else {
+          // On desktop, hide the button (user presses ESC to exit)
+          keyboardExitBtn.style.display = "none";
+        }
+      } else {
+        // Not in dome mode, show "enter" button
+        keyboardExitBtn.textContent = "enter";
+        keyboardExitBtn.style.display = "flex";
+      }
+    }
+  }
 
   function enterDomeMode(shouldRequestPointerLock = false) {
     if (body.classList.contains("dome-mode")) return;
 
     body.classList.add("dome-mode");
     document.documentElement.style.overflow = "hidden";
+    updateEnterExitButton();
 
     const canvasContainer = document.getElementById("canvas-container");
     if (canvasContainer) {
@@ -400,6 +542,7 @@ function initDomeMode() {
         // Reset width to default (remove inline style to let CSS handle it)
         canvasContainer.style.width = "";
       }
+      updateEnterExitButton();
     }
   }
 
@@ -407,50 +550,38 @@ function initDomeMode() {
     enterDomeMode(true);
   };
 
-  if (enterDomeBtn && canvas) {
-    enterDomeBtn.addEventListener("click", (e) => {
+  // Keyboard enter/exit button - behaves like old "dome simulator" link
+  if (keyboardExitBtn) {
+    // Click event - exactly like old "dome simulator" link
+    keyboardExitBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      enterDomeMode(true);
+      // If not in dome mode, enter (exactly like old link)
+      if (!body.classList.contains("dome-mode")) {
+        enterDomeMode(true);
+      } else if (isMobile()) {
+        // Only allow exit on mobile when already in dome mode
+        exitDomeMode();
+      }
+      // On desktop when in dome mode, do nothing (user presses ESC)
     });
-    enterDomeBtn.addEventListener("touchend", (e) => {
+    
+    // Touch event - exactly like old "dome simulator" link
+    keyboardExitBtn.addEventListener("touchend", (e) => {
       e.stopPropagation();
       e.preventDefault();
-      enterDomeMode(true);
+      // If not in dome mode, enter (exactly like old link)
+      if (!body.classList.contains("dome-mode")) {
+        enterDomeMode(true);
+      } else if (isMobile()) {
+        // Only allow exit on mobile when already in dome mode
+        exitDomeMode();
+      }
+      // On desktop when in dome mode, do nothing (user presses ESC)
     });
   }
 
-  // Keyboard exit button
-  if (keyboardExitBtn) {
-    keyboardExitBtn.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      keyboardExitBtn.classList.add("active");
-    });
-    
-    keyboardExitBtn.addEventListener("mouseup", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      keyboardExitBtn.classList.remove("active");
-      exitDomeMode();
-    });
-    
-    keyboardExitBtn.addEventListener("mouseleave", () => {
-      keyboardExitBtn.classList.remove("active");
-    });
-    
-    keyboardExitBtn.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      keyboardExitBtn.classList.add("active");
-    });
-    
-    keyboardExitBtn.addEventListener("touchend", (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      keyboardExitBtn.classList.remove("active");
-      exitDomeMode();
-    });
-  }
+  // Initialize button text
+  updateEnterExitButton();
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && body.classList.contains("dome-mode")) {

@@ -238,15 +238,6 @@ export function loadModel() {
 
       scene.add(object);
 
-      // Fade in the site
-      setTimeout(() => {
-        loadingDiv.classList.add("hidden");
-        const canvasContainer = document.getElementById("canvas-container");
-        const infoPanel = document.getElementById("info-panel");
-        if (canvasContainer) canvasContainer.classList.add("loaded");
-        if (infoPanel) infoPanel.classList.add("loaded");
-      }, 300);
-
       // Reset camera position and rotation to ensure consistency
       // Use the settings values, ensuring they're valid
       const camPos = settings.startCameraPosition || { x: 0, y: 5.4, z: -4.3 };
@@ -296,27 +287,50 @@ export function loadModel() {
       }
 
       initNavmesh();
-      loadDefaultScreenTexture();
       setupDragAndDrop(); // Initialize drag and drop for texture updates
       
-      // Apply settings to scene (including random interior color) after model is loaded
-      import("../core/settings.js").then((settings) => {
-        settings.applySettingsToScene();
-      });
+      // Function to show the scene once everything is loaded
+      function showScene() {
+        loadingDiv.classList.add("hidden");
+        const canvasContainer = document.getElementById("canvas-container");
+        const infoPanel = document.getElementById("info-panel");
+        if (canvasContainer) canvasContainer.classList.add("loaded");
+        if (infoPanel) infoPanel.classList.add("loaded");
+        console.log("Scene is now visible - all assets loaded");
+      }
       
-      // Initialize screen-based lighting that samples colors from the texture
-      // The screen object is already set via setScreenObject, so we can initialize lighting
-      // We'll find it from the scene or use a small delay to ensure it's set
-      setTimeout(() => {
-        const screenObj = object.children.find(child => {
-          const name = child.name?.toLowerCase() || "";
-          return name.includes("screen") || name.includes("monitor") || name.includes("panel") || 
-                 name.includes("projection") || name.includes("canvas");
-        });
-        if (screenObj) {
-          initScreenLighting(screenObj);
-        }
-      }, 100);
+      // Wait for all assets to load before showing the scene
+      Promise.all([
+        // Apply settings to scene (including random interior color)
+        import("../core/settings.js").then((settingsModule) => {
+          return settingsModule.applySettingsToScene();
+        }),
+        // Load default texture and wait for it to complete
+        loadDefaultScreenTexture().catch((error) => {
+          console.warn("Error loading default texture, continuing anyway:", error);
+          return null; // Don't block scene from showing
+        })
+      ]).then(() => {
+        // Initialize screen-based lighting after texture is loaded
+        setTimeout(() => {
+          const screenObj = object.children.find(child => {
+            const name = child.name?.toLowerCase() || "";
+            return name.includes("screen") || name.includes("monitor") || name.includes("panel") || 
+                   name.includes("projection") || name.includes("canvas");
+          });
+          if (screenObj) {
+            initScreenLighting(screenObj);
+            console.log("Screen lighting initialized");
+          }
+          
+          // Now show the scene - everything is loaded (model, colors, texture)
+          showScene();
+        }, 100);
+      }).catch((error) => {
+        console.error("Error during scene initialization:", error);
+        // Show scene anyway after a delay
+        setTimeout(showScene, 1000);
+      });
     },
     undefined,
     (error) => {

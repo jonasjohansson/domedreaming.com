@@ -21,7 +21,7 @@
   "settings": {
     "moveSpeed": 0.04,
     "screenSettings": {
-      "defaultImage": "assets/img/background.jpg"
+      "defaultImage": "assets/img/background.png"
     },
     "textureRotationSettings": {
       "enabled": true,

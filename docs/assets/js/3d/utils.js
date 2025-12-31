@@ -1,28 +1,85 @@
 import * as THREE from "three";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
 
+/**
+ * Generate a random muted color for screen (same as other meshes)
+ * Returns RGB values between 0 and 1
+ */
+function generateRandomMutedColor() {
+  // Generate random hue (0-1)
+  const hue = Math.random();
+  
+  // Keep saturation low (0.2-0.4) for muted look
+  const saturation = 0.2 + Math.random() * 0.2;
+  
+  // Keep lightness medium (0.3-0.5) to match current palette
+  const lightness = 0.3 + Math.random() * 0.2;
+  
+  // Use Three.js Color for clean HSL to RGB conversion
+  const color = new THREE.Color();
+  color.setHSL(hue, saturation, lightness);
+  
+  return color;
+}
+
+/**
+ * Get or generate random color for screen
+ */
+function getScreenColor() {
+  // Ensure savedColorSettings exists
+  if (!window.savedColorSettings) {
+    window.savedColorSettings = {};
+  }
+  
+  // Generate random muted color for Screen on each load (like Main_Structure and Floor)
+  if (!window.savedColorSettings["Screen"]) {
+    const randomColor = generateRandomMutedColor();
+    window.savedColorSettings["Screen"] = {
+      r: randomColor.r,
+      g: randomColor.g,
+      b: randomColor.b
+    };
+    console.log("Applied random muted color to Screen:", window.savedColorSettings["Screen"]);
+  }
+  
+  const colorData = window.savedColorSettings["Screen"];
+  return new THREE.Color(colorData.r, colorData.g, colorData.b);
+}
+
 export function applyTextureToScreen(texture, screenObject) {
   if (!screenObject) return;
 
   const material = Array.isArray(screenObject.material) ? screenObject.material[0] : screenObject.material;
 
   if (!material) {
-    screenObject.material = new THREE.MeshStandardMaterial({
+    const newMaterial = new THREE.MeshStandardMaterial({
       map: texture,
-      emissiveMap: texture,
       ...SCREEN_MATERIAL_SETTINGS,
+      color: new THREE.Color(0xffffff), // White so texture shows true colors
+      emissive: new THREE.Color(0xffffff), // White emissive for brightness
+      emissiveMap: texture, // Use texture as emissive map
+      emissiveIntensity: 1.0, // Full emissive intensity
     });
+    screenObject.material = newMaterial;
     return;
   }
 
   // Dispose old textures
   if (material.map) material.map.dispose();
-  if (material.emissiveMap) material.emissiveMap.dispose();
+  if (material.emissiveMap && material.emissiveMap !== texture) {
+    material.emissiveMap.dispose();
+  }
 
   // Apply new texture
   material.map = texture;
-  material.emissiveMap = texture;
+  material.emissiveMap = texture; // Use texture as emissive map
+  // Apply screen material settings
   Object.assign(material, SCREEN_MATERIAL_SETTINGS);
+  // Set color to white so texture shows true colors (like a normal screen)
+  material.color.setRGB(1, 1, 1);
+  // Set emissive to white with texture for brightness
+  material.emissive.setRGB(1, 1, 1);
+  material.emissiveIntensity = 1.0; // Full emissive intensity
   material.needsUpdate = true;
 }
 

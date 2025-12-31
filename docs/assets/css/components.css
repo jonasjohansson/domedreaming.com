@@ -216,63 +216,6 @@ body.dome-mode .dome-instructions {
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Mobile WASD Controls */
-.mobile-wasd-controls {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  z-index: 1000;
-  display: none;
-  pointer-events: none;
-}
-
-body.dome-mode .mobile-wasd-controls {
-  display: block;
-  pointer-events: auto;
-}
-
-@media (min-width: 769px) {
-  .mobile-wasd-controls {
-    display: none !important;
-  }
-}
-
-.wasd-row {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-bottom: 8px;
-}
-
-.wasd-row:last-child {
-  margin-bottom: 0;
-}
-
-.wasd-btn {
-  width: 50px;
-  height: 50px;
-  background: rgba(0, 0, 0, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-  font-size: 18px;
-  font-family: var(--font-family);
-  font-weight: 500;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  user-select: none;
-  -webkit-user-select: none;
-  touch-action: manipulation;
-}
-
-.wasd-btn:active,
-.wasd-btn.active {
-  background: rgba(255, 255, 255, 0.3);
-  border-color: rgba(255, 255, 255, 0.6);
-}
-
 /* WASD Keyboard Layout in Block */
 .wasd-keyboard {
   display: flex;
@@ -327,12 +270,8 @@ body.dome-mode .mobile-wasd-controls {
   width: 100%;
 }
 
-/* Hide exit button when not in dome mode */
+/* Enter/Exit button - always visible */
 #keyboard-exit-btn {
-  display: none;
-}
-
-body.dome-mode #keyboard-exit-btn {
   display: flex;
 }
 
