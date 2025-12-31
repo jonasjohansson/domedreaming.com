@@ -275,10 +275,7 @@ function applyVignette() {
 }
 
 export function applyPageColors() {
-  document.documentElement.style.setProperty("--color-bg", pageColorSettings.backgroundColor);
-  document.documentElement.style.setProperty("--color-text", pageColorSettings.textColor);
-  document.documentElement.style.setProperty("--color-dot", pageColorSettings.dotColor);
-  // Color is set via CSS custom property and will be inherited by all elements, no inline styles needed
+  // Colors are now set via CSS variables in :root, not inline styles
   // Apply vignette
   applyVignette();
 }

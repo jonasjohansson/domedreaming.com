@@ -21,7 +21,7 @@
   --font-size-small: 16px;
   --font-size-xs: 16px;
   --font-size-intro: 16px;
-  --line-height-base: 24px;
+  --line-height-base: 28px;
   --letter-spacing-tight: 0px;
   --letter-spacing-normal: 0.5px;
   --letter-spacing-wide: 2px;
@@ -135,7 +135,7 @@ body {
   overflow-x: hidden;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  color: #ffecde;
+  color: var(--color-text);
   margin: 0;
   padding: 0;
   min-height: 300vh;
@@ -153,7 +153,6 @@ body {
 body::-webkit-scrollbar {
   display: none;
 }
-
 
 .top {
   position: relative;

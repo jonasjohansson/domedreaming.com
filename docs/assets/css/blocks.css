@@ -211,7 +211,7 @@ section:first-of-type .page-content {
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
   margin: 0;
-  margin-bottom: 24px;
+  margin-bottom: 28px;
 }
 
 .page-content p:last-child {
@@ -240,7 +240,7 @@ section:first-of-type .page-content {
 
 .page-section.responsive .page-content .block.responsive {
   height: auto;
-  min-height: calc(var(--row-height) * 10);
+  min-height: calc(var(--row-height) * var(--grid-rows));
 }
 
 .page-content p.large,

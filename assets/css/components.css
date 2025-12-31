@@ -256,7 +256,6 @@ body.dome-mode .dome-instructions {
 
 .wasd-action-btn {
   font-size: 12px;
-  padding: 8px 12px;
   min-width: 0;
   max-width: none;
   flex: 1;

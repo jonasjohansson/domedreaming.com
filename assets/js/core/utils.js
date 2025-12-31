@@ -18,10 +18,12 @@ export function getActualViewportHeight() {
 /**
  * Update the CSS custom property for actual viewport height
  * This should be called on resize and orientation change
+ * Note: --actual-vh is now set via CSS (100vh default), not inline styles
  */
 export function updateViewportHeightCSS() {
-  const actualHeight = getActualViewportHeight();
-  document.documentElement.style.setProperty("--actual-vh", `${actualHeight}px`);
+  // --actual-vh is now set via CSS, not inline styles
+  // const actualHeight = getActualViewportHeight();
+  // document.documentElement.style.setProperty("--actual-vh", `${actualHeight}px`);
 }
 
 /**

@@ -170,9 +170,10 @@ async function init() {
   };
 
   // Set up reset button handler
+  let resetButtonSetup = false;
   function setupResetButton() {
     const resetBtn = document.getElementById("keyboard-reset-btn");
-    if (resetBtn) {
+    if (resetBtn && !resetButtonSetup) {
       const handleReset = function(e) {
         e.preventDefault();
         e.stopPropagation();
@@ -194,27 +195,31 @@ async function init() {
       newBtn.addEventListener("click", handleReset, { capture: true, passive: false });
       newBtn.addEventListener("touchend", handleReset, { capture: true, passive: false });
       
+      resetButtonSetup = true;
       return true;
     }
     return false;
   }
   
   // Set up camera button handler - asks for permission
-  function setupCameraButton() {
+  // Store handler function so we can re-attach if needed
+  const handleCamera = function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    
+    // Ask user if they want to connect webcam
+    if (confirm("Do you want to connect your webcam to the screen?")) {
+      connectWebcam();
+    }
+    return false;
+  };
+  
+  // Make setupCameraButton accessible globally so initDomeMode can call it
+  window.setupCameraButton = function() {
     const cameraBtn = document.getElementById("keyboard-camera-btn");
     if (cameraBtn) {
-      const handleCamera = function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-        
-        // Ask user if they want to connect webcam
-        if (confirm("Do you want to connect your webcam to the screen?")) {
-          connectWebcam();
-        }
-        return false;
-      };
-      
+      // Always re-setup to ensure handlers are attached, especially after DOM changes
       // Remove ALL existing event listeners by cloning and replacing
       const newBtn = cameraBtn.cloneNode(true);
       cameraBtn.parentNode.replaceChild(newBtn, cameraBtn);
@@ -229,7 +234,7 @@ async function init() {
       return true;
     }
     return false;
-  }
+  };
   
   // Set up both buttons
   setupResetButton();
@@ -439,6 +444,7 @@ function startRenderLoop() {
 function initDomeMode() {
   const keyboardExitBtn = document.getElementById("keyboard-exit-btn");
   const body = document.body;
+  let isExitingDomeMode = false; // Flag to prevent double-exit
 
   function isMobile() {
     return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
@@ -461,6 +467,9 @@ function initDomeMode() {
         // Not in dome mode, show "enter" button
         keyboardExitBtn.textContent = "enter";
         keyboardExitBtn.style.display = "flex";
+        // Ensure button is enabled and clickable
+        keyboardExitBtn.disabled = false;
+        keyboardExitBtn.style.pointerEvents = "auto";
       }
     }
   }
@@ -487,27 +496,82 @@ function initDomeMode() {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
     if (shouldRequestPointerLock && canvas && !isMobile) {
-      // Request pointer lock after a small delay to ensure canvas is ready
-      // Browsers require user interaction, so this should be called from a click handler
-      setTimeout(() => {
-      const requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
-      if (requestPointerLock) {
-        requestPointerLock.call(canvas);
+      // Check if pointer lock is already active before requesting
+      const isAlreadyLocked = document.pointerLockElement === canvas || 
+                              document.mozPointerLockElement === canvas || 
+                              document.webkitPointerLockElement === canvas;
+      
+      if (!isAlreadyLocked) {
+        // Request pointer lock after a small delay to ensure canvas is ready
+        // Browsers require user interaction, so this should be called from a click handler
+        const pointerLockTimeout = setTimeout(() => {
+          // Check again before requesting (user might have exited in the meantime)
+          if (!body.classList.contains("dome-mode") || isExitingDomeMode) {
+            return; // Don't request if we're no longer in dome mode or are exiting
+          }
+          
+          const requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
+          if (requestPointerLock) {
+            try {
+              requestPointerLock.call(canvas).catch((error) => {
+                // Handle promise rejection for pointer lock request
+                // Silently handle SecurityError if user exited before request completed
+                if (error.name !== 'SecurityError' && error.name !== 'NotAllowedError') {
+                  console.warn('Pointer lock request failed:', error);
+                }
+              });
+            } catch (error) {
+              // Silently handle SecurityError if user exited before request completed
+              if (error.name !== 'SecurityError' && error.name !== 'NotAllowedError') {
+                console.warn('Pointer lock request failed:', error);
+              }
+            }
+          }
+        }, 100);
+        
+        // Store timeout so we can clear it if needed
+        window.pointerLockTimeout = pointerLockTimeout;
       }
-      }, 100);
     }
 
     if (isMobile) {
     }
+    
+    // Re-setup camera button after entering dome mode to ensure handlers are attached
+    setTimeout(() => {
+      if (window.setupCameraButton) {
+        window.setupCameraButton();
+      }
+    }, 150);
   }
 
   function exitDomeMode() {
+    // Prevent double-exit
+    if (isExitingDomeMode) {
+      return;
+    }
+    
+    isExitingDomeMode = true;
+    
+    // Clear any pending pointer lock request
+    if (window.pointerLockTimeout) {
+      clearTimeout(window.pointerLockTimeout);
+      window.pointerLockTimeout = null;
+    }
+    
     // Exit pointer lock first if active
     if (
       canvas &&
       (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas)
     ) {
-      document.exitPointerLock();
+      try {
+        document.exitPointerLock();
+      } catch (error) {
+        // Silently handle errors when exiting pointer lock
+        if (error.name !== 'SecurityError') {
+          console.warn('Error exiting pointer lock:', error);
+        }
+      }
     }
 
     // Then exit dome mode
@@ -520,7 +584,23 @@ function initDomeMode() {
         // Reset width to default (remove inline style to let CSS handle it)
         canvasContainer.style.width = "";
       }
+      
+      // Update button state immediately
       updateEnterExitButton();
+      
+      // Re-setup camera button after a small delay to ensure DOM is ready
+      setTimeout(() => {
+        if (window.setupCameraButton) {
+          window.setupCameraButton();
+        }
+        // Reset flag after a delay to allow re-entry
+        setTimeout(() => {
+          isExitingDomeMode = false;
+        }, 100);
+      }, 0);
+    } else {
+      // Reset flag immediately if we weren't in dome mode
+      isExitingDomeMode = false;
     }
   }
 
@@ -563,31 +643,35 @@ function initDomeMode() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && body.classList.contains("dome-mode")) {
-      // If pointer lock is active, ESC will exit it first, then onPointerLockChange will call exitDomeMode
-      // If pointer lock is not active, exit dome mode directly
-      if (
-        !canvas ||
-        (document.pointerLockElement !== canvas &&
-          document.mozPointerLockElement !== canvas &&
-          document.webkitPointerLockElement !== canvas)
-      ) {
+      // Always call exitDomeMode directly - it will handle pointer lock exit
       exitDomeMode();
-      } else {
-        // Pointer lock is active, exit it (which will trigger onPointerLockChange to exit dome mode)
-        document.exitPointerLock();
-      }
     }
   });
 
   function onPointerLockChange() {
+    // Don't handle pointer lock changes if we're already exiting dome mode
+    if (isExitingDomeMode) {
+      return;
+    }
+    
+    // If pointer lock is lost while in dome mode (but not from our exitDomeMode call),
+    // we should still exit dome mode. However, we need to check if we're already exiting.
     const isLocked =
       canvas &&
       (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas);
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    // If pointer lock is lost while in dome mode (user pressed ESC), exit dome mode
+    
+    // Only exit if pointer lock was lost and we're still in dome mode (user might have pressed ESC outside our handler)
     if (!isLocked && body.classList.contains("dome-mode") && !isMobile) {
-      // Exit dome mode when pointer lock is lost (user pressed ESC)
-      exitDomeMode();
+      // Small delay to avoid race condition with exitDomeMode() being called from ESC handler
+      setTimeout(() => {
+        // Double-check we're still in dome mode and pointer lock is still not active, and we're not already exiting
+        if (!isExitingDomeMode && 
+            body.classList.contains("dome-mode") && 
+            !(document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas)) {
+          exitDomeMode();
+        }
+      }, 50);
     }
   }
 
