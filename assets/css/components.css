@@ -1,33 +1,26 @@
-#loading {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: var(--z-loading);
+/* Fixed overlay that covers everything during loading */
+#loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #000000;
+  z-index: 99999;
   opacity: 1;
+  transition: opacity 0.5s ease-in-out;
+  pointer-events: all;
 }
 
-#loading.hidden {
+#loading-overlay.fade-out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#loading-overlay.hidden {
   display: none;
-}
-
-.spinner {
-  border: 3px solid rgba(255, 255, 255, var(--opacity-light));
-  border-top: 3px solid #ffffff;
-  border-radius: var(--radius-full);
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto;
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
 }
 
 main h1 {

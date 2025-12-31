@@ -1,20 +1,5 @@
 /* Dots grid system */
 
-body::before {
-  content: "";
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: var(--actual-vh);
-  background-image: radial-gradient(circle, var(--color-dot) 1px, transparent 1px);
-  background-size: var(--col-width) var(--row-height);
-  background-position: calc(var(--col-width) / 2) calc(var(--row-height) / 2);
-  pointer-events: none;
-  z-index: var(--z-dots);
-  opacity: 0;
-}
-
 .dome-mode #dots {
   opacity: 0;
 }

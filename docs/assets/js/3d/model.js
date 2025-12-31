@@ -25,14 +25,15 @@ export function loadModel() {
   dracoLoader.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/libs/draco/gltf/");
   loader.setDRACOLoader(dracoLoader);
   
-  const loadingDiv = document.getElementById("loading");
-
   loader.load(
     "assets/models/wisdome.glb",
     (gltf) => {
       if (!gltf || !gltf.scene) {
         console.error("GLB loaded but scene is missing");
-        loadingDiv.innerHTML = '<div style="color: #ff4444;">Error: Model scene is missing.</div>';
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (loadingOverlay) {
+          loadingOverlay.innerHTML = '<div style="color: #ff4444; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Error: Model scene is missing.</div>';
+        }
         return;
       }
       const object = gltf.scene;
@@ -237,7 +238,16 @@ export function loadModel() {
       
       // Function to show the scene once everything is loaded
       function showScene() {
-        loadingDiv.classList.add("hidden");
+        // Fade out the overlay
+        const loadingOverlay = document.getElementById("loading-overlay");
+        if (loadingOverlay) {
+          loadingOverlay.classList.add("fade-out");
+          // Remove from DOM after fade completes
+          setTimeout(() => {
+            loadingOverlay.remove();
+          }, 500);
+        }
+        
         const canvasContainer = document.getElementById("canvas-container");
         const infoPanel = document.getElementById("info-panel");
         if (canvasContainer) canvasContainer.classList.add("loaded");
@@ -279,7 +289,10 @@ export function loadModel() {
     undefined,
     (error) => {
       console.error("Error loading 3D model:", error);
-      loadingDiv.innerHTML = '<div style="color: #ff4444;">Error loading 3D model.</div>';
+      const loadingOverlay = document.getElementById("loading-overlay");
+      if (loadingOverlay) {
+        loadingOverlay.innerHTML = '<div style="color: #ff4444; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Error loading 3D model.</div>';
+      }
     }
   );
 }
