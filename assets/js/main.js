@@ -6,7 +6,6 @@ import { updateMovement, updateRotation } from "./3d/movement.js";
 import { loadModel, fbxMeshes, glbLights } from "./3d/model.js";
 import {
   loadSettings,
-  canvasSettings,
   currentCameraPosition,
   currentCameraRotation,
   startCameraPosition,
@@ -18,12 +17,10 @@ import { initScrollIncrement } from "./layout/scroll-increment.js";
 import { initGridDotsSystem } from "./layout/grid-dots.js";
 import { initDashboard } from "./ui/dashboard.js";
 import { initResponsiveHeights } from "./layout/responsive-height.js";
-import { initASCIIDecorative } from "./ui/ascii-decorative.js";
 import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam, loadImage, loadVideo, disconnectWebcam, loadDefaultScreenTexture } from "./3d/texture.js";
 import { textureRotationSettings } from "./core/settings.js";
-import { getRowHeight, updateViewportHeightCSS } from "./core/utils.js";
+import { updateViewportHeightCSS } from "./core/utils.js";
 import { updateScreenLighting } from "./3d/screen-lighting.js";
-import { updateDiscoBall } from "./3d/disco-ball.js";
 import { touchMovement } from "./3d/movement.js";
 
 let animationFrameId = null;
@@ -86,9 +83,9 @@ async function init() {
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
       () => {
-        setupLighting();
-        initPostProcessing();
-        setupCameraControls();
+      setupLighting();
+      initPostProcessing();
+      setupCameraControls();
       },
       { timeout: 1000 }
     );
@@ -97,7 +94,6 @@ async function init() {
       setupLighting();
       initPostProcessing();
       setupCameraControls();
-      initParallaxLayer();
     }, 50);
   }
 
@@ -156,8 +152,6 @@ async function init() {
 
   // Reset function: reset camera, clear textures, stop webcam
   window.resetToDefaults = function() {
-    console.log("Resetting to defaults...");
-    
     try {
       // Disconnect webcam if active
       disconnectWebcam();
@@ -171,8 +165,6 @@ async function init() {
       // Update current camera position/rotation tracking
       Object.assign(currentCameraPosition, startCameraPosition);
       Object.assign(currentCameraRotation, startCameraRotation);
-      
-      console.log("Reset complete - camera position:", startCameraPosition, "rotation:", startCameraRotation);
     } catch (error) {
       console.error("Error during reset:", error);
     }
@@ -182,13 +174,10 @@ async function init() {
   function setupResetButton() {
     const resetBtn = document.getElementById("keyboard-reset-btn");
     if (resetBtn) {
-      console.log("✓ Reset button FOUND");
-      
       const handleReset = function(e) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
-        console.log("Reset button clicked");
         if (window.resetToDefaults) {
           window.resetToDefaults();
         }
@@ -207,23 +196,18 @@ async function init() {
       newBtn.addEventListener("touchend", handleReset, { capture: true, passive: false });
       
       return true;
-    } else {
-      console.warn("Reset button (keyboard-reset-btn) not found");
-      return false;
     }
+    return false;
   }
   
   // Set up camera button handler - asks for permission
   function setupCameraButton() {
     const cameraBtn = document.getElementById("keyboard-camera-btn");
     if (cameraBtn) {
-      console.log("✓ Camera button FOUND");
-      
       const handleCamera = function(e) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
-        console.log("Camera button clicked");
         
         // Ask user if they want to connect webcam
         if (confirm("Do you want to connect your webcam to the screen?")) {
@@ -244,14 +228,11 @@ async function init() {
       newBtn.addEventListener("touchend", handleCamera, { capture: true, passive: false });
       
       return true;
-    } else {
-      console.warn("Camera button (keyboard-camera-btn) not found");
-      return false;
     }
+    return false;
   }
   
   // Set up both buttons
-  console.log("Setting up reset and camera buttons...");
   setupResetButton();
   setupCameraButton();
   
@@ -370,20 +351,20 @@ async function init() {
     updateViewportHeightCSS();
   };
   window.addEventListener("resize", handleResize);
-
+  
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", handleResize);
   }
-
+  
   window.addEventListener("orientationchange", () => {
     setTimeout(handleResize, 100);
   });
-
+  
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
       () => {
-        loadModel();
-        startRenderLoop();
+      loadModel();
+      startRenderLoop();
       },
       { timeout: 2000 }
     );
@@ -424,7 +405,6 @@ function animate(currentTime) {
   updateLEDAnimation(deltaTime);
   updateTextureRotation(deltaTime);
   updateScreenLighting(currentTime);
-  updateDiscoBall(deltaTime);
 
   updatePostProcessing();
 }
@@ -512,10 +492,10 @@ function initDomeMode() {
       // Request pointer lock after a small delay to ensure canvas is ready
       // Browsers require user interaction, so this should be called from a click handler
       setTimeout(() => {
-        const requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
-        if (requestPointerLock) {
-          requestPointerLock.call(canvas);
-        }
+      const requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
+      if (requestPointerLock) {
+        requestPointerLock.call(canvas);
+      }
       }, 100);
     }
 
@@ -571,7 +551,7 @@ function initDomeMode() {
       e.preventDefault();
       // If not in dome mode, enter (exactly like old link)
       if (!body.classList.contains("dome-mode")) {
-        enterDomeMode(true);
+      enterDomeMode(true);
       } else if (isMobile()) {
         // Only allow exit on mobile when already in dome mode
         exitDomeMode();
@@ -593,7 +573,7 @@ function initDomeMode() {
           document.mozPointerLockElement !== canvas &&
           document.webkitPointerLockElement !== canvas)
       ) {
-        exitDomeMode();
+      exitDomeMode();
       } else {
         // Pointer lock is active, exit it (which will trigger onPointerLockChange to exit dome mode)
         document.exitPointerLock();

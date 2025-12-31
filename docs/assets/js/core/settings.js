@@ -109,7 +109,6 @@ async function loadDefaultSettings(forceReload = false) {
   try {
     // Use relative path - works both locally and on GitHub Pages
     const jsonPath = "assets/js/core/default-settings.json";
-    console.log("Loading default-settings.json from:", jsonPath);
     // Add cache busting if forcing reload
     const url = forceReload ? `${jsonPath}?t=${Date.now()}` : jsonPath;
     const response = await fetch(url);
@@ -127,7 +126,6 @@ async function loadDefaultSettings(forceReload = false) {
     // Load default settings values from JSON (always, as base)
     if (defaultSettings.settings) {
       applySettings(defaultSettings.settings);
-      console.log("Default settings loaded from JSON file");
     }
 
     return true;
@@ -166,7 +164,6 @@ function applySettings(settings) {
 
   if (settings.bloomSettings) {
     Object.assign(bloomSettings, settings.bloomSettings);
-    console.log("Bloom settings loaded from JSON:", bloomSettings);
   }
 
   if (settings.ledStripSettings) {
@@ -323,14 +320,12 @@ export async function loadSettings(forceFromJSON = false) {
 
       const settings = JSON.parse(saved);
       applySettings(settings);
-      console.log("Loaded settings from localStorage (JSON file not available)");
     } catch (error) {
       console.warn("Failed to load settings from localStorage:", error);
       // Apply default page colors on error
       applyPageColors();
     }
   } else if (jsonLoaded) {
-    console.log("Loaded settings from data.json");
     // Ensure page colors are applied after loading from JSON
     applyPageColors();
   }
@@ -383,7 +378,6 @@ export async function applySettingsToScene() {
             colorToApply = generateRandomMutedColor();
             // Update saved settings so it persists for this session
             window.savedColorSettings[item.name] = colorToApply;
-            console.log(`Applied random muted color to ${item.name}:`, colorToApply);
           } else if (window.savedColorSettings[item.name]) {
             colorToApply = window.savedColorSettings[item.name];
           } else {
@@ -449,7 +443,6 @@ export async function reloadFromJSON() {
   await loadSettings(true);
   await applySettingsToScene();
 
-  console.log("Settings reloaded from JSON file");
 }
 
 export function saveSettings(fbxMeshes, glbLights) {
@@ -565,7 +558,6 @@ export function exportSettingsFile(fbxMeshes, glbLights) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    console.log("Settings file exported successfully");
   } catch (error) {
     console.error("Failed to export settings file:", error);
   }

@@ -39,7 +39,6 @@ function getScreenColor() {
       g: randomColor.g,
       b: randomColor.b
     };
-    console.log("Applied random muted color to Screen:", window.savedColorSettings["Screen"]);
   }
   
   const colorData = window.savedColorSettings["Screen"];

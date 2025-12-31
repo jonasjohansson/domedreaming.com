@@ -9,7 +9,6 @@ import { setScreenObject, loadDefaultScreenTexture, setupDragAndDrop } from "./t
 import { verifyNavmeshAtStartPosition, initNavmesh, getNavMeshQuery } from "./navmesh.js";
 import { findLEDRim, createLEDStrip } from "./led-strip.js";
 import { initScreenLighting } from "./screen-lighting.js";
-import { initDiscoBall } from "./disco-ball.js";
 
 export let wisdomeModel = null;
 export let fbxMeshes = [];
@@ -32,7 +31,6 @@ export function loadModel() {
   loader.load(
     "assets/models/wisdome.glb",
     (gltf) => {
-      console.log("Wisdome GLB loaded successfully");
       if (!gltf || !gltf.scene) {
         console.error("GLB loaded but scene is missing");
         loadingDiv.innerHTML = '<div style="color: #ff4444;">Error: Model scene is missing.</div>';
@@ -57,7 +55,6 @@ export function loadModel() {
           if (child.isLight) {
             glbLights.push(child);
             glbLightsGroup.add(child);
-            console.log("Found GLB light:", child.name || "Unnamed", child.type, "intensity:", child.intensity);
           }
         });
       };
@@ -70,7 +67,6 @@ export function loadModel() {
 
       // Also check for lights that might not be detected by isLight
       if (glbLights.length === 0) {
-        console.log("No lights found with isLight, checking object for light instances...");
         safeTraverse(object, (child) => {
           if (
             child instanceof THREE.Light ||
@@ -83,7 +79,6 @@ export function loadModel() {
             if (!glbLights.includes(child)) {
               glbLights.push(child);
               glbLightsGroup.add(child);
-              console.log("Found additional light:", child.name || "Unnamed", child.constructor.name);
             }
           }
         });
@@ -91,7 +86,6 @@ export function loadModel() {
 
       if (glbLights.length > 0) {
         scene.add(glbLightsGroup);
-        console.log(`Grouped ${glbLights.length} lights from GLB`);
 
         // Apply saved light settings
         if (window.savedLightSettings) {
@@ -107,7 +101,6 @@ export function loadModel() {
           });
         }
       } else {
-        console.log("No lights found in GLB file. Lights GUI will not be available.");
       }
 
       // Find and store hotspots
@@ -126,7 +119,6 @@ export function loadModel() {
                 name: hotspotChild.name,
                 triggered: false,
               });
-              console.log(`Found hotspot: ${hotspotChild.name} at position:`, worldPosition);
             }
           });
         }
@@ -135,14 +127,12 @@ export function loadModel() {
       // Find and create LED strip for LED_Rim
       const ledRim = findLEDRim(object);
       if (ledRim) {
-        console.log("Found LED_Rim object, creating LED strip...");
         // Load LED strip settings before creating
         import("./led-strip.js").then((ledStrip) => {
           ledStrip.loadLEDStripSettings();
         });
         createLEDStrip(ledRim);
       } else {
-        console.log("LED_Rim object not found in model");
       }
 
       // Process meshes
@@ -252,34 +242,7 @@ export function loadModel() {
 
       setModelLoaded(true);
 
-      // Find "Disco" Empty object in the model to position the disco ball
-      let discoPosition = { x: 0, y: 7.5, z: 0 }; // Default position
-      let discoEmpty = null;
-      
-      safeTraverse(object, (child) => {
-        if (child.name === "Disco" || child.name === "disco") {
-          discoEmpty = child;
-          const worldPosition = new THREE.Vector3();
-          child.getWorldPosition(worldPosition);
-          discoPosition = { x: worldPosition.x, y: worldPosition.y, z: worldPosition.z };
-          console.log(`Found Disco Empty at position:`, discoPosition);
-        }
-      });
 
-      if (!discoEmpty) {
-        console.warn("Disco Empty not found in model, using default position");
-      }
-
-      // Initialize disco ball at the Disco Empty position (or default)
-      // Temporarily hidden
-      // initDiscoBall({
-      //   radius: 1.08, // 1.5x larger (0.72 * 1.5)
-      //   position: discoPosition, // Use position from Disco Empty
-      //   lightCount: 4, // Fewer but brighter, wider lights work better
-      //   lightRadius: 3.0,
-      //   rotationSpeed: 1.0, // Increased from 0.5 for faster rotation
-      //   lightRotationSpeed: 1.2,
-      // });
 
       const navMeshQuery = getNavMeshQuery();
       if (navMeshQuery) {
@@ -296,7 +259,6 @@ export function loadModel() {
         const infoPanel = document.getElementById("info-panel");
         if (canvasContainer) canvasContainer.classList.add("loaded");
         if (infoPanel) infoPanel.classList.add("loaded");
-        console.log("Scene is now visible - all assets loaded");
       }
       
       // Wait for all assets to load before showing the scene
@@ -320,7 +282,6 @@ export function loadModel() {
           });
           if (screenObj) {
             initScreenLighting(screenObj);
-            console.log("Screen lighting initialized");
           }
           
           // Now show the scene - everything is loaded (model, colors, texture)
