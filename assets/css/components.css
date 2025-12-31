@@ -45,7 +45,7 @@ main p {
   font-weight: var(--font-weight-normal);
   letter-spacing: var(--letter-spacing-normal);
   margin: 0;
-  margin-bottom: 24px;
+  margin-bottom: var(--line-height-base);
 }
 
 main p:last-child {

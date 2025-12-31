@@ -44,28 +44,52 @@ function applyDomeDreamingFont() {
     }
   }
 
-  textNodes.forEach((textNode) => {
-    const parent = textNode.parentNode;
-    if (!parent) return;
+  // Process text nodes in batches to avoid long main-thread tasks
+  let currentIndex = 0;
+  const batchSize = 5;
+  
+  function processBatch() {
+    const endIndex = Math.min(currentIndex + batchSize, textNodes.length);
+    
+    for (let i = currentIndex; i < endIndex; i++) {
+      const textNode = textNodes[i];
+      const parent = textNode.parentNode;
+      if (!parent) continue;
 
-    const text = textNode.textContent;
-    const regex = /(dome\s+dreaming)/gi;
-    const parts = text.split(regex);
+      const text = textNode.textContent;
+      const regex = /(dome\s+dreaming)/gi;
+      const parts = text.split(regex);
 
-    const fragment = document.createDocumentFragment();
-    parts.forEach((part) => {
-      if (part && /^dome\s+dreaming$/i.test(part)) {
-        const span = document.createElement("span");
-        span.className = "dome-dreaming-text";
-        span.textContent = part;
-        fragment.appendChild(span);
-      } else if (part) {
-        fragment.appendChild(document.createTextNode(part));
+      const fragment = document.createDocumentFragment();
+      parts.forEach((part) => {
+        if (part && /^dome\s+dreaming$/i.test(part)) {
+          const span = document.createElement("span");
+          span.className = "dome-dreaming-text";
+          span.textContent = part;
+          fragment.appendChild(span);
+        } else if (part) {
+          fragment.appendChild(document.createTextNode(part));
+        }
+      });
+
+      parent.replaceChild(fragment, textNode);
+    }
+    
+    currentIndex = endIndex;
+    
+    if (currentIndex < textNodes.length) {
+      // Use requestIdleCallback or setTimeout to continue batching
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(processBatch, { timeout: 50 });
+      } else {
+        setTimeout(processBatch, 0);
       }
-    });
-
-    parent.replaceChild(fragment, textNode);
-  });
+    }
+  }
+  
+  if (textNodes.length > 0) {
+    processBatch();
+  }
 }
 
 async function init() {
@@ -74,10 +98,21 @@ async function init() {
   updateViewportHeightCSS();
 
   initScrollIncrement();
-  initGridDotsSystem();
   initResponsiveHeights();
   initDashboard();
-  applyDomeDreamingFont();
+  
+  // Defer non-critical initialization to avoid blocking
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      initGridDotsSystem();
+      applyDomeDreamingFont();
+    }, { timeout: 500 });
+  } else {
+    setTimeout(() => {
+      initGridDotsSystem();
+      applyDomeDreamingFont();
+    }, 50);
+  }
 
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
@@ -364,11 +399,12 @@ async function init() {
     setTimeout(handleResize, 100);
   });
   
+  // Defer 3D model loading to improve LCP - load after page is interactive
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
       () => {
-      loadModel();
-      startRenderLoop();
+        loadModel();
+        startRenderLoop();
       },
       { timeout: 2000 }
     );

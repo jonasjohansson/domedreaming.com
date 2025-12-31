@@ -170,6 +170,7 @@ body::-webkit-scrollbar {
 }
 .x-1 {
   grid-column-start: 1;
+  padding-left: var(--grid-gap);
 }
 .x-2 {
   grid-column-start: 2;

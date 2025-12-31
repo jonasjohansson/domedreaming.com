@@ -25,6 +25,7 @@ export function loadModel() {
   dracoLoader.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/libs/draco/gltf/");
   loader.setDRACOLoader(dracoLoader);
   
+  // Use fetchpriority="low" hint for 3D model to not block LCP
   loader.load(
     "assets/models/wisdome.glb",
     (gltf) => {

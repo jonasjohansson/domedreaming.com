@@ -87,36 +87,6 @@ main.grid {
   align-items: center;
 }
 
-#ascii-decorative-layer {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  max-width: 100%;
-  min-height: var(--actual-vh);
-  pointer-events: none;
-  z-index: 4;
-  display: grid;
-  grid-template-columns: repeat(var(--grid-columns), 1fr);
-  grid-auto-rows: var(--row-height);
-  column-gap: var(--grid-gap);
-  row-gap: 0;
-  overflow: visible;
-}
-
-#ascii-decorative-layer .ascii-symbol {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: monospace;
-  font-size: calc(var(--row-height) * 0.6);
-  color: var(--color-text);
-  opacity: 0.5;
-  mix-blend-mode: difference;
-  line-height: 1;
-  user-select: none;
-}
-
 a:link,
 a:visited {
   color: inherit;

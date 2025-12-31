@@ -53,6 +53,7 @@ function updateDotsSize() {
 
 /**
  * Create dot elements - fixed 16x16 grid
+ * Batched to avoid long main-thread tasks
  */
 function createDotElements() {
   if (!dotsContainer) return;
@@ -61,11 +62,17 @@ function createDotElements() {
   dotsContainer.innerHTML = "";
 
   const totalRows = 16; // Fixed 16 rows
+  const totalDots = totalRows * gridColumns;
+  const batchSize = 32; // Create dots in batches to avoid blocking
+  let currentIndex = 0;
 
-  // Create exactly 16x16 dots (16 columns, 16 rows)
-  for (let row = 0; row < totalRows; row++) {
-    // Create dots for this row (one per column)
-    for (let col = 0; col < gridColumns; col++) {
+  function createBatch() {
+    const endIndex = Math.min(currentIndex + batchSize, totalDots);
+    
+    for (let i = currentIndex; i < endIndex; i++) {
+      const row = Math.floor(i / gridColumns);
+      const col = i % gridColumns;
+      
       const dot = document.createElement("div");
       dot.className = "dot";
       dot.dataset.col = col + 1; // 1-indexed
@@ -83,7 +90,20 @@ function createDotElements() {
 
       dotsContainer.appendChild(dot);
     }
+    
+    currentIndex = endIndex;
+    
+    if (currentIndex < totalDots) {
+      // Use requestIdleCallback or setTimeout to continue batching
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(createBatch, { timeout: 50 });
+      } else {
+        setTimeout(createBatch, 0);
+      }
+    }
   }
+  
+  createBatch();
 }
 
 /**
