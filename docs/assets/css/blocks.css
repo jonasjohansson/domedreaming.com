@@ -250,11 +250,12 @@ p.large,
   line-height: 1.4;
 }
 
-@media (max-width: 768px) {
+/* Mobile (portrait and landscape) - use same font size as other sections */
+@media (max-width: 1024px) and (max-height: 768px), (max-width: 768px) {
   .page-content p.large,
   p.large,
   .large {
-    font-size: calc(var(--font-size-base) * 1.25) !important;
+    font-size: var(--font-size-base) !important;
   }
 }
 
