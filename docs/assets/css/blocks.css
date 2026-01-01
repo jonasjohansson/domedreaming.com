@@ -218,7 +218,8 @@ section:first-of-type .page-content {
   margin-bottom: 0;
 }
 
-@media (max-width: 768px) {
+/* Mobile (portrait and landscape) */
+@media (max-width: 768px), (max-width: 1024px) and (max-height: 768px) {
   .page-content p {
     line-height: 1.4;
     margin-bottom: calc(var(--font-size-base) * 1.4);
