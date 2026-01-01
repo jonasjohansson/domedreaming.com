@@ -1,9 +1,31 @@
-import { scene, camera, renderer, canvas, resetCamera } from "./3d/scene.js";
-import { setupLighting } from "./3d/lighting.js";
-import { initPostProcessing, updatePostProcessing } from "./3d/postprocessing.js";
-import { setupCameraControls, euler } from "./3d/camera.js";
-import { updateMovement, updateRotation } from "./3d/movement.js";
-import { loadModel, fbxMeshes, glbLights } from "./3d/model.js";
+// Import from 3D barrel export (cleaner imports)
+import {
+  scene,
+  camera,
+  renderer,
+  canvas,
+  resetCamera,
+  setupLighting,
+  initPostProcessing,
+  updatePostProcessing,
+  setupCameraControls,
+  euler,
+  updateMovement,
+  updateRotation,
+  loadModel,
+  fbxMeshes,
+  glbLights,
+  getCurrentImageTexture,
+  getCurrentVideoTexture,
+  connectWebcam,
+  loadImage,
+  loadVideo,
+  disconnectWebcam,
+  loadDefaultScreenTexture,
+  updateScreenLighting,
+  touchMovement
+} from "./3d/index.js";
+
 import {
   loadSettings,
   currentCameraPosition,
@@ -11,16 +33,13 @@ import {
   startCameraPosition,
   startCameraRotation,
   saveSettings,
+  textureRotationSettings
 } from "./core/settings.js";
 import { initScrollIncrement } from "./layout/scroll-increment.js";
 import { initGridDotsSystem } from "./layout/grid-dots.js";
 import { initDashboard } from "./ui/dashboard.js";
 import { initResponsiveHeights } from "./layout/responsive-height.js";
-import { getCurrentImageTexture, getCurrentVideoTexture, connectWebcam, loadImage, loadVideo, disconnectWebcam, loadDefaultScreenTexture } from "./3d/texture.js";
-import { textureRotationSettings } from "./core/settings.js";
 import { updateViewportHeightCSS } from "./core/utils.js";
-import { updateScreenLighting } from "./3d/screen-lighting.js";
-import { touchMovement } from "./3d/movement.js";
 
 let animationFrameId = null;
 let lastTime = 0;

@@ -4,7 +4,7 @@
   "description": "Dome Dreaming fulldome film festival website",
   "scripts": {
     "dev": "eleventy --serve --watch",
-    "build": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js && node scripts/minify-js.js",
+    "build": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js && node scripts/minify-js.js && node scripts/extract-critical-css.js && node scripts/inline-critical-css.js",
     "build:no-minify": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js",
     "serve": "eleventy --serve"
   },

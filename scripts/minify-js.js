@@ -8,6 +8,7 @@ const sourcePath = path.join(__dirname, '../assets/js');
 // Files to minify (main entry point and all modules)
 const filesToMinify = [
   'main.js',
+  '3d/index.js',  // Barrel export (must come before other 3d files)
   '3d/scene.js',
   '3d/camera.js',
   '3d/model.js',

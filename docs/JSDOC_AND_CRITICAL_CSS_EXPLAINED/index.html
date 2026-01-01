@@ -1,0 +1,181 @@
+<h1>JSDoc Comments &amp; Critical CSS Extraction Explained</h1>
+<h2>1. JSDoc Comments</h2>
+<p><strong>What it is</strong>: A standardized way to document JavaScript code using special comment syntax. It helps IDEs understand your code better and can generate documentation.</p>
+<h3>Without JSDoc:</h3>
+<pre><code class="language-javascript">// Your current code
+export function applyTextureToScreen(texture, screenObject) {
+  if (!texture || !screenObject) return;
+  const material = getMaterial(screenObject);
+  // ... rest of code
+}
+</code></pre>
+<p><strong>Problems:</strong></p>
+<ul>
+<li>IDE doesn't know what <code>texture</code> should be</li>
+<li>No autocomplete hints</li>
+<li>No type checking</li>
+<li>Hard to understand what the function does</li>
+</ul>
+<h3>With JSDoc:</h3>
+<pre><code class="language-javascript">/**
+ * Applies a texture to the 3D screen object
+ * @param {THREE.Texture} texture - The Three.js texture to apply
+ * @param {THREE.Mesh} screenObject - The screen mesh object to apply texture to
+ * @returns {void}
+ * @throws {Error} If texture or screenObject is invalid
+ */
+export function applyTextureToScreen(texture, screenObject) {
+  if (!texture || !screenObject) return;
+  const material = getMaterial(screenObject);
+  // ... rest of code
+}
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>✅ IDE shows parameter types when you type</li>
+<li>✅ Autocomplete works better</li>
+<li>✅ Hover tooltips show documentation</li>
+<li>✅ Can generate HTML documentation</li>
+<li>✅ Better code understanding</li>
+</ul>
+<h3>Real Example from Your Code:</h3>
+<p><strong>Before:</strong></p>
+<pre><code class="language-javascript">export function loadModel() {
+  const loader = new GLTFLoader();
+  // ...
+}
+</code></pre>
+<p><strong>After with JSDoc:</strong></p>
+<pre><code class="language-javascript">/**
+ * Loads the 3D GLB model and initializes the scene
+ * @returns {Promise&lt;void&gt;} Resolves when model is loaded
+ * @throws {Error} If model file is missing or invalid
+ */
+export function loadModel() {
+  const loader = new GLTFLoader();
+  // ...
+}
+</code></pre>
+<h3>Common JSDoc Tags:</h3>
+<pre><code class="language-javascript">/**
+ * @param {Type} name - Description
+ * @returns {Type} Description
+ * @throws {Error} When this happens
+ * @example
+ * loadModel().then(() =&gt; console.log('Loaded!'));
+ * @since 1.0.0
+ * @author Your Name
+ */
+</code></pre>
+<h3>IDE Benefits:</h3>
+<p>When you use the function:</p>
+<pre><code class="language-javascript">loadModel(  // ← IDE shows: &quot;Loads the 3D GLB model and initializes the scene&quot;
+            //    Parameter: (none)
+            //    Returns: Promise&lt;void&gt;
+</code></pre>
+<hr>
+<h2>2. Critical CSS Extraction</h2>
+<p><strong>What it is</strong>: Extracting only the CSS needed for above-the-fold content (what users see first) and inlining it in the HTML, then loading the rest asynchronously.</p>
+<h3>Current Situation:</h3>
+<pre><code class="language-html">&lt;!-- All CSS loads before page renders --&gt;
+&lt;link rel=&quot;stylesheet&quot; href=&quot;assets/css/main.css&quot; /&gt;
+&lt;!-- Page waits for ALL CSS to load before showing content --&gt;
+</code></pre>
+<p><strong>Problem:</strong></p>
+<ul>
+<li>User sees blank screen while CSS loads</li>
+<li>Large CSS file blocks rendering</li>
+<li>Slower First Contentful Paint (FCP)</li>
+</ul>
+<h3>With Critical CSS:</h3>
+<pre><code class="language-html">&lt;!-- Inline critical CSS (small, fast) --&gt;
+&lt;style&gt;
+  /* Only CSS for above-the-fold content */
+  body { margin: 0; font-family: var(--font-family); }
+  .page-section:first-child { ... }
+  /* ~5KB instead of 50KB */
+&lt;/style&gt;
+
+&lt;!-- Load rest asynchronously --&gt;
+&lt;link rel=&quot;preload&quot; href=&quot;assets/css/main.css&quot; as=&quot;style&quot; onload=&quot;this.onload=null;this.rel='stylesheet'&quot;&gt;
+</code></pre>
+<p><strong>Benefits:</strong></p>
+<ul>
+<li>✅ Page renders immediately with critical styles</li>
+<li>✅ Faster First Contentful Paint</li>
+<li>✅ Better user experience</li>
+<li>✅ Rest of CSS loads in background</li>
+</ul>
+<h3>How It Works:</h3>
+<ol>
+<li><strong>Extract</strong> - Tool analyzes your HTML and finds CSS used above the fold</li>
+<li><strong>Inline</strong> - Put that CSS in a <code>&lt;style&gt;</code> tag in <code>&lt;head&gt;</code></li>
+<li><strong>Defer</strong> - Load full CSS file asynchronously</li>
+</ol>
+<h3>Example Tool Setup:</h3>
+<pre><code class="language-javascript">// scripts/extract-critical-css.js
+const critical = require('critical');
+const { generate } = critical;
+
+generate({
+  base: 'docs/',
+  src: 'index.html',
+  target: {
+    css: 'docs/assets/css/critical.css',
+    html: 'docs/index.html'
+  },
+  inline: true,
+  minify: true,
+  width: 1300,
+  height: 900
+});
+</code></pre>
+<h3>Before vs After:</h3>
+<p><strong>Before (Current):</strong></p>
+<pre><code>User visits site
+  ↓
+Browser requests HTML
+  ↓
+Browser requests CSS (50KB) ← BLOCKS RENDERING
+  ↓
+Wait 200ms...
+  ↓
+CSS loaded, page renders
+</code></pre>
+<p><strong>After (Critical CSS):</strong></p>
+<pre><code>User visits site
+  ↓
+Browser requests HTML (with inline critical CSS)
+  ↓
+Page renders immediately! ← FAST
+  ↓
+Full CSS loads in background (non-blocking)
+</code></pre>
+<h3>What Gets Extracted:</h3>
+<p><strong>Critical (inline):</strong></p>
+<ul>
+<li>Body styles</li>
+<li>Header/navigation</li>
+<li>First section styles</li>
+<li>Font loading</li>
+<li>Grid system basics</li>
+</ul>
+<p><strong>Non-Critical (async):</strong></p>
+<ul>
+<li>Footer styles</li>
+<li>Below-the-fold sections</li>
+<li>Hover effects</li>
+<li>Print styles</li>
+<li>Animations</li>
+</ul>
+<h3>Real Impact:</h3>
+<ul>
+<li><strong>Before</strong>: FCP ~800ms (waiting for CSS)</li>
+<li><strong>After</strong>: FCP ~200ms (instant render)</li>
+<li><strong>Improvement</strong>: 75% faster initial render!</li>
+</ul>
+<hr>
+<h2>Summary</h2>
+<p><strong>JSDoc</strong>: Makes your code self-documenting and helps IDEs understand it better
+<strong>Critical CSS</strong>: Makes your site render faster by prioritizing above-the-fold styles</p>
+<p>Both are relatively easy to implement and provide significant benefits!</p>

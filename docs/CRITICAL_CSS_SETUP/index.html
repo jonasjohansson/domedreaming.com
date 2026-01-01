@@ -1,0 +1,106 @@
+<h1>Critical CSS Setup Guide</h1>
+<h2>How It Works</h2>
+<h3>1. <strong>Extract Critical CSS</strong> (<code>scripts/extract-critical-css.js</code>)</h3>
+<ul>
+<li>Runs after Eleventy builds</li>
+<li>Extracts only CSS needed for above-the-fold content:
+<ul>
+<li>CSS variables (<code>:root</code>)</li>
+<li>Base styles (<code>html</code>, <code>body</code>)</li>
+<li>Grid system (<code>.grid</code>, <code>.x-1</code> through <code>.x-12</code>)</li>
+<li>Loading overlay (<code>#loading-overlay</code>)</li>
+<li>Canvas container (<code>#canvas-container</code>)</li>
+<li>First section styles</li>
+<li>Typography basics</li>
+<li>Font faces</li>
+</ul>
+</li>
+<li>Saves to <code>docs/critical.css</code></li>
+</ul>
+<h3>2. <strong>Inline Critical CSS</strong> (<code>scripts/inline-critical-css.js</code>)</h3>
+<ul>
+<li>Reads <code>docs/critical.css</code></li>
+<li>Inlines it in <code>&lt;head&gt;</code> as <code>&lt;style&gt;</code> tag</li>
+<li>Sets up async loading for full CSS file</li>
+<li>Updates <code>docs/index.html</code></li>
+</ul>
+<h3>3. <strong>Result</strong></h3>
+<p><strong>Before:</strong></p>
+<pre><code class="language-html">&lt;link rel=&quot;stylesheet&quot; href=&quot;assets/css/main.css&quot; /&gt;
+&lt;!-- Blocks rendering until CSS loads --&gt;
+</code></pre>
+<p><strong>After:</strong></p>
+<pre><code class="language-html">&lt;style&gt;
+  /* Critical CSS inlined here (~5-10KB) */
+  :root { --color-bg: #000000; ... }
+  body { font-family: ... }
+  /* etc */
+&lt;/style&gt;
+&lt;link rel=&quot;preload&quot; href=&quot;assets/css/main.css&quot; as=&quot;style&quot; 
+      onload=&quot;this.onload=null;this.rel='stylesheet'&quot; /&gt;
+&lt;noscript&gt;&lt;link rel=&quot;stylesheet&quot; href=&quot;assets/css/main.css&quot; /&gt;&lt;/noscript&gt;
+&lt;!-- Full CSS loads asynchronously, doesn't block rendering --&gt;
+</code></pre>
+<h2>Benefits</h2>
+<ol>
+<li>
+<p><strong>Faster First Contentful Paint (FCP)</strong></p>
+<ul>
+<li>Page renders immediately with critical styles</li>
+<li>No waiting for full CSS file</li>
+</ul>
+</li>
+<li>
+<p><strong>Better User Experience</strong></p>
+<ul>
+<li>Users see content faster</li>
+<li>Progressive enhancement (styles load in background)</li>
+</ul>
+</li>
+<li>
+<p><strong>Performance Score Improvement</strong></p>
+<ul>
+<li>Reduces render-blocking resources</li>
+<li>Improves Lighthouse score</li>
+</ul>
+</li>
+</ol>
+<h2>Build Process</h2>
+<p>The build script now runs:</p>
+<ol>
+<li>Eleventy builds site → <code>docs/</code></li>
+<li>Cleanup unused files</li>
+<li>Minify JavaScript</li>
+<li><strong>Extract critical CSS</strong> → <code>docs/critical.css</code></li>
+<li><strong>Inline critical CSS</strong> → Updates <code>docs/index.html</code></li>
+</ol>
+<h2>How to Use</h2>
+<p>Just run your normal build:</p>
+<pre><code class="language-bash">npm run build
+</code></pre>
+<p>The critical CSS extraction and inlining happens automatically!</p>
+<h2>Manual Testing</h2>
+<p>To test if it's working:</p>
+<ol>
+<li>Build the site: <code>npm run build</code></li>
+<li>Check <code>docs/index.html</code> - should have <code>&lt;style&gt;</code> tag with critical CSS</li>
+<li>Check that full CSS loads asynchronously (check Network tab in DevTools)</li>
+<li>Verify page renders immediately without waiting for CSS</li>
+</ol>
+<h2>Troubleshooting</h2>
+<p><strong>If critical CSS is too large:</strong></p>
+<ul>
+<li>Adjust selectors in <code>extract-critical-css.js</code></li>
+<li>Remove non-essential styles from extraction</li>
+</ul>
+<p><strong>If styles are missing:</strong></p>
+<ul>
+<li>Add missing selectors to extraction script</li>
+<li>Check that CSS file paths are correct</li>
+</ul>
+<p><strong>If async loading doesn't work:</strong></p>
+<ul>
+<li>Check browser console for errors</li>
+<li>Verify <code>loadCSS</code> polyfill is included</li>
+<li>Test with JavaScript disabled (should use <code>&lt;noscript&gt;</code> fallback)</li>
+</ul>

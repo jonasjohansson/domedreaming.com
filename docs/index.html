@@ -98,10 +98,13 @@
   as="font"
   type="font/woff2"
   crossorigin="anonymous" />
+<style></style>
 <link
-  rel="stylesheet"
+  rel="preload"
   href="assets/css/main.css"
-  media="all" />
+  as="style"
+  onload="this.onload=null;this.rel='stylesheet'" />
+<noscript><link rel="stylesheet" href="assets/css/main.css" /></noscript>
 
 <!-- Preload LCP image -->
 <link
