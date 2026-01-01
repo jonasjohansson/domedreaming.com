@@ -1,6 +1,27 @@
+const htmlmin = require('html-minifier-next');
+
 module.exports = function (eleventyConfig) {
   // Use gitignore to avoid processing ignored files (performance optimization)
   eleventyConfig.setUseGitIgnore(true);
+  
+  // HTML minification
+  eleventyConfig.addTransform('htmlmin', async function(content) {
+    if (this.page.outputPath && this.page.outputPath.endsWith('.html')) {
+      let minified = await htmlmin.minify(content, {
+        collapseBooleanAttributes: true,
+        collapseWhitespace: true,
+        decodeEntities: true,
+        minifyCSS: true,        // Minify inline CSS
+        minifyJS: true,         // Minify inline JS
+        preventAttributesEscaping: true,
+        removeComments: true,
+        removeOptionalTags: true,
+        removeRedundantAttributes: true,
+      });
+      return minified;
+    }
+    return content;
+  });
 
   // Ignore the old index.html since we're using index.njk
   eleventyConfig.ignores.add("index.html");

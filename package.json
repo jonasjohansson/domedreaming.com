@@ -4,7 +4,7 @@
   "description": "Dome Dreaming fulldome film festival website",
   "scripts": {
     "dev": "eleventy --serve --watch",
-    "build": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js && node scripts/minify-js.js && node scripts/extract-critical-css.js && node scripts/inline-critical-css.js",
+    "build": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js && node scripts/minify-js.js && node scripts/minify-css.js && node scripts/extract-critical-css.js && node scripts/inline-critical-css.js",
     "build:no-minify": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js",
     "serve": "eleventy --serve"
   },
@@ -13,6 +13,8 @@
   "license": "ISC",
   "devDependencies": {
     "@11ty/eleventy": "^3.0.0",
-    "terser": "^5.44.1"
+    "terser": "^5.44.1",
+    "csso": "^5.0.5",
+    "html-minifier-next": "^1.0.0"
   }
 }
