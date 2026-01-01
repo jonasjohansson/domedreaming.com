@@ -219,30 +219,58 @@ export function applyPageBackgrounds() {
 
   // About page (first page-section after canvas)
   // Background is now handled by CSS in layout.css
-  const pageSections = document.querySelectorAll(".page-section");
-  if (pageSections.length > 0) {
-    // Skip first page-section - handled by CSS
+  // Defer this work to avoid blocking TBT
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      const pageSections = document.querySelectorAll(".page-section");
+      if (pageSections.length > 0) {
+        // Skip first page-section - handled by CSS
 
-    // Apply team background to remaining sections if needed
-    if (pageSections.length > 1 && pageBackgroundSettings.team) {
-      for (let i = 1; i < pageSections.length; i++) {
-        const section = pageSections[i];
-        if (pageBackgroundSettings.team.backgroundColor && pageBackgroundSettings.team.backgroundColor !== "#000000") {
-          const rgbaColor = hexToRgba(pageBackgroundSettings.team.backgroundColor, 0.5);
-          section.style.setProperty("background-color", rgbaColor, "important");
-        } else {
-          section.style.removeProperty("background-color");
-        }
-        if (pageBackgroundSettings.team.backgroundImage) {
-          section.style.setProperty("background-image", `url(${pageBackgroundSettings.team.backgroundImage})`, "important");
-          section.style.setProperty("background-size", "cover", "important");
-          section.style.setProperty("background-position", "center", "important");
-          section.style.setProperty("background-repeat", "no-repeat", "important");
-        } else {
-          section.style.removeProperty("background-image");
+        // Apply team background to remaining sections if needed
+        if (pageSections.length > 1 && pageBackgroundSettings.team) {
+          for (let i = 1; i < pageSections.length; i++) {
+            const section = pageSections[i];
+            if (pageBackgroundSettings.team.backgroundColor && pageBackgroundSettings.team.backgroundColor !== "#000000") {
+              const rgbaColor = hexToRgba(pageBackgroundSettings.team.backgroundColor, 0.5);
+              section.style.setProperty("background-color", rgbaColor, "important");
+            } else {
+              section.style.removeProperty("background-color");
+            }
+            if (pageBackgroundSettings.team.backgroundImage) {
+              section.style.setProperty("background-image", `url(${pageBackgroundSettings.team.backgroundImage})`, "important");
+              section.style.setProperty("background-size", "cover", "important");
+              section.style.setProperty("background-position", "center", "important");
+              section.style.setProperty("background-repeat", "no-repeat", "important");
+            } else {
+              section.style.removeProperty("background-image");
+            }
+          }
         }
       }
-    }
+    }, { timeout: 200 });
+  } else {
+    setTimeout(() => {
+      const pageSections = document.querySelectorAll(".page-section");
+      if (pageSections.length > 0 && pageSections.length > 1 && pageBackgroundSettings.team) {
+        for (let i = 1; i < pageSections.length; i++) {
+          const section = pageSections[i];
+          if (pageBackgroundSettings.team.backgroundColor && pageBackgroundSettings.team.backgroundColor !== "#000000") {
+            const rgbaColor = hexToRgba(pageBackgroundSettings.team.backgroundColor, 0.5);
+            section.style.setProperty("background-color", rgbaColor, "important");
+          } else {
+            section.style.removeProperty("background-color");
+          }
+          if (pageBackgroundSettings.team.backgroundImage) {
+            section.style.setProperty("background-image", `url(${pageBackgroundSettings.team.backgroundImage})`, "important");
+            section.style.setProperty("background-size", "cover", "important");
+            section.style.setProperty("background-position", "center", "important");
+            section.style.setProperty("background-repeat", "no-repeat", "important");
+          } else {
+            section.style.removeProperty("background-image");
+          }
+        }
+      }
+    }, 50);
   }
 }
 
@@ -465,53 +493,92 @@ export async function applySettingsToScene() {
     window.savedColorSettings = {};
   }
   
-  // Apply colors to meshes
+  // Apply colors to meshes (batch to avoid long tasks)
   import("../3d/model.js").then((model) => {
     if (model.fbxMeshes && model.fbxMeshes.length > 0) {
-      model.fbxMeshes.forEach((item) => {
-        const material = getMaterial(item.mesh);
-        if (material) {
-          let colorToApply;
-          
-          // Generate random muted color for Main_Structure (interior) and Floor on each load
-          if (item.name === "Main_Structure" || item.name === "Floor") {
-            colorToApply = generateRandomMutedColor();
-            // Update saved settings so it persists for this session
-            window.savedColorSettings[item.name] = colorToApply;
-          } else if (window.savedColorSettings[item.name]) {
-            colorToApply = window.savedColorSettings[item.name];
+      // Batch mesh color updates to avoid blocking
+      let currentIndex = 0;
+      const batchSize = 5;
+      
+      function processMeshBatch() {
+        const endIndex = Math.min(currentIndex + batchSize, model.fbxMeshes.length);
+        
+        for (let i = currentIndex; i < endIndex; i++) {
+          const item = model.fbxMeshes[i];
+          const material = getMaterial(item.mesh);
+          if (material) {
+            let colorToApply;
+            
+            // Generate random muted color for Main_Structure (interior) and Floor on each load
+            if (item.name === "Main_Structure" || item.name === "Floor") {
+              colorToApply = generateRandomMutedColor();
+              // Update saved settings so it persists for this session
+              window.savedColorSettings[item.name] = colorToApply;
+            } else if (window.savedColorSettings[item.name]) {
+              colorToApply = window.savedColorSettings[item.name];
+            } else {
+              // If no saved color, use original color
+              colorToApply = item.originalColor ? {
+                r: item.originalColor.r,
+                g: item.originalColor.g,
+                b: item.originalColor.b
+              } : null;
+            }
+            
+            if (colorToApply) {
+              material.color.setRGB(colorToApply.r, colorToApply.g, colorToApply.b);
+              material.needsUpdate = true;
+            }
+          }
+        }
+        
+        currentIndex = endIndex;
+        
+        if (currentIndex < model.fbxMeshes.length) {
+          // Yield to browser between batches
+          if ('requestIdleCallback' in window) {
+            requestIdleCallback(processMeshBatch, { timeout: 50 });
           } else {
-            // If no saved color, use original color
-            colorToApply = item.originalColor ? {
-              r: item.originalColor.r,
-              g: item.originalColor.g,
-              b: item.originalColor.b
-            } : null;
+            setTimeout(processMeshBatch, 0);
           }
-          
-          if (colorToApply) {
-            material.color.setRGB(colorToApply.r, colorToApply.g, colorToApply.b);
-            material.needsUpdate = true;
-          }
+        } else {
+          // All meshes processed, apply backgrounds
+          applyBackgroundColors();
         }
-      });
+      }
+      
+      processMeshBatch();
     }
-    
-    // Apply background colors after mesh colors are set
-    applyBackgroundColors();
 
-    // Apply light settings
+    // Apply light settings (batch to avoid blocking)
     if (window.savedLightSettings && model.glbLights) {
-      model.glbLights.forEach((light, index) => {
-        const lightName = light.name || `light_${index}`;
-        if (window.savedLightSettings[lightName]) {
-          const saved = window.savedLightSettings[lightName];
-          light.color.setRGB(saved.r, saved.g, saved.b);
-          // Clamp to avoid extreme persisted values blowing out the scene
-          const clampedIntensity = Math.max(0, Math.min(saved.intensity ?? light.intensity, 10));
-          light.intensity = clampedIntensity;
-        }
-      });
+      // Defer light updates slightly
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+          model.glbLights.forEach((light, index) => {
+            const lightName = light.name || `light_${index}`;
+            if (window.savedLightSettings[lightName]) {
+              const saved = window.savedLightSettings[lightName];
+              light.color.setRGB(saved.r, saved.g, saved.b);
+              // Clamp to avoid extreme persisted values blowing out the scene
+              const clampedIntensity = Math.max(0, Math.min(saved.intensity ?? light.intensity, 10));
+              light.intensity = clampedIntensity;
+            }
+          });
+        }, { timeout: 100 });
+      } else {
+        setTimeout(() => {
+          model.glbLights.forEach((light, index) => {
+            const lightName = light.name || `light_${index}`;
+            if (window.savedLightSettings[lightName]) {
+              const saved = window.savedLightSettings[lightName];
+              light.color.setRGB(saved.r, saved.g, saved.b);
+              const clampedIntensity = Math.max(0, Math.min(saved.intensity ?? light.intensity, 10));
+              light.intensity = clampedIntensity;
+            }
+          });
+        }, 50);
+      }
     }
   });
 

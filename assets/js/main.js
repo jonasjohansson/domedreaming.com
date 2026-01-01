@@ -112,15 +112,43 @@ function applyDomeDreamingFont() {
 }
 
 async function init() {
+  // Yield to browser immediately to allow FCP
+  await new Promise(resolve => {
+    if ('scheduler' in window && 'postTask' in window.scheduler) {
+      // Use Scheduler API if available (best for yielding)
+      window.scheduler.postTask(() => resolve(), { priority: 'user-blocking' });
+    } else if ('requestIdleCallback' in window) {
+      requestIdleCallback(() => resolve(), { timeout: 0 });
+    } else {
+      setTimeout(() => resolve(), 0);
+    }
+  });
+
+  // Load settings (async, but yield after)
   await loadSettings();
+  
+  // Yield again after settings load
+  await new Promise(resolve => setTimeout(resolve, 0));
 
   updateViewportHeightCSS();
 
-  initScrollIncrement();
-  initResponsiveHeights();
-  initDashboard();
+  // Defer all non-critical initialization to avoid blocking TBT
+  // Only keep absolutely critical path synchronous
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      initScrollIncrement();
+      initResponsiveHeights();
+      initDashboard();
+    }, { timeout: 100 });
+  } else {
+    setTimeout(() => {
+      initScrollIncrement();
+      initResponsiveHeights();
+      initDashboard();
+    }, 0);
+  }
   
-  // Defer non-critical initialization to avoid blocking
+  // Defer non-critical visual elements
   if ('requestIdleCallback' in window) {
     requestIdleCallback(() => {
       initGridDotsSystem();
@@ -133,6 +161,7 @@ async function init() {
     }, 50);
   }
 
+  // Defer 3D setup (not needed for FCP)
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
       () => {
@@ -147,9 +176,23 @@ async function init() {
       setupLighting();
       initPostProcessing();
       setupCameraControls();
-    }, 50);
+    }, 100);
   }
 
+  // Defer event listener setup to avoid blocking TBT
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      setupEventListeners();
+    }, { timeout: 100 });
+  } else {
+    setTimeout(() => {
+      setupEventListeners();
+    }, 0);
+  }
+}
+
+// Setup event listeners (deferred from init to reduce TBT)
+function setupEventListeners() {
   // Create file input for uploads (reusable)
   let fileInput = null;
   function getFileInput() {
@@ -191,7 +234,6 @@ async function init() {
       getFileInput().click();
     });
   }
-
 
   // Handle keyboard layout buttons
   const keyboardUploadBtn = document.getElementById("keyboard-upload-btn");
@@ -303,6 +345,114 @@ async function init() {
       setupCameraButton();
     }
   }, 500);
+
+  // keyboardExitBtn is now handled in initDomeMode() to support both enter and exit
+
+  // WASD button controls (keyboard layout)
+  const wasdButtons = document.querySelectorAll(".wasd-key-btn");
+  
+  wasdButtons.forEach((btn) => {
+      const key = btn.getAttribute("data-key");
+      if (!key) return;
+
+      // Touch start
+      btn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.add("active");
+        if (key === "w") touchMovement.forward = true;
+        if (key === "s") touchMovement.backward = true;
+        if (key === "a") touchMovement.left = true;
+        if (key === "d") touchMovement.right = true;
+        if (key === "q") touchMovement.rotateLeft = true;
+        if (key === "e") touchMovement.rotateRight = true;
+      });
+
+      // Touch end - always remove active state
+      btn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+
+      // Touch cancel - also remove active state
+      btn.addEventListener("touchcancel", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+
+      // Mouse events for testing
+      btn.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.add("active");
+        if (key === "w") touchMovement.forward = true;
+        if (key === "s") touchMovement.backward = true;
+        if (key === "a") touchMovement.left = true;
+        if (key === "d") touchMovement.right = true;
+        if (key === "q") touchMovement.rotateLeft = true;
+        if (key === "e") touchMovement.rotateRight = true;
+      });
+
+      // Mouse up - always remove active state
+      btn.addEventListener("mouseup", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+
+      btn.addEventListener("click", () => {
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+
+      btn.addEventListener("mouseleave", () => {
+        btn.classList.remove("active");
+        if (key === "w") touchMovement.forward = false;
+        if (key === "s") touchMovement.backward = false;
+        if (key === "a") touchMovement.left = false;
+        if (key === "d") touchMovement.right = false;
+        if (key === "q") touchMovement.rotateLeft = false;
+        if (key === "e") touchMovement.rotateRight = false;
+      });
+    });
+
+  const handleResize = () => {
+    updateViewportHeightCSS();
+  };
+  window.addEventListener("resize", handleResize);
+  
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", handleResize);
+  }
+  
+  window.addEventListener("orientationchange", () => {
+    setTimeout(handleResize, 100);
+  });
 
   // keyboardExitBtn is now handled in initDomeMode() to support both enter and exit
 
