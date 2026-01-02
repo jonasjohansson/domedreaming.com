@@ -549,8 +549,11 @@ function animate(currentTime) {
 
   // Only update if 3D modules are loaded
   if (updateMovement && updateRotation) {
+  // Only update if 3D modules are loaded
+  if (updateMovement && updateRotation) {
     updateMovement();
     updateRotation(deltaTime);
+  }
   }
 
   currentCameraPosition.x = camera.position.x;

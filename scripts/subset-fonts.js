@@ -105,16 +105,24 @@ function subsetFonts() {
     try {
       // Use glyphhanger to subset the font
       // --subset: subset the font
-      // --formats=woff2,woff: keep both formats
+      // --formats=woff2: keep woff2 format
       // --US_ASCII: include ASCII characters
       // --whitelist: include all characters found in HTML
-      const command = `glyphhanger --subset="${sourceFile}" --formats=woff2,woff --US_ASCII --whitelist="${tempHtmlPath}" --output="${docsFontsPath}"`;
+      const command = `glyphhanger --subset="${sourceFile}" --formats=woff2 --US_ASCII --whitelist="${tempHtmlPath}" --output="${docsFontsPath}"`;
       
       try {
-        execSync(command, { stdio: 'pipe' });
+        execSync(command, { stdio: 'pipe', cwd: path.join(__dirname, '..') });
       } catch (e) {
-        // Try with npx
-        execSync(`npx --yes ${command}`, { stdio: 'pipe' });
+        // Try with npx (without --yes to avoid auto-install issues)
+        try {
+          execSync(`npx glyphhanger --subset="${sourceFile}" --formats=woff2 --US_ASCII --whitelist="${tempHtmlPath}" --output="${docsFontsPath}"`, { 
+            stdio: 'pipe', 
+            cwd: path.join(__dirname, '..'),
+            env: { ...process.env, PATH: process.env.PATH }
+          });
+        } catch (e2) {
+          throw e2;
+        }
       }
       
       // Check if output file exists (glyphhanger may rename files)
