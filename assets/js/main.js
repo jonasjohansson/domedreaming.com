@@ -1,4 +1,4 @@
-// Import from 3D barrel export (cleaner imports)
+// Import core 3D scene (needed immediately for canvas setup)
 import {
   scene,
   camera,
@@ -9,22 +9,16 @@ import {
   initPostProcessing,
   updatePostProcessing,
   setupCameraControls,
-  euler,
-  updateMovement,
-  updateRotation,
-  loadModel,
-  fbxMeshes,
-  glbLights,
-  getCurrentImageTexture,
-  getCurrentVideoTexture,
-  connectWebcam,
-  loadImage,
-  loadVideo,
-  disconnectWebcam,
-  loadDefaultScreenTexture,
-  updateScreenLighting,
-  touchMovement
+  euler
 } from "./3d/index.js";
+
+// 3D model and movement will be dynamically imported for code splitting
+// This reduces initial bundle size - 3D code loads on demand
+// These are assigned when modules load dynamically
+let loadModel, updateMovement, updateRotation, fbxMeshes, glbLights;
+let getCurrentImageTexture, getCurrentVideoTexture, connectWebcam;
+let loadImage, loadVideo, disconnectWebcam, loadDefaultScreenTexture;
+let updateScreenLighting, touchMovement;
 
 import {
   loadSettings,
@@ -191,6 +185,47 @@ async function init() {
   }
 }
 
+// Function to dynamically load 3D modules (code splitting)
+// Defined at module level so it's accessible everywhere
+async function load3DModules() {
+  if (loadModel && connectWebcam) {
+    return; // Already loaded
+  }
+  
+  try {
+    const modelModule = await import("./3d/model.js");
+    const movementModule = await import("./3d/movement.js");
+    const textureModule = await import("./3d/texture.js");
+    const screenLightingModule = await import("./3d/screen-lighting.js");
+    
+    // Assign to module-level variables
+    loadModel = modelModule.loadModel;
+    updateMovement = movementModule.updateMovement;
+    updateRotation = movementModule.updateRotation;
+    fbxMeshes = modelModule.fbxMeshes;
+    glbLights = modelModule.glbLights;
+    getCurrentImageTexture = textureModule.getCurrentImageTexture;
+    getCurrentVideoTexture = textureModule.getCurrentVideoTexture;
+    connectWebcam = textureModule.connectWebcam;
+    loadImage = textureModule.loadImage;
+    loadVideo = textureModule.loadVideo;
+    disconnectWebcam = textureModule.disconnectWebcam;
+    loadDefaultScreenTexture = textureModule.loadDefaultScreenTexture;
+    updateScreenLighting = screenLightingModule.updateScreenLighting;
+    touchMovement = movementModule.touchMovement;
+    
+    // Make available globally for other modules
+    window.loadModel = loadModel;
+    window.connectWebcam = connectWebcam;
+    window.loadImage = loadImage;
+    window.loadVideo = loadVideo;
+    window.disconnectWebcam = disconnectWebcam;
+    window.loadDefaultScreenTexture = loadDefaultScreenTexture;
+  } catch (error) {
+    console.error("Error loading 3D modules:", error);
+  }
+}
+
 // Setup event listeners (deferred from init to reduce TBT)
 function setupEventListeners() {
   // Create file input for uploads (reusable)
@@ -203,9 +238,13 @@ function setupEventListeners() {
       fileInput.style.display = "none";
       document.body.appendChild(fileInput);
 
-      fileInput.addEventListener("change", (e) => {
+      fileInput.addEventListener("change", async (e) => {
         const file = e.target.files?.[0];
         if (file) {
+          // Ensure 3D modules are loaded before using
+          if (!loadImage || !loadVideo) {
+            await load3DModules();
+          }
           if (file.type.startsWith("image/")) {
             loadImage(file);
           } else if (file.type.startsWith("video/")) {
@@ -221,8 +260,12 @@ function setupEventListeners() {
   // Handle links outside dome mode
   const webcamLink = document.getElementById("connect-webcam-link");
   if (webcamLink) {
-    webcamLink.addEventListener("click", (e) => {
+    webcamLink.addEventListener("click", async (e) => {
       e.preventDefault();
+      // Ensure 3D modules are loaded before using
+      if (!connectWebcam) {
+        await load3DModules();
+      }
       connectWebcam();
     });
   }
@@ -246,8 +289,12 @@ function setupEventListeners() {
   }
 
   // Reset function: reset camera, clear textures, stop webcam
-  window.resetToDefaults = function() {
+  window.resetToDefaults = async function() {
     try {
+      // Ensure 3D modules are loaded before using
+      if (!disconnectWebcam || !loadDefaultScreenTexture) {
+        await load3DModules();
+      }
       // Disconnect webcam if active
       disconnectWebcam();
       
@@ -299,10 +346,15 @@ function setupEventListeners() {
   
   // Set up camera button handler - asks for permission
   // Store handler function so we can re-attach if needed
-  const handleCamera = function(e) {
+  const handleCamera = async function(e) {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
+    
+    // Ensure 3D modules are loaded before using
+    if (!connectWebcam) {
+      await load3DModules();
+    }
     
     // Ask user if they want to connect webcam
     if (confirm("Do you want to connect your webcam to the screen?")) {
@@ -347,99 +399,6 @@ function setupEventListeners() {
   }, 500);
 
   // keyboardExitBtn is now handled in initDomeMode() to support both enter and exit
-
-  // WASD button controls (keyboard layout)
-  const wasdButtons = document.querySelectorAll(".wasd-key-btn");
-  
-  wasdButtons.forEach((btn) => {
-      const key = btn.getAttribute("data-key");
-      if (!key) return;
-
-      // Touch start
-      btn.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.add("active");
-        if (key === "w") touchMovement.forward = true;
-        if (key === "s") touchMovement.backward = true;
-        if (key === "a") touchMovement.left = true;
-        if (key === "d") touchMovement.right = true;
-        if (key === "q") touchMovement.rotateLeft = true;
-        if (key === "e") touchMovement.rotateRight = true;
-      });
-
-      // Touch end - always remove active state
-      btn.addEventListener("touchend", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
-
-      // Touch cancel - also remove active state
-      btn.addEventListener("touchcancel", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
-
-      // Mouse events for testing
-      btn.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.add("active");
-        if (key === "w") touchMovement.forward = true;
-        if (key === "s") touchMovement.backward = true;
-        if (key === "a") touchMovement.left = true;
-        if (key === "d") touchMovement.right = true;
-        if (key === "q") touchMovement.rotateLeft = true;
-        if (key === "e") touchMovement.rotateRight = true;
-      });
-
-      // Mouse up - always remove active state
-      btn.addEventListener("mouseup", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
-
-      btn.addEventListener("click", () => {
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
-
-      btn.addEventListener("mouseleave", () => {
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
-    });
 
   const handleResize = () => {
     updateViewportHeightCSS();
@@ -554,34 +513,29 @@ function setupEventListeners() {
         if (key === "e") touchMovement.rotateRight = false;
       });
     });
-
-  const handleResize = () => {
-    updateViewportHeightCSS();
-  };
-  window.addEventListener("resize", handleResize);
   
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener("resize", handleResize);
-  }
-  
-  window.addEventListener("orientationchange", () => {
-    setTimeout(handleResize, 100);
-  });
-  
-  // Defer 3D model loading to improve LCP - load after page is interactive
+  // Defer 3D model loading - dynamically import 3D code to reduce initial bundle size
+  // This code-splits the 3D functionality into a separate chunk
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
-      () => {
-        loadModel();
-        startRenderLoop();
+      async () => {
+        await load3DModules();
+        // Now load the model and start rendering
+        if (loadModel) {
+          loadModel();
+          startRenderLoop();
+        }
       },
       { timeout: 2000 }
     );
   } else {
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        loadModel();
-        startRenderLoop();
+    requestAnimationFrame(async () => {
+      setTimeout(async () => {
+        await load3DModules();
+        if (loadModel) {
+          loadModel();
+          startRenderLoop();
+        }
       }, 100);
     });
   }
@@ -593,8 +547,11 @@ function animate(currentTime) {
   const deltaTime = (currentTime - lastTime) / 1000;
   lastTime = currentTime;
 
-  updateMovement();
-  updateRotation(deltaTime);
+  // Only update if 3D modules are loaded
+  if (updateMovement && updateRotation) {
+    updateMovement();
+    updateRotation(deltaTime);
+  }
 
   currentCameraPosition.x = camera.position.x;
   currentCameraPosition.y = camera.position.y;

@@ -4,7 +4,24 @@
   "description": "Dome Dreaming fulldome film festival website",
   "scripts": {
     "dev": "eleventy --serve --watch",
-    "build": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js && node scripts/minify-js.js && node scripts/minify-css.js && node scripts/extract-critical-css.js && node scripts/inline-critical-css.js",
+    "build": "npm run build:eleventy && npm run build:optimize",
+    "build:eleventy": "ELEVENTY_OUTPUT_DIR=docs eleventy",
+    "build:optimize": "npm run build:cleanup && npm run build:copy-images && npm run build:minify && npm run build:optimize-used-images && npm run build:fonts",
+    "build:cleanup": "node scripts/cleanup-assets.js",
+    "build:minify": "npm run build:minify:js && npm run build:minify:css && npm run build:purge-css && npm run build:critical-css",
+    "build:minify:js": "node scripts/minify-js.js",
+    "build:minify:css": "node scripts/minify-css.js",
+    "build:purge-css": "node scripts/purge-css.js",
+    "build:critical-css": "node scripts/extract-critical-css.js && node scripts/inline-critical-css.js",
+    "build:images": "node scripts/optimize-images.js",
+    "build:optimize:images": "node scripts/optimize-images.js",
+    "build:optimize-used-images": "node scripts/optimize-used-images.js",
+    "build:optimize:glb": "node scripts/optimize-glb.js",
+    "build:fonts": "node scripts/subset-fonts.js",
+    "build:copy-images": "node scripts/copy-used-images.js",
+    "build:analyze-images": "node scripts/analyze-image-usage.js",
+    "build:cleanup-fonts": "node scripts/remove-unused-fonts.js",
+    "build:analyze": "node scripts/analyze-bundle.js && node scripts/remove-unused-css.js",
     "build:no-minify": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js",
     "serve": "eleventy --serve"
   },
@@ -15,6 +32,8 @@
     "@11ty/eleventy": "^3.0.0",
     "terser": "^5.44.1",
     "csso": "^5.0.5",
-    "html-minifier-next": "^1.0.0"
+    "html-minifier-next": "^1.0.0",
+    "sharp": "^0.33.0",
+    "purgecss": "^6.0.0"
   }
 }

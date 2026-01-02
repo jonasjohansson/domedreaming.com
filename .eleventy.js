@@ -26,8 +26,12 @@ module.exports = function (eleventyConfig) {
   // Ignore the old index.html since we're using index.njk
   eleventyConfig.ignores.add("index.html");
   
-  // Ignore README files
+  // Ignore README and documentation files
   eleventyConfig.ignores.add("**/README.md");
+  eleventyConfig.ignores.add("JSDOC_AND_CRITICAL_CSS_EXPLAINED.md");
+  eleventyConfig.ignores.add("CRITICAL_CSS_SETUP.md");
+  eleventyConfig.ignores.add("OPTIMIZATION_SUGGESTIONS.md");
+  eleventyConfig.ignores.add("BUILD_OPTIMIZATIONS.md");
 
   // Ignore source files that shouldn't be in output
   eleventyConfig.ignores.add("assets/background.ai");
@@ -35,12 +39,11 @@ module.exports = function (eleventyConfig) {
   
   // Copy all static assets including JS/CSS
   // Note: .blend and .ai source files are excluded via .eleventyignore
+  // Note: Images are copied selectively after build (see scripts/copy-used-images.js)
   eleventyConfig.addPassthroughCopy({
-    "assets/img": "assets/img",
     "assets/fonts": "assets/fonts",
     "assets/favicon": "assets/favicon",
     "assets/models": "assets/models",
-    "assets/media": "assets/media",
     "assets/js": "assets/js",
     "assets/css": "assets/css",
   });
@@ -48,6 +51,7 @@ module.exports = function (eleventyConfig) {
   // Copy other root files
   eleventyConfig.addPassthroughCopy("*.pdf");
   eleventyConfig.addPassthroughCopy("CNAME");
+  eleventyConfig.addPassthroughCopy("sw.js");
 
   // Use different output directories for dev vs build
   // Default to _site for dev, use docs for production builds

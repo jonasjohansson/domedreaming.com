@@ -1,0 +1,162 @@
+/**
+ * Service Worker for Dome Dreaming
+ * Caches static assets for faster repeat visits and offline support
+ */
+
+const CACHE_NAME = 'domedreaming-v1';
+const RUNTIME_CACHE = 'domedreaming-runtime-v1';
+
+// Assets to cache immediately on install
+const PRECACHE_ASSETS = [
+  '/',
+  '/assets/css/main.css',
+  '/assets/js/main.js',
+  '/assets/fonts/OffBit-Regular.woff2',
+  '/assets/img/wisdome-stockholm-visuals.jpg',
+  '/assets/favicon/favicon-96x96.png'
+];
+
+// Install event - cache static assets
+self.addEventListener('install', (event) => {
+  console.log('[Service Worker] Installing...');
+  
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[Service Worker] Caching static assets');
+        return cache.addAll(PRECACHE_ASSETS.map(url => new Request(url, { cache: 'reload' })));
+      })
+      .then(() => {
+        // Force activation of new service worker
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('[Service Worker] Cache failed:', error);
+      })
+  );
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', (event) => {
+  console.log('[Service Worker] Activating...');
+  
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames
+            .filter((cacheName) => {
+              // Delete old caches
+              return cacheName !== CACHE_NAME && cacheName !== RUNTIME_CACHE;
+            })
+            .map((cacheName) => {
+              console.log('[Service Worker] Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            })
+        );
+      })
+      .then(() => {
+        // Take control of all pages immediately
+        return self.clients.claim();
+      })
+  );
+});
+
+// Fetch event - serve from cache, fallback to network
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+  
+  // Skip cross-origin requests
+  if (url.origin !== location.origin) {
+    return;
+  }
+  
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+  
+  // Strategy: Cache First for static assets, Network First for HTML
+  if (isStaticAsset(request.url)) {
+    // Static assets: Cache First
+    event.respondWith(cacheFirst(request));
+  } else if (request.headers.get('accept')?.includes('text/html')) {
+    // HTML: Network First with cache fallback
+    event.respondWith(networkFirst(request));
+  } else {
+    // Other resources: Network First
+    event.respondWith(networkFirst(request));
+  }
+});
+
+/**
+ * Check if URL is a static asset (CSS, JS, images, fonts, etc.)
+ */
+function isStaticAsset(url) {
+  return /\.(css|js|jpg|jpeg|png|webp|gif|svg|woff|woff2|ttf|eot|ico|glb|mp4|webm)$/i.test(url);
+}
+
+/**
+ * Cache First strategy - check cache, fallback to network
+ */
+async function cacheFirst(request) {
+  const cache = await caches.open(CACHE_NAME);
+  const cached = await cache.match(request);
+  
+  if (cached) {
+    return cached;
+  }
+  
+  try {
+    const response = await fetch(request);
+    
+    // Cache successful responses
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    
+    return response;
+  } catch (error) {
+    console.error('[Service Worker] Fetch failed:', error);
+    // Return offline page or error response
+    return new Response('Offline', { status: 503 });
+  }
+}
+
+/**
+ * Network First strategy - try network, fallback to cache
+ */
+async function networkFirst(request) {
+  const cache = await caches.open(RUNTIME_CACHE);
+  
+  try {
+    const response = await fetch(request);
+    
+    // Cache successful responses
+    if (response.ok) {
+      cache.put(request, response.clone());
+    }
+    
+    return response;
+  } catch (error) {
+    console.log('[Service Worker] Network failed, trying cache:', request.url);
+    
+    const cached = await cache.match(request);
+    
+    if (cached) {
+      return cached;
+    }
+    
+    // Return offline page for HTML requests
+    if (request.headers.get('accept')?.includes('text/html')) {
+      const offlinePage = await cache.match('/');
+      if (offlinePage) {
+        return offlinePage;
+      }
+    }
+    
+    return new Response('Offline', { status: 503 });
+  }
+}
+

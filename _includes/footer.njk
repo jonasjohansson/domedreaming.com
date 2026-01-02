@@ -2,3 +2,31 @@
   type="module"
   src="assets/js/main.js"
   defer></script>
+
+<!-- Service Worker Registration -->
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((registration) => {
+          console.log("[Service Worker] Registered:", registration.scope);
+
+          // Check for updates
+          registration.addEventListener("updatefound", () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener("statechange", () => {
+              if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+                // New service worker available, prompt user to refresh
+                console.log("[Service Worker] New version available");
+                // Optionally show a notification to the user
+              }
+            });
+          });
+        })
+        .catch((error) => {
+          console.warn("[Service Worker] Registration failed:", error);
+        });
+    });
+  }
+</script>

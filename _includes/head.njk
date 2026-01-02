@@ -81,22 +81,20 @@
 <!-- Resource Hints -->
 <!-- Preconnect to CDN for faster resource loading -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+
+<!-- Preload critical fonts -->
 <link
   rel="preload"
   href="assets/fonts/OffBit-Regular.woff2"
   as="font"
   type="font/woff2"
   crossorigin="anonymous" />
-<link
-  rel="preload"
-  href="assets/fonts/OffBit-101Bold.woff2"
-  as="font"
-  type="font/woff2"
-  crossorigin="anonymous" />
+
+<!-- Load CSS -->
 <link
   rel="stylesheet"
-  href="assets/css/main.css"
-  media="all" />
+  href="assets/css/main.css" />
 
 <!-- Preload LCP image -->
 <link
@@ -104,6 +102,13 @@
   href="assets/img/wisdome-stockholm-visuals.jpg"
   as="image"
   fetchpriority="high" />
+
+<!-- Prefetch 3D model (low priority, load after page is interactive) -->
+<link
+  rel="prefetch"
+  href="assets/models/wisdome.glb"
+  as="fetch"
+  crossorigin="anonymous" />
 
 <!-- Import map must come before modulepreload and module scripts -->
 <script type="importmap">
