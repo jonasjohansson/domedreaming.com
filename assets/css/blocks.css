@@ -106,6 +106,21 @@ body:not(.dome-mode) .page-section:has(#canvas-container) .block {
   position: relative;
   height: calc(var(--row-height) * var(--section-grid-rows, var(--grid-rows)));
   background-color: inherit;
+  overflow: visible;
+}
+
+/* First section: transparent at top, transitions to bg-1 color at bottom */
+/* Use ::after pseudo-element to layer on top of 3D canvas */
+main > section.page-section:first-of-type::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, transparent 0%, transparent 80%, var(--bg-1-color) 100%);
+  pointer-events: none;
+  z-index: 2;
 }
 
 main > section.page-section:first-of-type .page-content {

@@ -9,7 +9,7 @@ import {
   initPostProcessing,
   updatePostProcessing,
   setupCameraControls,
-  euler
+  euler,
 } from "./3d/index.js";
 
 // 3D model and movement will be dynamically imported for code splitting
@@ -27,7 +27,7 @@ import {
   startCameraPosition,
   startCameraRotation,
   saveSettings,
-  textureRotationSettings
+  textureRotationSettings,
 } from "./core/settings.js";
 import { initScrollIncrement } from "./layout/scroll-increment.js";
 import { initGridDotsSystem } from "./layout/grid-dots.js";
@@ -60,10 +60,10 @@ function applyDomeDreamingFont() {
   // Process text nodes in batches to avoid long main-thread tasks
   let currentIndex = 0;
   const batchSize = 5;
-  
+
   function processBatch() {
     const endIndex = Math.min(currentIndex + batchSize, textNodes.length);
-    
+
     for (let i = currentIndex; i < endIndex; i++) {
       const textNode = textNodes[i];
       const parent = textNode.parentNode;
@@ -87,19 +87,19 @@ function applyDomeDreamingFont() {
 
       parent.replaceChild(fragment, textNode);
     }
-    
+
     currentIndex = endIndex;
-    
+
     if (currentIndex < textNodes.length) {
       // Use requestIdleCallback or setTimeout to continue batching
-      if ('requestIdleCallback' in window) {
+      if ("requestIdleCallback" in window) {
         requestIdleCallback(processBatch, { timeout: 50 });
       } else {
         setTimeout(processBatch, 0);
       }
     }
   }
-  
+
   if (textNodes.length > 0) {
     processBatch();
   }
@@ -107,11 +107,11 @@ function applyDomeDreamingFont() {
 
 async function init() {
   // Yield to browser immediately to allow FCP
-  await new Promise(resolve => {
-    if ('scheduler' in window && 'postTask' in window.scheduler) {
+  await new Promise((resolve) => {
+    if ("scheduler" in window && "postTask" in window.scheduler) {
       // Use Scheduler API if available (best for yielding)
-      window.scheduler.postTask(() => resolve(), { priority: 'user-blocking' });
-    } else if ('requestIdleCallback' in window) {
+      window.scheduler.postTask(() => resolve(), { priority: "user-blocking" });
+    } else if ("requestIdleCallback" in window) {
       requestIdleCallback(() => resolve(), { timeout: 0 });
     } else {
       setTimeout(() => resolve(), 0);
@@ -120,20 +120,23 @@ async function init() {
 
   // Load settings (async, but yield after)
   await loadSettings();
-  
+
   // Yield again after settings load
-  await new Promise(resolve => setTimeout(resolve, 0));
+  await new Promise((resolve) => setTimeout(resolve, 0));
 
   updateViewportHeightCSS();
 
   // Defer all non-critical initialization to avoid blocking TBT
   // Only keep absolutely critical path synchronous
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      initScrollIncrement();
-      initResponsiveHeights();
-      initDashboard();
-    }, { timeout: 100 });
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        initScrollIncrement();
+        initResponsiveHeights();
+        initDashboard();
+      },
+      { timeout: 100 }
+    );
   } else {
     setTimeout(() => {
       initScrollIncrement();
@@ -141,13 +144,16 @@ async function init() {
       initDashboard();
     }, 0);
   }
-  
+
   // Defer non-critical visual elements
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      initGridDotsSystem();
-      applyDomeDreamingFont();
-    }, { timeout: 500 });
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        initGridDotsSystem();
+        applyDomeDreamingFont();
+      },
+      { timeout: 500 }
+    );
   } else {
     setTimeout(() => {
       initGridDotsSystem();
@@ -159,9 +165,9 @@ async function init() {
   if ("requestIdleCallback" in window) {
     requestIdleCallback(
       () => {
-      setupLighting();
-      initPostProcessing();
-      setupCameraControls();
+        setupLighting();
+        initPostProcessing();
+        setupCameraControls();
       },
       { timeout: 1000 }
     );
@@ -174,10 +180,13 @@ async function init() {
   }
 
   // Defer event listener setup to avoid blocking TBT
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      setupEventListeners();
-    }, { timeout: 100 });
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        setupEventListeners();
+      },
+      { timeout: 100 }
+    );
   } else {
     setTimeout(() => {
       setupEventListeners();
@@ -191,13 +200,13 @@ async function load3DModules() {
   if (loadModel && connectWebcam) {
     return; // Already loaded
   }
-  
+
   try {
     const modelModule = await import("./3d/model.js");
     const movementModule = await import("./3d/movement.js");
     const textureModule = await import("./3d/texture.js");
     const screenLightingModule = await import("./3d/screen-lighting.js");
-    
+
     // Assign to module-level variables
     loadModel = modelModule.loadModel;
     updateMovement = movementModule.updateMovement;
@@ -213,7 +222,7 @@ async function load3DModules() {
     loadDefaultScreenTexture = textureModule.loadDefaultScreenTexture;
     updateScreenLighting = screenLightingModule.updateScreenLighting;
     touchMovement = movementModule.touchMovement;
-    
+
     // Make available globally for other modules
     window.loadModel = loadModel;
     window.connectWebcam = connectWebcam;
@@ -289,7 +298,7 @@ function setupEventListeners() {
   }
 
   // Reset function: reset camera, clear textures, stop webcam
-  window.resetToDefaults = async function() {
+  window.resetToDefaults = async function () {
     try {
       // Ensure 3D modules are loaded before using
       if (!disconnectWebcam || !loadDefaultScreenTexture) {
@@ -297,13 +306,13 @@ function setupEventListeners() {
       }
       // Disconnect webcam if active
       disconnectWebcam();
-      
+
       // Load default texture (this will dispose of current textures internally)
       loadDefaultScreenTexture();
-      
+
       // Reset camera to original position and rotation
       resetCamera(startCameraPosition, startCameraRotation, euler);
-      
+
       // Update current camera position/rotation tracking
       Object.assign(currentCameraPosition, startCameraPosition);
       Object.assign(currentCameraRotation, startCameraRotation);
@@ -317,7 +326,7 @@ function setupEventListeners() {
   function setupResetButton() {
     const resetBtn = document.getElementById("keyboard-reset-btn");
     if (resetBtn && !resetButtonSetup) {
-      const handleReset = function(e) {
+      const handleReset = function (e) {
         e.preventDefault();
         e.stopPropagation();
         e.stopImmediatePropagation();
@@ -326,68 +335,68 @@ function setupEventListeners() {
         }
         return false;
       };
-      
+
       // Remove ALL existing event listeners by cloning and replacing
       const newBtn = resetBtn.cloneNode(true);
       resetBtn.parentNode.replaceChild(newBtn, resetBtn);
-      
+
       // Set inline onclick (highest priority)
       newBtn.onclick = handleReset;
-      
+
       // Add event listeners with capture phase
       newBtn.addEventListener("click", handleReset, { capture: true, passive: false });
       newBtn.addEventListener("touchend", handleReset, { capture: true, passive: false });
-      
+
       resetButtonSetup = true;
       return true;
     }
     return false;
   }
-  
+
   // Set up camera button handler - asks for permission
   // Store handler function so we can re-attach if needed
-  const handleCamera = async function(e) {
+  const handleCamera = async function (e) {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    
+
     // Ensure 3D modules are loaded before using
     if (!connectWebcam) {
       await load3DModules();
     }
-    
+
     // Ask user if they want to connect webcam
     if (confirm("Do you want to connect your webcam to the screen?")) {
       connectWebcam();
     }
     return false;
   };
-  
+
   // Make setupCameraButton accessible globally so initDomeMode can call it
-  window.setupCameraButton = function() {
+  window.setupCameraButton = function () {
     const cameraBtn = document.getElementById("keyboard-camera-btn");
     if (cameraBtn) {
       // Always re-setup to ensure handlers are attached, especially after DOM changes
       // Remove ALL existing event listeners by cloning and replacing
       const newBtn = cameraBtn.cloneNode(true);
       cameraBtn.parentNode.replaceChild(newBtn, cameraBtn);
-      
+
       // Set inline onclick
       newBtn.onclick = handleCamera;
-      
+
       // Add event listeners
       newBtn.addEventListener("click", handleCamera, { capture: true, passive: false });
       newBtn.addEventListener("touchend", handleCamera, { capture: true, passive: false });
-      
+
       return true;
     }
     return false;
   };
-  
+
   // Set up both buttons
   setupResetButton();
   setupCameraButton();
-  
+
   // Retry if not found
   setTimeout(() => {
     if (!document.getElementById("keyboard-reset-btn")) {
@@ -404,11 +413,11 @@ function setupEventListeners() {
     updateViewportHeightCSS();
   };
   window.addEventListener("resize", handleResize);
-  
+
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", handleResize);
   }
-  
+
   window.addEventListener("orientationchange", () => {
     setTimeout(handleResize, 100);
   });
@@ -417,103 +426,103 @@ function setupEventListeners() {
 
   // WASD button controls (keyboard layout)
   const wasdButtons = document.querySelectorAll(".wasd-key-btn");
-  
+
   wasdButtons.forEach((btn) => {
-      const key = btn.getAttribute("data-key");
-      if (!key) return;
+    const key = btn.getAttribute("data-key");
+    if (!key) return;
 
-      // Touch start
-      btn.addEventListener("touchstart", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.add("active");
-        if (key === "w") touchMovement.forward = true;
-        if (key === "s") touchMovement.backward = true;
-        if (key === "a") touchMovement.left = true;
-        if (key === "d") touchMovement.right = true;
-        if (key === "q") touchMovement.rotateLeft = true;
-        if (key === "e") touchMovement.rotateRight = true;
-      });
-
-      // Touch end - always remove active state
-      btn.addEventListener("touchend", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
-
-      // Touch cancel - also remove active state
-      btn.addEventListener("touchcancel", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
-
-      // Mouse events for testing
-      btn.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.add("active");
-        if (key === "w") touchMovement.forward = true;
-        if (key === "s") touchMovement.backward = true;
-        if (key === "a") touchMovement.left = true;
-        if (key === "d") touchMovement.right = true;
-        if (key === "q") touchMovement.rotateLeft = true;
-        if (key === "e") touchMovement.rotateRight = true;
-      });
-
-      // Mouse up - always remove active state
-      btn.addEventListener("mouseup", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
-
-      // Mouse leave - remove active state if mouse leaves button
-      btn.addEventListener("mouseleave", (e) => {
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
-
-      // Click - ensure active state is removed
-      btn.addEventListener("click", (e) => {
-        btn.classList.remove("active");
-      });
-
-      btn.addEventListener("mouseleave", () => {
-        btn.classList.remove("active");
-        if (key === "w") touchMovement.forward = false;
-        if (key === "s") touchMovement.backward = false;
-        if (key === "a") touchMovement.left = false;
-        if (key === "d") touchMovement.right = false;
-        if (key === "q") touchMovement.rotateLeft = false;
-        if (key === "e") touchMovement.rotateRight = false;
-      });
+    // Touch start
+    btn.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      btn.classList.add("active");
+      if (key === "w") touchMovement.forward = true;
+      if (key === "s") touchMovement.backward = true;
+      if (key === "a") touchMovement.left = true;
+      if (key === "d") touchMovement.right = true;
+      if (key === "q") touchMovement.rotateLeft = true;
+      if (key === "e") touchMovement.rotateRight = true;
     });
-  
+
+    // Touch end - always remove active state
+    btn.addEventListener("touchend", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      btn.classList.remove("active");
+      if (key === "w") touchMovement.forward = false;
+      if (key === "s") touchMovement.backward = false;
+      if (key === "a") touchMovement.left = false;
+      if (key === "d") touchMovement.right = false;
+      if (key === "q") touchMovement.rotateLeft = false;
+      if (key === "e") touchMovement.rotateRight = false;
+    });
+
+    // Touch cancel - also remove active state
+    btn.addEventListener("touchcancel", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      btn.classList.remove("active");
+      if (key === "w") touchMovement.forward = false;
+      if (key === "s") touchMovement.backward = false;
+      if (key === "a") touchMovement.left = false;
+      if (key === "d") touchMovement.right = false;
+      if (key === "q") touchMovement.rotateLeft = false;
+      if (key === "e") touchMovement.rotateRight = false;
+    });
+
+    // Mouse events for testing
+    btn.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      btn.classList.add("active");
+      if (key === "w") touchMovement.forward = true;
+      if (key === "s") touchMovement.backward = true;
+      if (key === "a") touchMovement.left = true;
+      if (key === "d") touchMovement.right = true;
+      if (key === "q") touchMovement.rotateLeft = true;
+      if (key === "e") touchMovement.rotateRight = true;
+    });
+
+    // Mouse up - always remove active state
+    btn.addEventListener("mouseup", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      btn.classList.remove("active");
+      if (key === "w") touchMovement.forward = false;
+      if (key === "s") touchMovement.backward = false;
+      if (key === "a") touchMovement.left = false;
+      if (key === "d") touchMovement.right = false;
+      if (key === "q") touchMovement.rotateLeft = false;
+      if (key === "e") touchMovement.rotateRight = false;
+    });
+
+    // Mouse leave - remove active state if mouse leaves button
+    btn.addEventListener("mouseleave", (e) => {
+      btn.classList.remove("active");
+      if (key === "w") touchMovement.forward = false;
+      if (key === "s") touchMovement.backward = false;
+      if (key === "a") touchMovement.left = false;
+      if (key === "d") touchMovement.right = false;
+      if (key === "q") touchMovement.rotateLeft = false;
+      if (key === "e") touchMovement.rotateRight = false;
+    });
+
+    // Click - ensure active state is removed
+    btn.addEventListener("click", (e) => {
+      btn.classList.remove("active");
+    });
+
+    btn.addEventListener("mouseleave", () => {
+      btn.classList.remove("active");
+      if (key === "w") touchMovement.forward = false;
+      if (key === "s") touchMovement.backward = false;
+      if (key === "a") touchMovement.left = false;
+      if (key === "d") touchMovement.right = false;
+      if (key === "q") touchMovement.rotateLeft = false;
+      if (key === "e") touchMovement.rotateRight = false;
+    });
+  });
+
   // Defer 3D model loading - dynamically import 3D code to reduce initial bundle size
   // This code-splits the 3D functionality into a separate chunk
   if ("requestIdleCallback" in window) {
@@ -549,11 +558,11 @@ function animate(currentTime) {
 
   // Only update if 3D modules are loaded
   if (updateMovement && updateRotation) {
-  // Only update if 3D modules are loaded
-  if (updateMovement && updateRotation) {
-    updateMovement();
-    updateRotation(deltaTime);
-  }
+    // Only update if 3D modules are loaded
+    if (updateMovement && updateRotation) {
+      updateMovement();
+      updateRotation(deltaTime);
+    }
   }
 
   currentCameraPosition.x = camera.position.x;
@@ -612,9 +621,7 @@ function initDomeMode() {
   let isExitingDomeMode = false; // Flag to prevent double-exit
 
   function isMobile() {
-    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || 
-           "ontouchstart" in window || 
-           navigator.maxTouchPoints > 0;
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
   }
 
   function updateEnterExitButton() {
@@ -662,10 +669,9 @@ function initDomeMode() {
 
     if (shouldRequestPointerLock && canvas && !isMobile) {
       // Check if pointer lock is already active before requesting
-      const isAlreadyLocked = document.pointerLockElement === canvas || 
-                              document.mozPointerLockElement === canvas || 
-                              document.webkitPointerLockElement === canvas;
-      
+      const isAlreadyLocked =
+        document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas;
+
       if (!isAlreadyLocked) {
         // Request pointer lock after a small delay to ensure canvas is ready
         // Browsers require user interaction, so this should be called from a click handler
@@ -674,26 +680,26 @@ function initDomeMode() {
           if (!body.classList.contains("dome-mode") || isExitingDomeMode) {
             return; // Don't request if we're no longer in dome mode or are exiting
           }
-          
+
           const requestPointerLock = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
           if (requestPointerLock) {
             try {
               requestPointerLock.call(canvas).catch((error) => {
                 // Handle promise rejection for pointer lock request
                 // Silently handle SecurityError if user exited before request completed
-                if (error.name !== 'SecurityError' && error.name !== 'NotAllowedError') {
-                  console.warn('Pointer lock request failed:', error);
+                if (error.name !== "SecurityError" && error.name !== "NotAllowedError") {
+                  console.warn("Pointer lock request failed:", error);
                 }
               });
             } catch (error) {
               // Silently handle SecurityError if user exited before request completed
-              if (error.name !== 'SecurityError' && error.name !== 'NotAllowedError') {
-                console.warn('Pointer lock request failed:', error);
+              if (error.name !== "SecurityError" && error.name !== "NotAllowedError") {
+                console.warn("Pointer lock request failed:", error);
               }
             }
           }
         }, 100);
-        
+
         // Store timeout so we can clear it if needed
         window.pointerLockTimeout = pointerLockTimeout;
       }
@@ -701,7 +707,7 @@ function initDomeMode() {
 
     if (isMobile) {
     }
-    
+
     // Re-setup camera button after entering dome mode to ensure handlers are attached
     setTimeout(() => {
       if (window.setupCameraButton) {
@@ -715,15 +721,15 @@ function initDomeMode() {
     if (isExitingDomeMode) {
       return;
     }
-    
+
     isExitingDomeMode = true;
-    
+
     // Clear any pending pointer lock request
     if (window.pointerLockTimeout) {
       clearTimeout(window.pointerLockTimeout);
       window.pointerLockTimeout = null;
     }
-    
+
     // Exit pointer lock first if active
     if (
       canvas &&
@@ -733,8 +739,8 @@ function initDomeMode() {
         document.exitPointerLock();
       } catch (error) {
         // Silently handle errors when exiting pointer lock
-        if (error.name !== 'SecurityError') {
-          console.warn('Error exiting pointer lock:', error);
+        if (error.name !== "SecurityError") {
+          console.warn("Error exiting pointer lock:", error);
         }
       }
     }
@@ -749,10 +755,10 @@ function initDomeMode() {
         // Reset width to default (remove inline style to let CSS handle it)
         canvasContainer.style.width = "";
       }
-      
+
       // Update button state immediately
       updateEnterExitButton();
-      
+
       // Re-setup camera button after a small delay to ensure DOM is ready
       setTimeout(() => {
         if (window.setupCameraButton) {
@@ -787,14 +793,14 @@ function initDomeMode() {
       }
       // On desktop when in dome mode, do nothing (user presses ESC)
     });
-    
+
     // Touch event - exactly like old "dome simulator" link
     keyboardExitBtn.addEventListener("touchend", (e) => {
       e.stopPropagation();
       e.preventDefault();
       // If not in dome mode, enter (exactly like old link)
       if (!body.classList.contains("dome-mode")) {
-      enterDomeMode(true);
+        enterDomeMode(true);
       } else if (isMobile()) {
         // Only allow exit on mobile when already in dome mode
         exitDomeMode();
@@ -811,7 +817,7 @@ function initDomeMode() {
       // Always call exitDomeMode directly - it will handle pointer lock exit
       exitDomeMode();
     }
-    
+
     // Keyboard shortcuts for action buttons (only when not in dome mode or when not typing)
     if (!body.classList.contains("dome-mode") || document.activeElement.tagName === "BODY") {
       if (e.key === "u" || e.key === "U") {
@@ -835,22 +841,28 @@ function initDomeMode() {
     if (isExitingDomeMode) {
       return;
     }
-    
+
     // If pointer lock is lost while in dome mode (but not from our exitDomeMode call),
     // we should still exit dome mode. However, we need to check if we're already exiting.
     const isLocked =
       canvas &&
       (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas);
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
-    
+
     // Only exit if pointer lock was lost and we're still in dome mode (user might have pressed ESC outside our handler)
     if (!isLocked && body.classList.contains("dome-mode") && !isMobile) {
       // Small delay to avoid race condition with exitDomeMode() being called from ESC handler
       setTimeout(() => {
         // Double-check we're still in dome mode and pointer lock is still not active, and we're not already exiting
-        if (!isExitingDomeMode && 
-            body.classList.contains("dome-mode") && 
-            !(document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas)) {
+        if (
+          !isExitingDomeMode &&
+          body.classList.contains("dome-mode") &&
+          !(
+            document.pointerLockElement === canvas ||
+            document.mozPointerLockElement === canvas ||
+            document.webkitPointerLockElement === canvas
+          )
+        ) {
           exitDomeMode();
         }
       }, 50);
