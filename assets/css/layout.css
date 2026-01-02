@@ -190,27 +190,27 @@ body:not(.dome-mode) .grid-overlay {
 }
 
 .bg-1 {
-  background-color: rgba(70, 52, 52, 1);
+  background-color: var(--bg-1-color);
 }
 
 .bg-2 {
-  background-color: #21272f;
+  background-color: var(--bg-2-color);
 }
 
 .bg-3 {
-  background-color: rgba(46, 47, 32, 1);
+  background-color: var(--bg-3-color);
 }
 
 .bg-4 {
-  background-color: #000000;
+  background-color: var(--bg-4-color);
 }
 
 .bg-5 {
-  background-color: #333333;
+  background-color: var(--bg-5-color);
 }
 
 .bg-6 {
-  background-color: #1a1a1a;
+  background-color: var(--bg-6-color);
 }
 
 /* Column classes - kept for backwards compatibility if needed elsewhere */

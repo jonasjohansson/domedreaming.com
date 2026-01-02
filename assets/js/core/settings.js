@@ -350,8 +350,8 @@ function generateRandomMutedColor() {
   // Generate random hue (0-1)
   const hue = Math.random();
   
-  // Keep saturation low (0.2-0.4) for muted look
-  const saturation = 0.2 + Math.random() * 0.2;
+  // Keep saturation very low (0.02-0.08) for very muted look
+  const saturation = 0.02 + Math.random() * 0.06;
   
   // Keep lightness medium (0.3-0.5) to match current palette
   const lightness = 0.3 + Math.random() * 0.2;
@@ -408,82 +408,21 @@ function muteColor(color, saturationFactor = 0.3) {
 
 /**
  * Apply random colors to background sections (bg-1 to bg-6)
- * bg-1, bg-2, bg-3 use muted versions of 3D scene colors (Main_Structure, Floor, Screen)
- * bg-4, bg-5, bg-6 are darker versions of bg-1, bg-2, bg-3
+ * Generates random muted colors for all 6 background classes
  */
 function applyBackgroundColors() {
-  // Ensure savedColorSettings exists
-  if (!window.savedColorSettings) {
-    window.savedColorSettings = {};
-  }
-
-  // Get colors from 3D scene meshes
-  const sceneColors = {
-    'bg-1': window.savedColorSettings['Main_Structure'],
-    'bg-2': window.savedColorSettings['Floor'],
-    'bg-3': window.savedColorSettings['Screen']
-  };
-
-  // If scene colors don't exist yet, generate them
-  if (!sceneColors['bg-1']) {
-    sceneColors['bg-1'] = generateRandomMutedColor();
-    window.savedColorSettings['Main_Structure'] = sceneColors['bg-1'];
-  }
-  if (!sceneColors['bg-2']) {
-    sceneColors['bg-2'] = generateRandomMutedColor();
-    window.savedColorSettings['Floor'] = sceneColors['bg-2'];
-  }
-  if (!sceneColors['bg-3']) {
-    sceneColors['bg-3'] = generateRandomMutedColor();
-    window.savedColorSettings['Screen'] = sceneColors['bg-3'];
-  }
-
-  // Apply bg-1, bg-2, bg-3 (muted versions of 3D scene colors)
-  ['bg-1', 'bg-2', 'bg-3'].forEach((bgClass, index) => {
-    const colorKey = ['Main_Structure', 'Floor', 'Screen'][index];
-    // Use the scene color if available, otherwise use the generated fallback
-    const sceneColor = window.savedColorSettings[colorKey] || sceneColors[bgClass];
-    
-    // Ensure the color is saved for the 3D scene mesh
-    if (!window.savedColorSettings[colorKey]) {
-      window.savedColorSettings[colorKey] = sceneColor;
-    }
-    
-    // Mute the color for CSS backgrounds (reduce saturation to 30% of original)
-    const mutedColor = muteColor(sceneColor, 0.3);
-    window.savedColorSettings[bgClass] = mutedColor;
+  // Generate random muted colors for all 6 background classes
+  ['bg-1', 'bg-2', 'bg-3', 'bg-4', 'bg-5', 'bg-6'].forEach((bgClass) => {
+    // Generate a random muted color
+    const randomColor = generateRandomMutedColor();
     
     // Convert RGB (0-1) to RGB (0-255) for CSS
-    const r = Math.round(mutedColor.r * 255);
-    const g = Math.round(mutedColor.g * 255);
-    const b = Math.round(mutedColor.b * 255);
+    const r = Math.round(randomColor.r * 255);
+    const g = Math.round(randomColor.g * 255);
+    const b = Math.round(randomColor.b * 255);
     
-    // Apply color to all elements with this class
-    const elements = document.querySelectorAll(`.${bgClass}`);
-    elements.forEach((element) => {
-      element.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-    });
-  });
-
-  // Apply bg-4, bg-5, bg-6 (darker versions of bg-1, bg-2, bg-3)
-  ['bg-4', 'bg-5', 'bg-6'].forEach((bgClass, index) => {
-    const sourceBgClass = ['bg-1', 'bg-2', 'bg-3'][index];
-    const sourceColor = window.savedColorSettings[sourceBgClass];
-    
-    // Create darker version (50% darker)
-    const darkerColor = darkenColor(sourceColor, 0.5);
-    window.savedColorSettings[bgClass] = darkerColor;
-    
-    // Convert RGB (0-1) to RGB (0-255) for CSS
-    const r = Math.round(darkerColor.r * 255);
-    const g = Math.round(darkerColor.g * 255);
-    const b = Math.round(darkerColor.b * 255);
-    
-    // Apply color to all elements with this class
-    const elements = document.querySelectorAll(`.${bgClass}`);
-    elements.forEach((element) => {
-      element.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-    });
+    // Set CSS variable on root element
+    document.documentElement.style.setProperty(`--${bgClass}-color`, `rgb(${r}, ${g}, ${b})`);
   });
 }
 
@@ -509,8 +448,8 @@ export async function applySettingsToScene() {
           if (material) {
             let colorToApply;
             
-            // Generate random muted color for Main_Structure (interior) and Floor on each load
-            if (item.name === "Main_Structure" || item.name === "Floor") {
+            // Generate random muted color for Main_Structure (interior), Floor, and Screen on each load
+            if (item.name === "Main_Structure" || item.name === "Floor" || item.name === "Screen") {
               colorToApply = generateRandomMutedColor();
               // Update saved settings so it persists for this session
               window.savedColorSettings[item.name] = colorToApply;
@@ -542,7 +481,7 @@ export async function applySettingsToScene() {
             setTimeout(processMeshBatch, 0);
           }
         } else {
-          // All meshes processed, apply backgrounds
+          // All meshes processed, apply backgrounds (read colors from actual 3D scene)
           applyBackgroundColors();
         }
       }
