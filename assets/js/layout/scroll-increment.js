@@ -7,7 +7,7 @@ import { getRowHeight } from "../core/utils.js";
 
 let isScrolling = false;
 let lastScrollTime = 0;
-const SCROLL_DELAY = 50; // Delay in milliseconds between scroll increments
+const SCROLL_DELAY = 30; // Delay in milliseconds between scroll increments (reduced for faster mobile scrolling)
 
 // Touch event handling for mobile
 let touchStartY = 0;
@@ -15,7 +15,7 @@ let touchStartTime = 0;
 let touchMoved = false;
 let lastTouchY = 0;
 let touchScrollAccumulator = 0; // Accumulate touch movement for continuous scrolling
-const MIN_SWIPE_DISTANCE = 30; // Minimum distance in pixels to trigger first scroll
+const MIN_SWIPE_DISTANCE = 20; // Minimum distance in pixels to trigger first scroll (reduced for faster response)
 
 /**
  * Find the nearest row-height increment to the current scroll position
@@ -184,7 +184,7 @@ function handleTouchMove(e) {
   const rowHeight = getRowHeight();
   // On mobile, use 2x row-height for scroll increment
   const scrollIncrement = rowHeight * 2;
-  const scrollThreshold = scrollIncrement * 0.3; // Trigger scroll at 30% of scroll increment
+  const scrollThreshold = scrollIncrement * 0.2; // Trigger scroll at 20% of scroll increment (reduced for faster scrolling)
 
   if (Math.abs(touchScrollAccumulator) >= scrollThreshold) {
     // Determine scroll direction
@@ -243,7 +243,7 @@ export function initScrollIncrement() {
       }
 
       // Shorter delay since we're controlling scrolling on mobile
-      const delay = 50;
+      const delay = 30; // Reduced for faster mobile scrolling
 
       // Snap after a brief delay
       scrollTimeout = setTimeout(() => {

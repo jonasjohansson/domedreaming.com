@@ -486,7 +486,7 @@ export async function applySettingsToScene() {
           }
         } else {
           // All meshes processed, apply backgrounds (read colors from actual 3D scene)
-          applyBackgroundColors();
+          // applyBackgroundColors(); // Disabled for now - using static black colors
         }
       }
 
