@@ -152,7 +152,6 @@ function applySettings(settings) {
     Object.assign(bloomSettings, settings.bloomSettings);
   }
 
-
   if (settings.pageColorSettings) {
     // Merge page color settings, including nested vignette object
     if (settings.pageColorSettings.vignette) {
@@ -220,34 +219,37 @@ export function applyPageBackgrounds() {
   // About page (first page-section after canvas)
   // Background is now handled by CSS in layout.css
   // Defer this work to avoid blocking TBT
-  if ('requestIdleCallback' in window) {
-    requestIdleCallback(() => {
-      const pageSections = document.querySelectorAll(".page-section");
-      if (pageSections.length > 0) {
-        // Skip first page-section - handled by CSS
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        const pageSections = document.querySelectorAll(".page-section");
+        if (pageSections.length > 0) {
+          // Skip first page-section - handled by CSS
 
-        // Apply team background to remaining sections if needed
-        if (pageSections.length > 1 && pageBackgroundSettings.team) {
-          for (let i = 1; i < pageSections.length; i++) {
-            const section = pageSections[i];
-            if (pageBackgroundSettings.team.backgroundColor && pageBackgroundSettings.team.backgroundColor !== "#000000") {
-              const rgbaColor = hexToRgba(pageBackgroundSettings.team.backgroundColor, 0.5);
-              section.style.setProperty("background-color", rgbaColor, "important");
-            } else {
-              section.style.removeProperty("background-color");
-            }
-            if (pageBackgroundSettings.team.backgroundImage) {
-              section.style.setProperty("background-image", `url(${pageBackgroundSettings.team.backgroundImage})`, "important");
-              section.style.setProperty("background-size", "cover", "important");
-              section.style.setProperty("background-position", "center", "important");
-              section.style.setProperty("background-repeat", "no-repeat", "important");
-            } else {
-              section.style.removeProperty("background-image");
+          // Apply team background to remaining sections if needed
+          if (pageSections.length > 1 && pageBackgroundSettings.team) {
+            for (let i = 1; i < pageSections.length; i++) {
+              const section = pageSections[i];
+              if (pageBackgroundSettings.team.backgroundColor && pageBackgroundSettings.team.backgroundColor !== "#000000") {
+                const rgbaColor = hexToRgba(pageBackgroundSettings.team.backgroundColor, 0.5);
+                section.style.setProperty("background-color", rgbaColor, "important");
+              } else {
+                section.style.removeProperty("background-color");
+              }
+              if (pageBackgroundSettings.team.backgroundImage) {
+                section.style.setProperty("background-image", `url(${pageBackgroundSettings.team.backgroundImage})`, "important");
+                section.style.setProperty("background-size", "cover", "important");
+                section.style.setProperty("background-position", "center", "important");
+                section.style.setProperty("background-repeat", "no-repeat", "important");
+              } else {
+                section.style.removeProperty("background-image");
+              }
             }
           }
         }
-      }
-    }, { timeout: 200 });
+      },
+      { timeout: 200 }
+    );
   } else {
     setTimeout(() => {
       const pageSections = document.querySelectorAll(".page-section");
@@ -349,21 +351,21 @@ export async function loadSettings(forceFromJSON = false) {
 function generateRandomMutedColor() {
   // Generate random hue (0-1)
   const hue = Math.random();
-  
-  // Keep saturation very low (0.02-0.08) for very muted look
-  const saturation = 0.02 + Math.random() * 0.06;
-  
-  // Keep lightness medium (0.3-0.5) to match current palette
-  const lightness = 0.3 + Math.random() * 0.2;
-  
+
+  // Moderate saturation (0.15-0.35) for slightly more popping colors
+  const saturation = 0.15 + Math.random() * 0.2;
+
+  // Darker lightness (0.2-0.35) for darker but still vibrant colors
+  const lightness = 0.2 + Math.random() * 0.15;
+
   // Use Three.js Color for clean HSL to RGB conversion
   const color = new THREE.Color();
   color.setHSL(hue, saturation, lightness);
-  
+
   return {
     r: color.r,
     g: color.g,
-    b: color.b
+    b: color.b,
   };
 }
 
@@ -377,7 +379,7 @@ function darkenColor(color, darkenFactor = 0.5) {
   return {
     r: color.r * darkenFactor,
     g: color.g * darkenFactor,
-    b: color.b * darkenFactor
+    b: color.b * darkenFactor,
   };
 }
 
@@ -392,17 +394,17 @@ function muteColor(color, saturationFactor = 0.3) {
   const threeColor = new THREE.Color(color.r, color.g, color.b);
   const hsl = { h: 0, s: 0, l: 0 };
   threeColor.getHSL(hsl);
-  
+
   // Reduce saturation
   hsl.s = hsl.s * saturationFactor;
-  
+
   // Convert back to RGB
   threeColor.setHSL(hsl.h, hsl.s, hsl.l);
-  
+
   return {
     r: threeColor.r,
     g: threeColor.g,
-    b: threeColor.b
+    b: threeColor.b,
   };
 }
 
@@ -412,15 +414,15 @@ function muteColor(color, saturationFactor = 0.3) {
  */
 function applyBackgroundColors() {
   // Generate random muted colors for all 6 background classes
-  ['bg-1', 'bg-2', 'bg-3', 'bg-4', 'bg-5', 'bg-6'].forEach((bgClass) => {
+  ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6"].forEach((bgClass) => {
     // Generate a random muted color
     const randomColor = generateRandomMutedColor();
-    
+
     // Convert RGB (0-1) to RGB (0-255) for CSS
     const r = Math.round(randomColor.r * 255);
     const g = Math.round(randomColor.g * 255);
     const b = Math.round(randomColor.b * 255);
-    
+
     // Set CSS variable on root element
     document.documentElement.style.setProperty(`--${bgClass}-color`, `rgb(${r}, ${g}, ${b})`);
   });
@@ -431,23 +433,23 @@ export async function applySettingsToScene() {
   if (!window.savedColorSettings) {
     window.savedColorSettings = {};
   }
-  
+
   // Apply colors to meshes (batch to avoid long tasks)
   import("../3d/model.js").then((model) => {
     if (model.fbxMeshes && model.fbxMeshes.length > 0) {
       // Batch mesh color updates to avoid blocking
       let currentIndex = 0;
       const batchSize = 5;
-      
+
       function processMeshBatch() {
         const endIndex = Math.min(currentIndex + batchSize, model.fbxMeshes.length);
-        
+
         for (let i = currentIndex; i < endIndex; i++) {
           const item = model.fbxMeshes[i];
           const material = getMaterial(item.mesh);
           if (material) {
             let colorToApply;
-            
+
             // Generate random muted color for Main_Structure (interior), Floor, and Screen on each load
             if (item.name === "Main_Structure" || item.name === "Floor" || item.name === "Screen") {
               colorToApply = generateRandomMutedColor();
@@ -457,25 +459,27 @@ export async function applySettingsToScene() {
               colorToApply = window.savedColorSettings[item.name];
             } else {
               // If no saved color, use original color
-              colorToApply = item.originalColor ? {
-                r: item.originalColor.r,
-                g: item.originalColor.g,
-                b: item.originalColor.b
-              } : null;
+              colorToApply = item.originalColor
+                ? {
+                    r: item.originalColor.r,
+                    g: item.originalColor.g,
+                    b: item.originalColor.b,
+                  }
+                : null;
             }
-            
+
             if (colorToApply) {
               material.color.setRGB(colorToApply.r, colorToApply.g, colorToApply.b);
               material.needsUpdate = true;
             }
           }
         }
-        
+
         currentIndex = endIndex;
-        
+
         if (currentIndex < model.fbxMeshes.length) {
           // Yield to browser between batches
-          if ('requestIdleCallback' in window) {
+          if ("requestIdleCallback" in window) {
             requestIdleCallback(processMeshBatch, { timeout: 50 });
           } else {
             setTimeout(processMeshBatch, 0);
@@ -485,26 +489,29 @@ export async function applySettingsToScene() {
           applyBackgroundColors();
         }
       }
-      
+
       processMeshBatch();
     }
 
     // Apply light settings (batch to avoid blocking)
     if (window.savedLightSettings && model.glbLights) {
       // Defer light updates slightly
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(() => {
-          model.glbLights.forEach((light, index) => {
-            const lightName = light.name || `light_${index}`;
-            if (window.savedLightSettings[lightName]) {
-              const saved = window.savedLightSettings[lightName];
-              light.color.setRGB(saved.r, saved.g, saved.b);
-              // Clamp to avoid extreme persisted values blowing out the scene
-              const clampedIntensity = Math.max(0, Math.min(saved.intensity ?? light.intensity, 10));
-              light.intensity = clampedIntensity;
-            }
-          });
-        }, { timeout: 100 });
+      if ("requestIdleCallback" in window) {
+        requestIdleCallback(
+          () => {
+            model.glbLights.forEach((light, index) => {
+              const lightName = light.name || `light_${index}`;
+              if (window.savedLightSettings[lightName]) {
+                const saved = window.savedLightSettings[lightName];
+                light.color.setRGB(saved.r, saved.g, saved.b);
+                // Clamp to avoid extreme persisted values blowing out the scene
+                const clampedIntensity = Math.max(0, Math.min(saved.intensity ?? light.intensity, 10));
+                light.intensity = clampedIntensity;
+              }
+            });
+          },
+          { timeout: 100 }
+        );
       } else {
         setTimeout(() => {
           model.glbLights.forEach((light, index) => {
@@ -537,13 +544,11 @@ export async function applySettingsToScene() {
       }
     }
   });
-
 }
 
 export async function reloadFromJSON() {
   await loadSettings(true);
   await applySettingsToScene();
-
 }
 
 export function saveSettings(fbxMeshes, glbLights) {
@@ -656,7 +661,6 @@ export function exportSettingsFile(fbxMeshes, glbLights) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-
   } catch (error) {
     console.error("Failed to export settings file:", error);
   }

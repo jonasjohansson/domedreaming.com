@@ -8,17 +8,17 @@ import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
 function generateRandomMutedColor() {
   // Generate random hue (0-1)
   const hue = Math.random();
-  
-  // Keep saturation low (0.2-0.4) for muted look
-  const saturation = 0.2 + Math.random() * 0.2;
-  
-  // Keep lightness medium (0.3-0.5) to match current palette
-  const lightness = 0.3 + Math.random() * 0.2;
-  
+
+  // Moderate saturation (0.25-0.45) for slightly more popping colors
+  const saturation = 0.25 + Math.random() * 0.2;
+
+  // Darker lightness (0.2-0.35) for darker but still vibrant colors
+  const lightness = 0.2 + Math.random() * 0.15;
+
   // Use Three.js Color for clean HSL to RGB conversion
   const color = new THREE.Color();
   color.setHSL(hue, saturation, lightness);
-  
+
   return color;
 }
 
@@ -30,17 +30,17 @@ function getScreenColor() {
   if (!window.savedColorSettings) {
     window.savedColorSettings = {};
   }
-  
+
   // Generate random muted color for Screen on each load (like Main_Structure and Floor)
   if (!window.savedColorSettings["Screen"]) {
     const randomColor = generateRandomMutedColor();
     window.savedColorSettings["Screen"] = {
       r: randomColor.r,
       g: randomColor.g,
-      b: randomColor.b
+      b: randomColor.b,
     };
   }
-  
+
   const colorData = window.savedColorSettings["Screen"];
   return new THREE.Color(colorData.r, colorData.g, colorData.b);
 }
