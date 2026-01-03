@@ -119,7 +119,7 @@ main > section.page-section:first-of-type::after {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(to bottom, transparent 0%, transparent 80%, var(--bg-floor-color) 100%);
+  background: linear-gradient(to bottom, transparent 0%, transparent 80%, var(--bg-black) 100%);
   pointer-events: none;
   z-index: 2;
 }

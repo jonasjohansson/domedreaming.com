@@ -345,27 +345,51 @@ export async function loadSettings(forceFromJSON = false) {
 }
 
 /**
- * Generate a random muted color within the same palette as the current interior colors
+ * Predefined color palette: purple, teal/blue, orange-amber
+ * Colors are in RGB 0-1 format for Three.js
+ */
+const COLOR_PALETTE = [
+  // Purple
+  { r: 0.4, g: 0.2, b: 0.6 },
+  // Teal/Blue
+  { r: 0.2, g: 0.5, b: 0.6 },
+  // Orange-amber
+  { r: 0.7, g: 0.4, b: 0.2 },
+];
+
+/**
+ * Generate a random color from the predefined palette
  * Returns RGB values between 0 and 1
  */
 function generateRandomMutedColor() {
-  // Generate random hue (0-1)
-  const hue = Math.random();
+  // Randomly select from the color palette
+  const randomIndex = Math.floor(Math.random() * COLOR_PALETTE.length);
+  return COLOR_PALETTE[randomIndex];
+}
 
-  // Moderate saturation (0.15-0.35) for slightly more popping colors
-  const saturation = 0.15 + Math.random() * 0.2;
+/**
+ * Create a more muted version of a color for CSS backgrounds
+ * Reduces saturation while maintaining better lightness for visibility
+ */
+function muteColorForCSS(color) {
+  // Convert RGB to HSL for easier manipulation
+  const threeColor = new THREE.Color(color.r, color.g, color.b);
+  const hsl = { h: 0, s: 0, l: 0 };
+  threeColor.getHSL(hsl);
 
-  // Darker lightness (0.2-0.35) for darker but still vibrant colors
-  const lightness = 0.2 + Math.random() * 0.15;
+  // Reduce saturation to 40-50% of original (more visible than before)
+  const mutedSaturation = Math.max(0.15, hsl.s * 0.5); // Reduce saturation to 50% of original
+  // Keep lightness in a better range (0.25-0.45) so colors are visible but still muted
+  const mutedLightness = Math.max(0.25, Math.min(0.45, hsl.l * 1.1)); // Slightly lighter for visibility
 
-  // Use Three.js Color for clean HSL to RGB conversion
-  const color = new THREE.Color();
-  color.setHSL(hue, saturation, lightness);
+  // Convert back to RGB
+  const mutedColor = new THREE.Color();
+  mutedColor.setHSL(hsl.h, mutedSaturation, mutedLightness);
 
   return {
-    r: color.r,
-    g: color.g,
-    b: color.b,
+    r: mutedColor.r,
+    g: mutedColor.g,
+    b: mutedColor.b,
   };
 }
 
@@ -452,9 +476,12 @@ function applyBackgroundColors() {
       }
     }
 
-    // Set Main_Structure color CSS variable (renamed from bg-floor-color for clarity)
+    // Create a muted version of the Main_Structure color for CSS backgrounds
+    const mutedMainColor = muteColorForCSS(mainColor);
+
+    // Set Main_Structure color CSS variable (muted version for backgrounds)
     // CSS nth-child selectors will automatically apply gradients to alternating sections
-    document.documentElement.style.setProperty(`--bg-floor-color`, rgbToCSS(mainColor));
+    document.documentElement.style.setProperty(`--bg-floor-color`, rgbToCSS(mutedMainColor));
   });
 }
 
@@ -480,15 +507,9 @@ export async function applySettingsToScene() {
           if (material) {
             let colorToApply;
 
-            // Generate random muted color for Main_Structure (interior), Floor, and Screen on each load
-            // Sometimes use black as one of the randomized colors
+            // Generate random color for Main_Structure (interior), Floor, and Screen on each load
             if (item.name === "Main_Structure" || item.name === "Floor" || item.name === "Screen") {
-              // 30% chance to use black, 70% chance to use random color
-              if (Math.random() < 0.3) {
-                colorToApply = { r: 0, g: 0, b: 0 }; // Black
-              } else {
-                colorToApply = generateRandomMutedColor();
-              }
+              colorToApply = generateRandomMutedColor();
               // Update saved settings so it persists for this session
               window.savedColorSettings[item.name] = colorToApply;
             } else if (window.savedColorSettings[item.name]) {

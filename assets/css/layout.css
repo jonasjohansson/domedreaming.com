@@ -194,12 +194,12 @@ body:not(.dome-mode) .grid-overlay {
 /* Alternating section backgrounds */
 /* Even sections (2, 4, 6, etc.): Main_Structure color → black */
 main > section.page-section:nth-child(even) {
-  background: linear-gradient(to bottom, var(--bg-floor-color), var(--bg-black));
+  background: linear-gradient(to bottom, var(--bg-black), var(--bg-floor-color));
 }
 
 /* Odd sections (3, 5, 7, etc.): black → Main_Structure color */
 main > section.page-section:nth-child(odd):not(:first-of-type) {
-  background: linear-gradient(to bottom, var(--bg-black), var(--bg-floor-color));
+  background: linear-gradient(to bottom, var(--bg-floor-color), var(--bg-black));
 }
 
 /* Column classes - kept for backwards compatibility if needed elsewhere */

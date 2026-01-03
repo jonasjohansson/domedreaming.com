@@ -2,24 +2,26 @@ import * as THREE from "three";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
 
 /**
- * Generate a random muted color for screen (same as other meshes)
- * Returns RGB values between 0 and 1
+ * Predefined color palette: purple, teal/blue, orange-amber
+ * Colors are in RGB 0-1 format for Three.js
+ */
+const COLOR_PALETTE = [
+  // Purple
+  new THREE.Color(0.4, 0.2, 0.6),
+  // Teal/Blue
+  new THREE.Color(0.2, 0.5, 0.6),
+  // Orange-amber
+  new THREE.Color(0.7, 0.4, 0.2),
+];
+
+/**
+ * Generate a random color from the predefined palette
+ * Returns a THREE.Color object
  */
 function generateRandomMutedColor() {
-  // Generate random hue (0-1)
-  const hue = Math.random();
-
-  // Moderate saturation (0.25-0.45) for slightly more popping colors
-  const saturation = 0.25 + Math.random() * 0.2;
-
-  // Darker lightness (0.2-0.35) for darker but still vibrant colors
-  const lightness = 0.2 + Math.random() * 0.15;
-
-  // Use Three.js Color for clean HSL to RGB conversion
-  const color = new THREE.Color();
-  color.setHSL(hue, saturation, lightness);
-
-  return color;
+  // Randomly select from the color palette
+  const randomIndex = Math.floor(Math.random() * COLOR_PALETTE.length);
+  return COLOR_PALETTE[randomIndex].clone();
 }
 
 /**
