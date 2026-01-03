@@ -4,7 +4,8 @@
   "description": "Dome Dreaming fulldome film festival website",
   "scripts": {
     "dev": "eleventy --serve --watch",
-    "build": "npm run build:eleventy && npm run build:optimize",
+    "build": "npm run build:update-sw && npm run build:eleventy && npm run build:optimize && npm run build:update-sw",
+    "build:update-sw": "node scripts/update-sw-version.js",
     "build:eleventy": "ELEVENTY_OUTPUT_DIR=docs eleventy",
     "build:optimize": "npm run build:cleanup && npm run build:copy-images && npm run build:minify && npm run build:optimize-used-images && npm run build:fonts",
     "build:cleanup": "node scripts/cleanup-assets.js",

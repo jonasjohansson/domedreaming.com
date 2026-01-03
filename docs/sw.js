@@ -3,8 +3,11 @@
  * Caches static assets for faster repeat visits and offline support
  */
 
-const CACHE_NAME = "domedreaming-v2";
-const RUNTIME_CACHE = "domedreaming-runtime-v2";
+// Cache version - automatically updated on each build
+// This ensures cache clears on every new push
+const CACHE_VERSION = "1767438817511";
+const CACHE_NAME = `domedreaming-v${CACHE_VERSION}`;
+const RUNTIME_CACHE = `domedreaming-runtime-v${CACHE_VERSION}`;
 
 // Assets to cache immediately on install
 const PRECACHE_ASSETS = [
@@ -79,16 +82,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Strategy: Network First for CSS (to see updates immediately), Cache First for other static assets, Network First for HTML
-  if (request.url.endsWith(".css")) {
-    // CSS: Network First to ensure fresh styles
+  // Strategy: Network First for CSS, JS, and HTML (to see updates immediately), Cache First for other static assets
+  if (request.url.endsWith(".css") || request.url.endsWith(".js")) {
+    // CSS and JS: Network First to ensure fresh code and styles
     event.respondWith(networkFirst(request));
-  } else if (isStaticAsset(request.url)) {
-    // Other static assets: Cache First
-    event.respondWith(cacheFirst(request));
   } else if (request.headers.get("accept")?.includes("text/html")) {
     // HTML: Network First with cache fallback
     event.respondWith(networkFirst(request));
+  } else if (isStaticAsset(request.url)) {
+    // Other static assets (images, fonts, etc.): Cache First
+    event.respondWith(cacheFirst(request));
   } else {
     // Other resources: Network First
     event.respondWith(networkFirst(request));
