@@ -110,7 +110,7 @@ body:not(.dome-mode) .page-section:has(#canvas-container) .block {
   overflow: visible;
 }
 
-/* First section: transparent at top, transitions to bg-1 color at bottom */
+/* First section: transparent at top, transitions to Main_Structure color at bottom */
 /* Use ::after pseudo-element to layer on top of 3D canvas */
 main > section.page-section:first-of-type::after {
   content: "";
@@ -119,7 +119,7 @@ main > section.page-section:first-of-type::after {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(to bottom, transparent 0%, transparent 80%, var(--bg-1-color) 100%);
+  background: linear-gradient(to bottom, transparent 0%, transparent 80%, var(--bg-floor-color) 100%);
   pointer-events: none;
   z-index: 2;
 }

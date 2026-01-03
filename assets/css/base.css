@@ -17,12 +17,8 @@
   --color-bar: #333333;
 
   /* Background section colors - set dynamically via JavaScript */
-  --bg-1-color: #000000;
-  --bg-2-color: #000000;
-  --bg-3-color: #000000;
-  --bg-4-color: #000000;
-  --bg-5-color: #000000;
-  --bg-6-color: #000000;
+  --bg-black: #0a0a0a; /* Slightly brighter black */
+  --bg-floor-color: #000000; /* Floor color from 3D scene */
 
   --font-family: "OffBit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
   --font-size-base: 18px;

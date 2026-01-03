@@ -409,22 +409,52 @@ function muteColor(color, saturationFactor = 0.3) {
 }
 
 /**
- * Apply random colors to background sections (bg-1 to bg-6)
- * Generates random muted colors for all 6 background classes
+ * Apply Main_Structure color from 3D scene to alternating sections
+ * Even sections (2, 4, 6): black → Main_Structure color
+ * Odd sections (3, 5, 7): Main_Structure color → black
  */
 function applyBackgroundColors() {
-  // Generate random muted colors for all 6 background classes
-  ["bg-1", "bg-2", "bg-3", "bg-4", "bg-5", "bg-6"].forEach((bgClass) => {
-    // Generate a random muted color
-    const randomColor = generateRandomMutedColor();
+  // Helper function to convert RGB (0-1) to CSS rgb string
+  const rgbToCSS = (color) => {
+    const r = Math.round(color.r * 255);
+    const g = Math.round(color.g * 255);
+    const b = Math.round(color.b * 255);
+    return `rgb(${r}, ${g}, ${b})`;
+  };
 
-    // Convert RGB (0-1) to RGB (0-255) for CSS
-    const r = Math.round(randomColor.r * 255);
-    const g = Math.round(randomColor.g * 255);
-    const b = Math.round(randomColor.b * 255);
+  // Get Main_Structure color directly from 3D scene material (more accurate than saved settings)
+  let mainColor = null;
 
-    // Set CSS variable on root element
-    document.documentElement.style.setProperty(`--${bgClass}-color`, `rgb(${r}, ${g}, ${b})`);
+  // Try to get Main_Structure mesh from 3D scene and read its actual material color
+  import("../3d/model.js").then((model) => {
+    if (model.fbxMeshes && model.fbxMeshes.length > 0) {
+      const mainMesh = model.fbxMeshes.find((item) => item.name === "Main_Structure");
+      if (mainMesh) {
+        const material = getMaterial(mainMesh.mesh);
+        if (material && material.color) {
+          // Read the actual color from the material (what's displayed in 3D)
+          mainColor = {
+            r: material.color.r,
+            g: material.color.g,
+            b: material.color.b,
+          };
+        }
+      }
+    }
+
+    // Fallback to savedColorSettings if material color not available
+    if (!mainColor) {
+      if (window.savedColorSettings && window.savedColorSettings.Main_Structure) {
+        mainColor = window.savedColorSettings.Main_Structure;
+      } else {
+        // If Main_Structure color not available yet, generate a random color as fallback
+        mainColor = generateRandomMutedColor();
+      }
+    }
+
+    // Set Main_Structure color CSS variable (renamed from bg-floor-color for clarity)
+    // CSS nth-child selectors will automatically apply gradients to alternating sections
+    document.documentElement.style.setProperty(`--bg-floor-color`, rgbToCSS(mainColor));
   });
 }
 
@@ -451,8 +481,14 @@ export async function applySettingsToScene() {
             let colorToApply;
 
             // Generate random muted color for Main_Structure (interior), Floor, and Screen on each load
+            // Sometimes use black as one of the randomized colors
             if (item.name === "Main_Structure" || item.name === "Floor" || item.name === "Screen") {
-              colorToApply = generateRandomMutedColor();
+              // 30% chance to use black, 70% chance to use random color
+              if (Math.random() < 0.3) {
+                colorToApply = { r: 0, g: 0, b: 0 }; // Black
+              } else {
+                colorToApply = generateRandomMutedColor();
+              }
               // Update saved settings so it persists for this session
               window.savedColorSettings[item.name] = colorToApply;
             } else if (window.savedColorSettings[item.name]) {
@@ -486,7 +522,10 @@ export async function applySettingsToScene() {
           }
         } else {
           // All meshes processed, apply backgrounds (read colors from actual 3D scene)
-          // applyBackgroundColors(); // Disabled for now - using static black colors
+          // Small delay to ensure savedColorSettings is fully populated
+          setTimeout(() => {
+            applyBackgroundColors();
+          }, 10);
         }
       }
 
