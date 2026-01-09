@@ -24,7 +24,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: var(--border-md);
   cursor: default;
 }
 
@@ -46,7 +46,7 @@
   flex: 1;
   min-height: 0;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: var(--border-md);
   cursor: default;
 }
 
@@ -54,14 +54,12 @@
   position: absolute;
   top: 100%;
   left: 0;
-  mix-blend-mode: difference;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   color: var(--color-text);
   font-weight: var(--font-weight-normal);
   letter-spacing: var(--letter-spacing-normal);
   margin: 0;
   padding: 0;
-  opacity: var(--opacity-muted);
   text-align: left;
   flex-shrink: 0;
 }
@@ -126,12 +124,12 @@ main > section.page-section:first-of-type::after {
 
 main > section.page-section:first-of-type .page-content {
   background-color: inherit;
-  line-height: 1.4;
+  line-height: var(--line-height-tight);
 }
 
 main > section.page-section:first-of-type .page-content p {
-  line-height: 1.4;
-  margin-bottom: calc(var(--font-size-base) * 1.4);
+  line-height: var(--line-height-tight);
+  margin-bottom: calc(var(--font-size-base) * var(--line-height-tight));
 }
 
 /* All sections can use dynamic grid-rows variable set by JavaScript */
@@ -155,18 +153,17 @@ main > section.page-section:first-of-type .page-content p {
 .grid-overlay .block p {
   font-size: var(--font-size-base);
   margin: 0;
-  opacity: var(--opacity-muted);
   line-height: var(--line-height-base);
   text-align: center;
 }
 
 main > section.page-section:first-of-type .grid-overlay .block p {
-  line-height: 1.4;
+  line-height: var(--line-height-tight);
 }
 
 @media (max-width: 768px) {
   .grid-overlay .block p {
-    line-height: 1.4;
+    line-height: var(--line-height-tight);
   }
 }
 
@@ -187,7 +184,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
 }
 
 section:first-of-type .page-content {
-  mix-blend-mode: difference;
+  /* mix-blend-mode: difference; */
 }
 
 .page-section.responsive .page-content .block {
@@ -199,7 +196,7 @@ section:first-of-type .page-content {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 16px;
+  border-radius: var(--border-md);
   display: block;
   cursor: default;
 }
@@ -227,7 +224,7 @@ section:first-of-type .page-content {
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
   margin: 0;
-  margin-bottom: 28px;
+  margin-bottom: var(--spacing-xl);
 }
 
 .page-content p:last-child {
@@ -237,8 +234,8 @@ section:first-of-type .page-content {
 /* Mobile (portrait and landscape) */
 @media (max-width: 768px), (max-width: 1024px) and (max-height: 768px) {
   .page-content p {
-    line-height: 1.4;
-    margin-bottom: calc(var(--font-size-base) * 1.4);
+    line-height: var(--line-height-tight);
+    margin-bottom: calc(var(--font-size-base) * var(--line-height-tight));
   }
 
   /*.page-section.responsive .page-content {
@@ -263,8 +260,8 @@ section:first-of-type .page-content {
 .page-content p.large,
 p.large,
 .large {
-  font-size: calc(var(--font-size-base) * 1.5) !important;
-  line-height: 1.4;
+  font-size: var(--font-size-xl) !important;
+  line-height: var(--line-height-tight);
 }
 
 /* Mobile (portrait and landscape) - use same font size as other sections */
@@ -280,8 +277,7 @@ p.large,
 p.small,
 .small {
   font-size: calc(var(--font-size-base) * 0.875) !important;
-  opacity: 0.5;
-  line-height: 1.5;
+  line-height: var(--line-height-normal);
 }
 
 .page-section:last-of-type p.small {
@@ -293,7 +289,7 @@ p.small,
   p.small,
   .small {
     font-size: calc(var(--font-size-base) * 0.8) !important;
-    line-height: 1.4;
+    line-height: var(--line-height-tight);
   }
   .page-section:last-of-type p.small {
     font-size: calc(var(--font-size-base) * 0.7) !important;

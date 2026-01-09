@@ -97,7 +97,7 @@ a:visited {
 }
 
 a[disabled] {
-  opacity: 0.5;
+  opacity: var(--opacity-50);
   cursor: not-allowed;
   pointer-events: none;
 }
@@ -125,7 +125,7 @@ main button {
 
 main button:has(.small) {
   flex-direction: column;
-  gap: 4px;
+  gap: var(--spacing-xs);
 }
 
 main button:hover,
@@ -136,28 +136,16 @@ main button:focus {
 }
 
 main button[disabled] {
-  opacity: 0.5;
+  opacity: var(--opacity-50);
   cursor: not-allowed;
   pointer-events: none;
 }
 
-.button-group {
-  display: flex;
-  gap: var(--col-width);
-  justify-content: center;
-  align-items: stretch;
-}
-
-.button-group button {
-  flex: 1;
-  max-width: calc(var(--col-width) * 4);
-}
 
 main button .small {
   font-size: calc(var(--font-size-base) * 0.875);
-  opacity: 0.7;
   display: block;
-  line-height: 1.4;
+  line-height: var(--line-height-tight);
   text-transform: uppercase;
   letter-spacing: var(--letter-spacing-wide);
 }
@@ -187,9 +175,6 @@ body:not(.dome-mode) .grid-overlay {
   pointer-events: none;
 }
 
-.color {
-  background-color: inherit;
-}
 
 /* Alternating section backgrounds */
 /* Even sections (2, 4, 6, etc.): Main_Structure color → black */
