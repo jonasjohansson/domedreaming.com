@@ -201,16 +201,6 @@ body.dome-mode .dome-instructions {
   width: 100%;
 }
 
-/* Underline key letters in keyboard buttons */
-.key-underline {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-.wasd-key-btn .key-underline {
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
 
 /* Enter/Exit button - always visible */
 #keyboard-exit-btn {

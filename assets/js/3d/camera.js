@@ -44,7 +44,7 @@ export function setupCameraControls() {
   document.addEventListener("webkitpointerlockchange", onPointerLockChange);
 
 
-  // Mouse movement
+  // Mouse movement - pointer lock mode
   function onMouseMove(event) {
     if (!isPointerLocked || !modelLoaded) return;
     const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
@@ -57,6 +57,45 @@ export function setupCameraControls() {
   }
 
   canvas.addEventListener("mousemove", onMouseMove);
+
+  // Click and drag camera controls (works without entering dome mode)
+  let isDragging = false;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+
+  canvas.addEventListener("mousedown", (event) => {
+    if (!modelLoaded) return;
+    // Only start dragging if not in pointer lock mode and clicking on canvas
+    if (!isPointerLocked && event.button === 0) {
+      isDragging = true;
+      lastMouseX = event.clientX;
+      lastMouseY = event.clientY;
+      euler.setFromQuaternion(camera.quaternion);
+      canvas.style.cursor = "grabbing";
+    }
+  });
+
+  window.addEventListener("mousemove", (event) => {
+    if (!isDragging || !modelLoaded || isPointerLocked) return;
+    
+    const deltaX = event.clientX - lastMouseX;
+    const deltaY = event.clientY - lastMouseY;
+
+    euler.y -= deltaX * cameraSettings.sensitivity * 0.01;
+    euler.x -= deltaY * cameraSettings.sensitivity * 0.01;
+    euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
+    camera.quaternion.setFromEuler(euler);
+
+    lastMouseX = event.clientX;
+    lastMouseY = event.clientY;
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      canvas.style.cursor = "default";
+    }
+  });
 
   // Touch controls - only active when in dome mode
   // Track touches: single touch = camera rotation, two touches = move forward
