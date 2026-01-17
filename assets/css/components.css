@@ -150,7 +150,7 @@ body.dome-mode .dome-instructions {
 
 /* WASD Keyboard Layout in Block */
 .wasd-keyboard {
-  display: flex;
+  display: none; /* Hidden for now */
   align-items: center;
   justify-content: center;
 }

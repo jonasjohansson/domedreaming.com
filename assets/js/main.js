@@ -817,23 +817,6 @@ function initDomeMode() {
       // Always call exitDomeMode directly - it will handle pointer lock exit
       exitDomeMode();
     }
-
-    // Keyboard shortcuts for action buttons (only when not in dome mode or when not typing)
-    if (!body.classList.contains("dome-mode") || document.activeElement.tagName === "BODY") {
-      if (e.key === "u" || e.key === "U") {
-        const uploadBtn = document.getElementById("keyboard-upload-btn");
-        if (uploadBtn && !uploadBtn.disabled) {
-          e.preventDefault();
-          uploadBtn.click();
-        }
-      } else if (e.key === "c" || e.key === "C") {
-        const cameraBtn = document.getElementById("keyboard-camera-btn");
-        if (cameraBtn && !cameraBtn.disabled) {
-          e.preventDefault();
-          cameraBtn.click();
-        }
-      }
-    }
   });
 
   function onPointerLockChange() {

@@ -23,66 +23,28 @@ export function setQeRotationSpeed(value) {
 }
 
 export function setupCameraControls() {
-  // Pointer lock
-  function requestPointerLock() {
-    const request = canvas.requestPointerLock || canvas.mozRequestPointerLock || canvas.webkitRequestPointerLock;
-    if (request) request.call(canvas);
-  }
-
-  function onPointerLockChange() {
-    const wasLocked = isPointerLocked;
-    isPointerLocked =
-      document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas;
-
-    if (!wasLocked && isPointerLocked && modelLoaded) {
-      euler.setFromQuaternion(camera.quaternion);
-    }
-  }
-
-  document.addEventListener("pointerlockchange", onPointerLockChange);
-  document.addEventListener("mozpointerlockchange", onPointerLockChange);
-  document.addEventListener("webkitpointerlockchange", onPointerLockChange);
-
-
-  // Mouse movement - pointer lock mode
-  function onMouseMove(event) {
-    if (!isPointerLocked || !modelLoaded) return;
-    const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
-    const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
-
-    euler.y -= movementX * cameraSettings.sensitivity;
-    euler.x -= movementY * cameraSettings.sensitivity;
-    euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
-    camera.quaternion.setFromEuler(euler);
-  }
-
-  canvas.addEventListener("mousemove", onMouseMove);
-
-  // Click and drag camera controls (works without entering dome mode)
+  // Click and drag camera rotation
   let isDragging = false;
   let lastMouseX = 0;
   let lastMouseY = 0;
 
   canvas.addEventListener("mousedown", (event) => {
     if (!modelLoaded) return;
-    // Only start dragging if not in pointer lock mode and clicking on canvas
-    if (!isPointerLocked && event.button === 0) {
-      isDragging = true;
-      lastMouseX = event.clientX;
-      lastMouseY = event.clientY;
-      euler.setFromQuaternion(camera.quaternion);
-      canvas.style.cursor = "grabbing";
-    }
+    isDragging = true;
+    lastMouseX = event.clientX;
+    lastMouseY = event.clientY;
+    euler.setFromQuaternion(camera.quaternion);
+    canvas.style.cursor = "grabbing";
   });
 
-  window.addEventListener("mousemove", (event) => {
-    if (!isDragging || !modelLoaded || isPointerLocked) return;
+  canvas.addEventListener("mousemove", (event) => {
+    if (!isDragging || !modelLoaded) return;
     
     const deltaX = event.clientX - lastMouseX;
     const deltaY = event.clientY - lastMouseY;
 
-    euler.y -= deltaX * cameraSettings.sensitivity * 0.01;
-    euler.x -= deltaY * cameraSettings.sensitivity * 0.01;
+    euler.y -= deltaX * cameraSettings.sensitivity;
+    euler.x -= deltaY * cameraSettings.sensitivity;
     euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
     camera.quaternion.setFromEuler(euler);
 
@@ -90,22 +52,23 @@ export function setupCameraControls() {
     lastMouseY = event.clientY;
   });
 
-  window.addEventListener("mouseup", () => {
-    if (isDragging) {
-      isDragging = false;
-      canvas.style.cursor = "default";
-    }
+  canvas.addEventListener("mouseup", () => {
+    isDragging = false;
+    canvas.style.cursor = "default";
   });
 
-  // Touch controls - only active when in dome mode
-  // Track touches: single touch = camera rotation, two touches = move forward
+  canvas.addEventListener("mouseleave", () => {
+    isDragging = false;
+    canvas.style.cursor = "default";
+  });
+
+  // Touch controls for mobile - drag to rotate camera
   let cameraTouchId = null;
 
   canvas.addEventListener(
     "touchstart",
     (event) => {
-      // Only allow touch camera controls if in dome mode
-      if (!document.body.classList.contains("dome-mode") || !modelLoaded) return;
+      if (!modelLoaded) return;
       event.preventDefault();
       
       // Single touch = camera rotation
@@ -117,11 +80,6 @@ export function setupCameraControls() {
         isTouching = true;
         euler.setFromQuaternion(camera.quaternion);
       }
-      
-      // Two touches = move forward
-      if (event.touches.length === 2) {
-        touchMovement.forward = true;
-      }
     },
     { passive: false }
   );
@@ -129,13 +87,11 @@ export function setupCameraControls() {
   canvas.addEventListener(
     "touchmove",
     (event) => {
-      // Only allow touch camera controls if in dome mode
-      if (!document.body.classList.contains("dome-mode") || !modelLoaded) return;
+      if (!modelLoaded) return;
       event.preventDefault();
       
-      // Camera rotation - works with single touch anywhere on screen
-      // Also allow rotation with first touch even when second touch is added (for moving forward)
-      if (cameraTouchId !== null) {
+      // Camera rotation with single touch drag
+      if (cameraTouchId !== null && event.touches.length === 1) {
         const touch = Array.from(event.touches).find(t => t.identifier === cameraTouchId);
         if (touch) {
           const deltaX = touch.clientX - touchStartX;
@@ -150,17 +106,6 @@ export function setupCameraControls() {
           touchStartY = touch.clientY;
         }
       }
-      
-      // Two touches = move forward (keep moving forward while two touches are active)
-      if (event.touches.length === 2) {
-        touchMovement.forward = true;
-        touchMovement.backward = false;
-        touchMovement.left = false;
-        touchMovement.right = false;
-      } else if (event.touches.length === 1) {
-        // If we go back to one touch, stop moving forward
-        touchMovement.forward = false;
-      }
     },
     { passive: false }
   );
@@ -168,8 +113,6 @@ export function setupCameraControls() {
   canvas.addEventListener(
     "touchend",
     (event) => {
-      // Only handle if in dome mode
-      if (!document.body.classList.contains("dome-mode")) return;
       event.preventDefault();
       
       // Check which touch ended
@@ -180,14 +123,6 @@ export function setupCameraControls() {
           isTouching = false;
         }
       }
-      
-      // If we have less than 2 touches now, stop moving forward
-      if (event.touches.length < 2) {
-        touchMovement.forward = false;
-        touchMovement.backward = false;
-        touchMovement.left = false;
-        touchMovement.right = false;
-      }
     },
     { passive: false }
   );
@@ -195,8 +130,6 @@ export function setupCameraControls() {
   canvas.addEventListener(
     "touchcancel",
     (event) => {
-      // Only handle if in dome mode
-      if (!document.body.classList.contains("dome-mode")) return;
       event.preventDefault();
       
       // Reset all touches
@@ -207,12 +140,6 @@ export function setupCameraControls() {
           isTouching = false;
         }
       }
-      
-      // Reset movement
-      touchMovement.forward = false;
-      touchMovement.backward = false;
-      touchMovement.left = false;
-      touchMovement.right = false;
     },
     { passive: false }
   );

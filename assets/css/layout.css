@@ -94,6 +94,7 @@ a:visited {
   color: inherit;
   text-decoration: underline;
   cursor: pointer;
+  display: inline;
 }
 
 a[disabled] {
