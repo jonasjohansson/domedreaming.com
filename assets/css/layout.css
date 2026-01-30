@@ -103,7 +103,8 @@ a[disabled] {
   pointer-events: none;
 }
 
-main button {
+main button,
+main a.button {
   font-size: var(--font-size-base);
   font-family: var(--font-family);
   color: var(--color-text);
@@ -122,6 +123,7 @@ main button {
   justify-content: center;
   border-radius: var(--radius-lg);
   outline: none;
+  text-decoration: none;
 }
 
 main button:has(.small) {
@@ -130,7 +132,9 @@ main button:has(.small) {
 }
 
 main button:hover,
-main button:focus {
+main button:focus,
+main a.button:hover,
+main a.button:focus {
   background-color: var(--color-text);
   color: var(--color-bg);
   outline: none;
