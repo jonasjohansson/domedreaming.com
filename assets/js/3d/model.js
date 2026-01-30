@@ -85,23 +85,23 @@ export function loadModel() {
         });
       }
 
+      // Filter out hemisphere lights
+      glbLights = glbLights.filter(light => !(light instanceof THREE.HemisphereLight));
+
       if (glbLights.length > 0) {
         scene.add(glbLightsGroup);
 
-        // Apply saved light settings
-        if (window.savedLightSettings) {
-          glbLights.forEach((light, index) => {
-            const lightName = light.name || `light_${index}`;
-            const saved = window.savedLightSettings[lightName];
-            if (saved) {
-              light.color.setRGB(saved.r, saved.g, saved.b);
-              // Clamp intensity to a sane range to avoid blowouts from bad saved data
-              const clampedIntensity = Math.max(0, Math.min(saved.intensity ?? light.intensity, 10));
-              light.intensity = clampedIntensity;
-            }
-          });
-        }
-      } else {
+        // Set default intensity for lights
+        glbLights.forEach((light) => {
+          if (light instanceof THREE.DirectionalLight) {
+            // Directional light: intensity 5, position (2, 15, 5)
+            light.intensity = 5;
+            light.position.set(2, 15, 5);
+          } else {
+            // Other lights (chaser lights): intensity 10
+            light.intensity = 10;
+          }
+        });
       }
 
       // Find and store hotspots
