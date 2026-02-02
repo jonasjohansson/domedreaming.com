@@ -214,10 +214,15 @@ export function loadModel() {
       scene.add(object);
 
       // Reset camera position and rotation to ensure consistency
-      // Use the settings values, ensuring they're valid
-      const camPos = settings.startCameraPosition || { x: 0, y: 5.4, z: -4.3 };
-      const camRot = settings.startCameraRotation || { x: -3, y: 0, z: 3.121154018741333 };
-      
+      // Use default values - ignore potentially corrupted saved settings
+      const defaultCamPos = { x: 0, y: 5.4, z: -4.3 };
+      const defaultCamRot = { x: -3, y: 0, z: 3.121154018741333 };
+
+      // Only use saved position if it looks valid (y should be between 1 and 10)
+      const savedPos = settings.startCameraPosition;
+      const camPos = (savedPos && savedPos.y > 1 && savedPos.y < 10) ? savedPos : defaultCamPos;
+      const camRot = settings.startCameraRotation || defaultCamRot;
+
       camera.position.set(camPos.x, camPos.y, camPos.z);
       camera.rotation.set(camRot.x, camRot.y, camRot.z);
       // Ensure quaternion is updated from rotation

@@ -39,13 +39,16 @@ module.exports = function (eleventyConfig) {
   
   // Copy all static assets including JS/CSS
   // Note: .blend and .ai source files are excluded via .eleventyignore
-  // Note: Images are copied selectively after build (see scripts/copy-used-images.js)
+  // Note: For production builds, images are optimized via scripts/copy-used-images.js
+  // For dev mode, we copy all images directly
   eleventyConfig.addPassthroughCopy({
     "assets/fonts": "assets/fonts",
     "assets/favicon": "assets/favicon",
     "assets/models": "assets/models",
     "assets/js": "assets/js",
     "assets/css": "assets/css",
+    "assets/img": "assets/img",
+    "assets/pdf": "assets/pdf",
   });
   
   // Copy other root files

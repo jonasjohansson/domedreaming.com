@@ -58,7 +58,7 @@ export let canvasSettings = {
 };
 
 export let screenSettings = {
-  defaultImage: "assets/img/background.png",
+  defaultImage: "assets/img/background-dome-dreaming.jpg",
 };
 
 export let textureRotationSettings = {

@@ -19,7 +19,7 @@
   "settings": {
     "moveSpeed": 0.04,
     "screenSettings": {
-      "defaultImage": "assets/img/background.jpg"
+      "defaultImage": "assets/img/background-dome-dreaming.jpg"
     },
     "textureRotationSettings": {
       "enabled": true,
@@ -56,9 +56,9 @@
       "rotationSpeed": 120
     },
     "startCameraPosition": {
-      "x": 0.04,
-      "y": 33,
-      "z": 5
+      "x": 0,
+      "y": 5.4,
+      "z": -4.3
     },
     "startCameraRotation": {
       "x": -3,

@@ -161,23 +161,12 @@ async function init() {
     }, 50);
   }
 
-  // Defer 3D setup (not needed for FCP)
-  if ("requestIdleCallback" in window) {
-    requestIdleCallback(
-      () => {
-        setupLighting();
-        initPostProcessing();
-        setupCameraControls();
-      },
-      { timeout: 1000 }
-    );
-  } else {
-    setTimeout(() => {
-      setupLighting();
-      initPostProcessing();
-      setupCameraControls();
-    }, 100);
-  }
+  // Setup 3D lighting and post-processing after a short delay
+  setTimeout(() => {
+    setupLighting();
+    initPostProcessing();
+    setupCameraControls();
+  }, 50);
 
   // Defer event listener setup to avoid blocking TBT
   if ("requestIdleCallback" in window) {
@@ -523,31 +512,14 @@ function setupEventListeners() {
     });
   });
 
-  // Defer 3D model loading - dynamically import 3D code to reduce initial bundle size
-  // This code-splits the 3D functionality into a separate chunk
-  if ("requestIdleCallback" in window) {
-    requestIdleCallback(
-      async () => {
-        await load3DModules();
-        // Now load the model and start rendering
-        if (loadModel) {
-          loadModel();
-          startRenderLoop();
-        }
-      },
-      { timeout: 2000 }
-    );
-  } else {
-    requestAnimationFrame(async () => {
-      setTimeout(async () => {
-        await load3DModules();
-        if (loadModel) {
-          loadModel();
-          startRenderLoop();
-        }
-      }, 100);
-    });
-  }
+  // Load 3D model and start rendering after a short delay
+  setTimeout(async () => {
+    await load3DModules();
+    if (loadModel) {
+      loadModel();
+      startRenderLoop();
+    }
+  }, 100);
 }
 
 function animate(currentTime) {

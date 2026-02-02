@@ -11,8 +11,7 @@ const cssFiles = [
   'dots.css',
   'blocks.css',
   'layout.css',
-  'components.css',
-  'shader.css'
+  'components.css'
 ];
 
 // main.css uses @import, so we'll handle it separately
