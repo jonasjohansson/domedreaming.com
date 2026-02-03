@@ -1,28 +1,15 @@
-import * as THREE from "three";
-
-// Import core 3D scene (needed immediately for canvas setup)
-import {
-  scene,
-  camera,
-  renderer,
-  canvas,
-  resetCamera,
-  setupLighting,
-  initPostProcessing,
-  updatePostProcessing,
-  setupCameraControls,
-  euler,
-} from "./3d/index.js";
-
-// 3D model and movement will be dynamically imported for code splitting
-// This reduces initial bundle size - 3D code loads on demand
+// All Three.js and 3D modules are now lazy-loaded for better performance
 // These are assigned when modules load dynamically
+let THREE;
+let scene, camera, renderer, canvas, resetCamera, setupLighting;
+let initPostProcessing, updatePostProcessing, setupCameraControls, euler;
 let loadModel, updateMovement, updateRotation, fbxMeshes, glbLights;
 let getCurrentImageTexture, getCurrentVideoTexture, connectWebcam;
 let loadImage, loadVideo, disconnectWebcam, loadDefaultScreenTexture;
 let updateScreenLighting, touchMovement;
 let updateListenerPosition;
 let startAudio, stopAudio;
+let threeJsLoaded = false;
 
 import {
   loadSettings,
@@ -165,12 +152,8 @@ async function init() {
     }, 50);
   }
 
-  // Setup 3D lighting and post-processing after a short delay
-  setTimeout(() => {
-    setupLighting();
-    initPostProcessing();
-    setupCameraControls();
-  }, 50);
+  // Setup 3D lighting and post-processing after Three.js loads
+  // This is deferred until user interaction or idle time for better FCP
 
   // Defer event listener setup to avoid blocking TBT
   if ("requestIdleCallback" in window) {
@@ -187,9 +170,42 @@ async function init() {
   }
 }
 
+// Function to load Three.js and core 3D scene (deferred for performance)
+async function loadThreeJS() {
+  if (threeJsLoaded) return;
+
+  try {
+    // Load Three.js and core scene modules
+    THREE = await import("three");
+    const sceneModule = await import("./3d/scene.js");
+    const cameraModule = await import("./3d/camera.js");
+    const lightingModule = await import("./3d/lighting.js");
+    const postModule = await import("./3d/postprocessing.js");
+
+    // Assign core scene exports
+    scene = sceneModule.scene;
+    camera = sceneModule.camera;
+    renderer = sceneModule.renderer;
+    canvas = sceneModule.canvas;
+    resetCamera = sceneModule.resetCamera;
+    setupLighting = lightingModule.setupLighting;
+    initPostProcessing = postModule.initPostProcessing;
+    updatePostProcessing = postModule.updatePostProcessing;
+    setupCameraControls = cameraModule.setupCameraControls;
+    euler = cameraModule.euler;
+
+    threeJsLoaded = true;
+  } catch (error) {
+    console.error("Error loading Three.js:", error);
+  }
+}
+
 // Function to dynamically load 3D modules (code splitting)
 // Defined at module level so it's accessible everywhere
 async function load3DModules() {
+  // First ensure Three.js is loaded
+  await loadThreeJS();
+
   if (loadModel && connectWebcam) {
     return; // Already loaded
   }
@@ -526,29 +542,40 @@ function setupEventListeners() {
     });
   }
 
-  // Load 3D model and start rendering after a short delay
-  setTimeout(async () => {
+  // Load 3D scene after idle time (defer for better FCP/LCP)
+  const load3DScene = async () => {
+    await loadThreeJS();
+    if (setupLighting) setupLighting();
+    if (initPostProcessing) initPostProcessing();
+    if (setupCameraControls) setupCameraControls();
     await load3DModules();
     if (loadModel) {
       loadModel();
       startRenderLoop();
     }
-  }, 100);
+  };
+
+  // Use requestIdleCallback to load 3D after page is interactive
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(() => load3DScene(), { timeout: 2000 });
+  } else {
+    setTimeout(load3DScene, 500);
+  }
 }
 
 function animate(currentTime) {
   animationFrameId = requestAnimationFrame(animate);
+
+  // Skip if Three.js not loaded yet
+  if (!threeJsLoaded || !camera) return;
 
   const deltaTime = (currentTime - lastTime) / 1000;
   lastTime = currentTime;
 
   // Only update if 3D modules are loaded
   if (updateMovement && updateRotation) {
-    // Only update if 3D modules are loaded
-    if (updateMovement && updateRotation) {
-      updateMovement();
-      updateRotation(deltaTime);
-    }
+    updateMovement();
+    updateRotation(deltaTime);
   }
 
   currentCameraPosition.x = camera.position.x;
@@ -566,11 +593,11 @@ function animate(currentTime) {
     lastCameraSaveTime = currentTime;
   }
 
-  updateTextureRotation(deltaTime);
-  updateScreenLighting(currentTime);
+  if (getCurrentImageTexture) updateTextureRotation(deltaTime);
+  if (updateScreenLighting) updateScreenLighting(currentTime);
 
   // Update spatial audio listener position based on camera
-  if (updateListenerPosition) {
+  if (updateListenerPosition && THREE && camera) {
     // Get camera forward direction
     const forward = new THREE.Vector3(0, 0, -1);
     forward.applyQuaternion(camera.quaternion);
@@ -585,10 +612,10 @@ function animate(currentTime) {
 }
 
 function updateTextureRotation(deltaTime) {
-  if (!textureRotationSettings.enabled) return;
+  if (!textureRotationSettings.enabled || !THREE || !getCurrentImageTexture) return;
 
   const imageTexture = getCurrentImageTexture();
-  const videoTexture = getCurrentVideoTexture();
+  const videoTexture = getCurrentVideoTexture ? getCurrentVideoTexture() : null;
   const texture = imageTexture || videoTexture;
 
   if (texture) {
