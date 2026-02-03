@@ -124,9 +124,14 @@ a:visited {
   display: inline;
   position: relative;
   z-index: 100;
-  pointer-events: auto !important;
+  pointer-events: auto;
   touch-action: manipulation;
   -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Disable link interactions in dome mode */
+body.dome-mode .page-section:has(#canvas-container) a {
+  pointer-events: none !important;
 }
 
 a:link:not(:has(img)),
