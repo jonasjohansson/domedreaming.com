@@ -245,6 +245,8 @@ function drawTextInCells(ctx, text, centerX, centerY, circleStep, row, startSect
     }
     ctx.rotate(rotation);
 
+    // Use difference blend mode so text is visible over images
+    ctx.globalCompositeOperation = "difference";
 
     // Apply text shadow
     if (polarGridSettings.textShadow) {
