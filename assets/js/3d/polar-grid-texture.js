@@ -34,9 +34,17 @@ export const polarGridSettings = {
   text4FlipX: true,
   text4FlipY: true,
   text4FontSize: 100,
-  text4StartSector: 26,
-  text4Content: "OPEN CALL IS LIVE!",
+  text4StartSector: 19,
+  text4Content: "FULLDOME FILM FESTIVAL",
   text4CellMode: true,
+  // Text 5 settings
+  text5Row: 7,
+  text5FlipX: true,
+  text5FlipY: true,
+  text5FontSize: 100,
+  text5StartSector: 21,
+  text5Content: "OPEN CALL IS LIVE!",
+  text5CellMode: true,
   // Label flip options
   labelsFlipX: false,
   labelsFlipY: true,
@@ -237,8 +245,6 @@ function drawTextInCells(ctx, text, centerX, centerY, circleStep, row, startSect
     }
     ctx.rotate(rotation);
 
-    // Use difference blend mode so text is always visible
-    ctx.globalCompositeOperation = "difference";
 
     // Apply text shadow
     if (polarGridSettings.textShadow) {
@@ -1254,6 +1260,7 @@ const scrambleState = {
   text2: { chars: [] },
   text3: { chars: [] },
   text4: { chars: [] },
+  text5: { chars: [] },
 };
 
 // ASCII characters for scramble effect
@@ -1311,7 +1318,7 @@ function updateScrambleStates(currentTime) {
     pendingScrambleCount--;
 
     // Pick a random text line and character to scramble
-    const textKeys = ['text1', 'text2', 'text3', 'text4'];
+    const textKeys = ['text1', 'text2', 'text3', 'text4', 'text5'];
     const randomKey = textKeys[Math.floor(Math.random() * textKeys.length)];
     const state = scrambleState[randomKey];
     const content = polarGridSettings[`${randomKey}Content`];
@@ -1338,7 +1345,7 @@ function updateScrambleStates(currentTime) {
   }
 
   // Build result text for each line
-  ['text1', 'text2', 'text3', 'text4'].forEach((key) => {
+  ['text1', 'text2', 'text3', 'text4', 'text5'].forEach((key) => {
     const state = scrambleState[key];
     const content = polarGridSettings[`${key}Content`];
 

@@ -116,6 +116,16 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
           flipY: polarGridSettings.text4FlipY,
           cellMode: polarGridSettings.text4CellMode,
         },
+        {
+          text: polarGridSettings.text5Content,
+          row: polarGridSettings.text5Row,
+          startSector: polarGridSettings.text5StartSector,
+          textFontSize: polarGridSettings.text5FontSize,
+          color: "#ffffff",
+          flipX: polarGridSettings.text5FlipX,
+          flipY: polarGridSettings.text5FlipY,
+          cellMode: polarGridSettings.text5CellMode,
+        },
       ],
     });
 
@@ -292,6 +302,22 @@ export function setupPolarGridGUI() {
     .name("Font Size %")
     .onChange(() => regeneratePolarGridTexture());
   text4Folder.close();
+
+  // Text 5 subfolder
+  const text5Folder = typographyFolder.addFolder("Text 5");
+  text5Folder.add(polarGridSettings, "text5Content")
+    .name("Text")
+    .onChange(() => regeneratePolarGridTexture());
+  text5Folder.add(polarGridSettings, "text5Row", 1, 8, 1)
+    .name("Row (Circle)")
+    .onChange(() => regeneratePolarGridTexture());
+  text5Folder.add(polarGridSettings, "text5StartSector", 0, 35, 1)
+    .name("Start Sector")
+    .onChange(() => regeneratePolarGridTexture());
+  text5Folder.add(polarGridSettings, "text5FontSize", 20, 200, 5)
+    .name("Font Size %")
+    .onChange(() => regeneratePolarGridTexture());
+  text5Folder.close();
 
   // Style subfolder under Typography
   const textStyleFolder = typographyFolder.addFolder("Style");
