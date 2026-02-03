@@ -36,7 +36,7 @@ header {
   -webkit-clip-path: none;
   z-index: 1;
   pointer-events: none;
-  transition: opacity 0.8s ease-in-out;
+  transition: opacity 0.3s ease-in-out;
 }
 
 #canvas-container.loaded {
@@ -51,7 +51,7 @@ header {
   height: 100%;
   background: var(--color-bg, #000000);
   z-index: 9999;
-  transition: opacity 0.5s ease-out;
+  transition: opacity 0.2s ease-out;
 }
 
 #loading-overlay.fade-out {
