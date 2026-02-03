@@ -218,6 +218,11 @@ export function setupPolarGridGUI() {
   // ============ TYPOGRAPHY GROUP ============
   const typographyFolder = polarGridGUI.addFolder("Typography");
 
+  // Global font size at the top level
+  typographyFolder.add(polarGridSettings, "globalFontSize", 50, 200, 5)
+    .name("Global Font Size %")
+    .onChange(() => regeneratePolarGridTexture());
+
   // Text 1 subfolder
   const text1Folder = typographyFolder.addFolder("Text 1");
   text1Folder.add(polarGridSettings, "text1Content")

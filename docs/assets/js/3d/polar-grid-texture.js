@@ -3,6 +3,8 @@ import { updatePulseAudio, createPulseSynths, isAudioEnabled, getTickIntensity, 
 
 // GUI settings - exported so they can be modified externally
 export const polarGridSettings = {
+  // Global font size multiplier (affects all text)
+  globalFontSize: 100,
   // Text 1 settings (Cell Mode: each character fits in one cell)
   text1Row: 3, // Circle number (1 = innermost, 8 = outermost)
   text1FlipX: true,
@@ -25,7 +27,7 @@ export const polarGridSettings = {
   text3FlipY: true,
   text3FontSize: 100,
   text3StartSector: 34, // Centered in view when entering
-  text3Content: "FULLDOME FILM FESTIVAL",
+  text3Content: "DOME DREAMING",
   text3CellMode: true,
   // Text 4 settings
   text4Row: 6,
@@ -191,8 +193,9 @@ function drawTextInCells(ctx, text, centerX, centerY, circleStep, row, startSect
   // Angle per sector (in radians)
   const sectorAngle = (2 * Math.PI) / numSectors;
 
-  // Font size based on cell size
-  const fontSize = (cellHeight * fontSizePercent / 100) * 0.8;
+  // Font size based on cell size, with global multiplier
+  const globalMultiplier = (polarGridSettings.globalFontSize || 100) / 100;
+  const fontSize = (cellHeight * fontSizePercent / 100) * globalMultiplier * 0.8;
 
   ctx.font = `${fontSize}px OffBit, monospace`;
   ctx.textAlign = "center";
