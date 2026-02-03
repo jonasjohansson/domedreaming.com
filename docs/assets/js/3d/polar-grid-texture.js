@@ -10,23 +10,23 @@ export const polarGridSettings = {
   text1FlipX: true,
   text1FlipY: true,
   text1FontSize: 100, // percentage of cell size
-  text1StartSector: 24, // Centered in view when entering
-  text1Content: "MALMÖ 12 MAY",
+  text1StartSector: 24,
+  text1Content: "STHLM 7-9 MAY",
   text1CellMode: true, // Each character fits in one cell
   // Text 2 settings
   text2Row: 4,
   text2FlipX: true,
   text2FlipY: true,
   text2FontSize: 100,
-  text2StartSector: 29, // Centered in view when entering
-  text2Content: "STOCKHOLM 7-9 MAY",
+  text2StartSector: 23,
+  text2Content: "MALMÖ 12 MAY",
   text2CellMode: true,
   // Text 3 settings
   text3Row: 5,
   text3FlipX: true,
   text3FlipY: true,
   text3FontSize: 100,
-  text3StartSector: 34, // Centered in view when entering
+  text3StartSector: 24,
   text3Content: "DOME DREAMING",
   text3CellMode: true,
   // Text 4 settings
@@ -34,8 +34,8 @@ export const polarGridSettings = {
   text4FlipX: true,
   text4FlipY: true,
   text4FontSize: 100,
-  text4StartSector: 18, // Centered
-  text4Content: "OPEN CALL IS LIVE",
+  text4StartSector: 26,
+  text4Content: "OPEN CALL IS LIVE!",
   text4CellMode: true,
   // Label flip options
   labelsFlipX: false,
@@ -916,18 +916,18 @@ export function generatePolarGridTexture(size = 1024, options = {}) {
     const applyThreshold = polarGridSettings.imageThreshold;
     const thresholdLevel = polarGridSettings.imageThresholdLevel || 0.5;
 
-    // Mark cells occupied by typography as used (avoid placing images there)
-    const textConfigs = [
-      { row: polarGridSettings.text1Row, start: polarGridSettings.text1StartSector, len: polarGridSettings.text1Content.length },
-      { row: polarGridSettings.text2Row, start: polarGridSettings.text2StartSector, len: polarGridSettings.text2Content.length },
-      { row: polarGridSettings.text3Row, start: polarGridSettings.text3StartSector, len: polarGridSettings.text3Content.length },
-      { row: polarGridSettings.text4Row, start: polarGridSettings.text4StartSector, len: polarGridSettings.text4Content.length },
-    ];
+    // Mark entire rows occupied by typography as used (avoid placing images there)
+    const textRows = new Set([
+      polarGridSettings.text1Row,
+      polarGridSettings.text2Row,
+      polarGridSettings.text3Row,
+      polarGridSettings.text4Row,
+    ]);
 
-    for (const tc of textConfigs) {
-      for (let i = 0; i < tc.len; i++) {
-        const sector = (tc.start + i) % numRadialLines;
-        usedCells.add(`${tc.row}-${sector}`);
+    // Mark all cells in text rows as used
+    for (const row of textRows) {
+      for (let sector = 0; sector < numRadialLines; sector++) {
+        usedCells.add(`${row}-${sector}`);
       }
     }
 
