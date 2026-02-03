@@ -122,27 +122,24 @@ a:visited {
   text-decoration: none;
   cursor: pointer;
   display: inline;
+}
+
+a:link:not(:has(img)),
+a:visited:not(:has(img)) {
   background-color: var(--bg-floor-color, #a68540);
   padding: 0.1em 0.3em;
   border-radius: 0.2em;
 }
 
-a:hover {
+a:hover:not(:has(img)) {
   background-color: var(--bg-chairs-color, #8c5261);
 }
 
-/* Logo links - no background highlight, preserve layout */
-.logo a,
-.logo a:link,
-.logo a:visited,
-.logo a:hover {
-  background-color: transparent;
-  padding: 0;
+/* Links with images */
+a:has(img) {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  cursor: pointer;
 }
 
 a[disabled] {
