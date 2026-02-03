@@ -29,6 +29,12 @@ export let bloomSettings = {
   radius: 0.4,
   threshold: 0.85,
 };
+export let dofSettings = {
+  enabled: true,
+  focus: 12,       // Focus distance - objects at this distance are sharp
+  aperture: 0.0014, // Aperture size - higher = more blur
+  maxblur: 0.05,   // Maximum blur amount
+};
 export let pageColorSettings = {
   backgroundColor: "#000000",
   textColor: "#ffffff",
@@ -150,6 +156,10 @@ function applySettings(settings) {
 
   if (settings.bloomSettings) {
     Object.assign(bloomSettings, settings.bloomSettings);
+  }
+
+  if (settings.dofSettings) {
+    Object.assign(dofSettings, settings.dofSettings);
   }
 
   if (settings.pageColorSettings) {
@@ -639,6 +649,17 @@ export async function applySettingsToScene() {
         bloomPass.strength = 0;
       }
     }
+
+    // Update DOF settings
+    const bokehPass = postProc.getBokehPass();
+    if (bokehPass) {
+      bokehPass.enabled = dofSettings.enabled !== false;
+      if (dofSettings.enabled) {
+        bokehPass.uniforms["focus"].value = dofSettings.focus;
+        bokehPass.uniforms["aperture"].value = dofSettings.aperture;
+        bokehPass.uniforms["maxblur"].value = dofSettings.maxblur;
+      }
+    }
   });
 }
 
@@ -701,6 +722,7 @@ export function saveSettings(fbxMeshes, glbLights) {
       colorSettings,
       lightSettings,
       bloomSettings,
+      dofSettings,
       pageColorSettings,
       scrollSettings,
       canvasSettings,
@@ -753,6 +775,7 @@ export function exportSettingsFile(fbxMeshes, glbLights) {
         startCameraPosition,
         startCameraRotation,
         bloomSettings,
+        dofSettings,
         colorSettings,
         lightSettings,
         screenSettings,

@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import { configureTexture, applyTextureToScreen, getMaterial } from "./utils.js";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
-import { screenSettings, textureRotationSettings, randomizeColors } from "../core/settings.js";
+import { screenSettings, textureRotationSettings, randomizeColors, dofSettings } from "../core/settings.js";
+import { getBokehPass } from "./postprocessing.js";
 import { camera } from "./scene.js";
 import { generatePolarGridTexture, polarGridSettings, startPulseAnimation, stopPulseAnimation, reinitializePulses, preloadCellImages, triggerScrambleBurst } from "./polar-grid-texture.js";
 import { audioSettings, startAudio, stopAudio, setMasterVolume, setReverbWet, setSpatialSpread, initAudio, setScrambleTrigger } from "./pulse-audio.js";
@@ -579,6 +580,39 @@ export function setupPolarGridGUI() {
   gradientFolder.close();
 
   lightingFolder.close();
+
+  // ============ DOF (DEPTH OF FIELD) GROUP ============
+  const dofFolder = polarGridGUI.addFolder("Depth of Field");
+
+  dofFolder.add(dofSettings, "enabled")
+    .name("Enable")
+    .onChange((v) => {
+      const bokehPass = getBokehPass();
+      if (bokehPass) bokehPass.enabled = v;
+    });
+
+  dofFolder.add(dofSettings, "focus", 0.1, 50, 0.1)
+    .name("Focus Distance")
+    .onChange((v) => {
+      const bokehPass = getBokehPass();
+      if (bokehPass) bokehPass.uniforms["focus"].value = v;
+    });
+
+  dofFolder.add(dofSettings, "aperture", 0, 0.01, 0.0001)
+    .name("Aperture")
+    .onChange((v) => {
+      const bokehPass = getBokehPass();
+      if (bokehPass) bokehPass.uniforms["aperture"].value = v;
+    });
+
+  dofFolder.add(dofSettings, "maxblur", 0, 0.05, 0.001)
+    .name("Max Blur")
+    .onChange((v) => {
+      const bokehPass = getBokehPass();
+      if (bokehPass) bokehPass.uniforms["maxblur"].value = v;
+    });
+
+  dofFolder.open(); // Keep open for easy adjustment
 
   // ============ CAMERA GROUP ============
   const cameraFolder = polarGridGUI.addFolder("Camera");

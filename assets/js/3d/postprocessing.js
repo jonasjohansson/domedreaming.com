@@ -2,14 +2,16 @@ import * as THREE from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { FXAAPass } from "three/addons/postprocessing/FXAAPass.js";
 import { scene, camera, renderer, setResizeHandler } from "./scene.js";
-import { bloomSettings } from "../core/settings.js";
+import { bloomSettings, dofSettings } from "../core/settings.js";
 
 let composer = null;
 let renderPass = null;
 let bloomPass = null;
+let bokehPass = null;
 let fxaaPass = null;
 let outputPass = null;
 
@@ -36,6 +38,15 @@ export function initPostProcessing() {
   bloomPass = new UnrealBloomPass(resolution, initialStrength, bloomSettings.radius, bloomSettings.threshold);
   bloomPass.enabled = bloomSettings.enabled !== false;
   composer.addPass(bloomPass);
+
+  // Create DOF (Depth of Field) pass to blur nearby objects
+  bokehPass = new BokehPass(scene, camera, {
+    focus: dofSettings.focus,
+    aperture: dofSettings.aperture,
+    maxblur: dofSettings.maxblur,
+  });
+  bokehPass.enabled = dofSettings.enabled !== false;
+  composer.addPass(bokehPass);
 
   // FXAA disabled for better performance
   // fxaaPass = new FXAAPass();
@@ -82,6 +93,10 @@ export function resizePostProcessing() {
       bloomPass.setSize(width, height);
     }
 
+    if (bokehPass) {
+      bokehPass.setSize(width, height);
+    }
+
     if (fxaaPass) {
       fxaaPass.setSize(width, height);
     }
@@ -90,4 +105,8 @@ export function resizePostProcessing() {
 
 export function getBloomPass() {
   return bloomPass;
+}
+
+export function getBokehPass() {
+  return bokehPass;
 }
