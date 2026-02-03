@@ -34,68 +34,6 @@ const CAMERA_SAVE_INTERVAL = 2000;
 // Canvas container height is now handled by CSS (100% of page-section)
 // No JavaScript height setting needed
 
-function applyDomeDreamingFont() {
-  const mainElement = document.querySelector("main");
-  if (!mainElement) return;
-
-  const walker = document.createTreeWalker(mainElement, NodeFilter.SHOW_TEXT, null, false);
-  const textNodes = [];
-  let node;
-  while ((node = walker.nextNode())) {
-    if (node.parentElement?.classList.contains("dome-dreaming-text")) continue;
-    if (/dome\s+dreaming/i.test(node.textContent)) {
-      textNodes.push(node);
-    }
-  }
-
-  // Process text nodes in batches to avoid long main-thread tasks
-  let currentIndex = 0;
-  const batchSize = 5;
-
-  function processBatch() {
-    const endIndex = Math.min(currentIndex + batchSize, textNodes.length);
-
-    for (let i = currentIndex; i < endIndex; i++) {
-      const textNode = textNodes[i];
-      const parent = textNode.parentNode;
-      if (!parent) continue;
-
-      const text = textNode.textContent;
-      const regex = /(dome\s+dreaming)/gi;
-      const parts = text.split(regex);
-
-      const fragment = document.createDocumentFragment();
-      parts.forEach((part) => {
-        if (part && /^dome\s+dreaming$/i.test(part)) {
-          const span = document.createElement("span");
-          span.className = "dome-dreaming-text";
-          span.textContent = part;
-          fragment.appendChild(span);
-        } else if (part) {
-          fragment.appendChild(document.createTextNode(part));
-        }
-      });
-
-      parent.replaceChild(fragment, textNode);
-    }
-
-    currentIndex = endIndex;
-
-    if (currentIndex < textNodes.length) {
-      // Use requestIdleCallback or setTimeout to continue batching
-      if ("requestIdleCallback" in window) {
-        requestIdleCallback(processBatch, { timeout: 50 });
-      } else {
-        setTimeout(processBatch, 0);
-      }
-    }
-  }
-
-  if (textNodes.length > 0) {
-    processBatch();
-  }
-}
-
 async function init() {
   // Yield to browser immediately to allow FCP
   await new Promise((resolve) => {
@@ -141,14 +79,12 @@ async function init() {
     requestIdleCallback(
       () => {
         initGridDotsSystem();
-        applyDomeDreamingFont();
       },
       { timeout: 500 }
     );
   } else {
     setTimeout(() => {
       initGridDotsSystem();
-      applyDomeDreamingFont();
     }, 50);
   }
 

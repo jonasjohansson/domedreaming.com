@@ -593,8 +593,6 @@ export function setupPolarGridGUI() {
   // Rotation subfolder
   const cameraRotationFolder = cameraFolder.addFolder("Rotation");
   cameraRotationFolder.add(camera.rotation, "x", -Math.PI, Math.PI, 0.01).name("X").listen();
-  cameraRotationFolder.add(camera.rotation, "y", -Math.PI, Math.PI, 0.01).name("Y").listen();
-  cameraRotationFolder.add(camera.rotation, "z", -Math.PI, Math.PI, 0.01).name("Z").listen();
   cameraRotationFolder.close();
 
   cameraFolder.close();
