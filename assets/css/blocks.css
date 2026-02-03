@@ -113,6 +113,11 @@ body.dome-mode .page-section:has(#canvas-container) {
   z-index: 10000;
 }
 
+body.dome-mode .page-section:has(#canvas-container) .page-content {
+  opacity: 0;
+  pointer-events: none;
+}
+
 body.dome-mode .page-section:has(#canvas-container) .block {
   opacity: 0;
   pointer-events: none;
