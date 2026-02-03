@@ -59,8 +59,14 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     const chairsColor = colors.Chairs || { r: 0.55, g: 0.32, b: 0.38 };
     const floorColor = colors.Floor || { r: 0.65, g: 0.52, b: 0.25 };
 
-    // Higher resolution for better quality and less aliasing
-    const texture = generatePolarGridTexture(4096, {
+    // Detect mobile for performance optimization
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+      ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+    // Lower resolution on mobile for better performance (2048 vs 4096)
+    const textureSize = isMobile ? 2048 : 4096;
+
+    const texture = generatePolarGridTexture(textureSize, {
       backgroundColor: "#000000",
       numCircles: 8,
       numRadialLines: 36,

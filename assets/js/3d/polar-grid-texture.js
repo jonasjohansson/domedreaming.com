@@ -57,7 +57,7 @@ export const polarGridSettings = {
   pulseSize: 12,
   pulseGlow: true,
   // Typography rotation (independent of grid)
-  textRotationEnabled: true, // Typography rotation enabled
+  textRotationEnabled: false, // Typography rotation disabled by default
   textRotationSpeed: -0.3, // Negative = opposite direction (used for continuous mode)
   textStepRotation: true, // Step by one cell width in sync with BPM
   textRotationBPM: 30, // BPM for step rotation
@@ -89,6 +89,15 @@ export const polarGridSettings = {
   // Function to regenerate texture (set later)
   regenerate: null,
 };
+
+// Mobile detection for performance optimization
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+  ('ontouchstart' in window) ||
+  (navigator.maxTouchPoints > 0);
+
+// Animation throttling for mobile
+let lastAnimFrame = 0;
+const MOBILE_FRAME_INTERVAL = 33; // ~30fps on mobile vs 60fps on desktop
 
 /**
  * Convert RGB object (0-1) to hex string
@@ -1420,6 +1429,8 @@ function initializePulses(numPulses, numCircles) {
  */
 function drawPulses(ctx, params, pulseSize, pulseGlow) {
   const { centerX, centerY, circleStep } = params;
+  // Disable glow on mobile for performance
+  const useGlow = pulseGlow && !isMobile;
 
   // Get tick intensity and which pulse should react
   const tickIntensity = getTickIntensity();
@@ -1441,7 +1452,7 @@ function drawPulses(ctx, params, pulseSize, pulseGlow) {
     const glowIntensity = 0.9 + pulseTickIntensity * 0.1;
 
     // Draw glow effect - white, enhanced during ticks for the active pulse
-    if (pulseGlow) {
+    if (useGlow) {
       const glowSize = size * (3 + pulseTickIntensity * 2); // Glow grows more during ticks
       const gradient = ctx.createRadialGradient(x, y, 0, x, y, glowSize);
       gradient.addColorStop(0, `rgba(255, 255, 255, ${glowIntensity})`);
@@ -1503,6 +1514,13 @@ export function startPulseAnimation(texture) {
   let globalAnimTime = 0;
 
   function animate(currentTime) {
+    // Throttle animation on mobile for better performance
+    if (isMobile && currentTime - lastAnimFrame < MOBILE_FRAME_INTERVAL) {
+      pulseAnimationId = requestAnimationFrame(animate);
+      return;
+    }
+    lastAnimFrame = currentTime;
+
     const pulsesEnabled = polarGridSettings.pulsesEnabled;
     const cellAnimEnabled = polarGridSettings.cellAnimationEnabled;
     const textRotEnabled = polarGridSettings.textRotationEnabled;
