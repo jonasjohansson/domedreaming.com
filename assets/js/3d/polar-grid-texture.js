@@ -237,6 +237,9 @@ function drawTextInCells(ctx, text, centerX, centerY, circleStep, row, startSect
     }
     ctx.rotate(rotation);
 
+    // Use difference blend mode so text is always visible
+    ctx.globalCompositeOperation = "difference";
+
     // Apply text shadow
     if (polarGridSettings.textShadow) {
       ctx.shadowColor = polarGridSettings.textShadowColor;
@@ -695,7 +698,6 @@ function loadImage(src) {
 
 // List of images to use in cells
 const cellImagePaths = [
-  "assets/img/svg/dome-dreaming.svg",
   "assets/img/jpg/wisdome-stockholm-visuals.jpg",
   "assets/img/jpg/wisdome-malmo-visuals.jpg",
   "assets/img/jpg/untold-garden.jpg",
@@ -916,58 +918,42 @@ export function generatePolarGridTexture(size = 1024, options = {}) {
     const applyThreshold = polarGridSettings.imageThreshold;
     const thresholdLevel = polarGridSettings.imageThresholdLevel || 0.5;
 
-    // Mark entire rows occupied by typography as used (avoid placing images there)
-    const textRows = new Set([
-      polarGridSettings.text1Row,
-      polarGridSettings.text2Row,
-      polarGridSettings.text3Row,
-      polarGridSettings.text4Row,
-    ]);
+    // Images can go anywhere - typography will have black background to cover them
 
-    // Mark all cells in text rows as used
-    for (const row of textRows) {
-      for (let sector = 0; sector < numRadialLines; sector++) {
-        usedCells.add(`${row}-${sector}`);
-      }
-    }
+    // Shuffle images for random order each reload
+    const shuffledImages = [...cellImagePaths].sort(() => Math.random() - 0.5);
 
-    // Distribute images evenly around the grid
-    const sectorStep = Math.floor(numRadialLines / imageCount);
-
-    for (let imgIdx = 0; imgIdx < imageCount; imgIdx++) {
-      const img = loadedImages.get(cellImagePaths[imgIdx % cellImagePaths.length]);
+    for (let imgIdx = 0; imgIdx < Math.min(polarGridSettings.imageCellCount || 12, shuffledImages.length); imgIdx++) {
+      const img = loadedImages.get(shuffledImages[imgIdx]);
       if (!img) continue;
 
-      // Determine cell size - favor larger sizes
-      const sizeRand = seededRandom(imgIdx + 500, imgIdx + 600);
+      // Determine cell size - favor larger sizes (random each reload)
+      const sizeRand = Math.random();
       let ringSpan = 1;
       let sectorSpan = 1;
 
       if (sizeRand > 0.7) {
         // Large: 3x4 or 3x5
         ringSpan = 3;
-        sectorSpan = 4 + Math.floor(seededRandom(imgIdx + 700, imgIdx + 800) * 2);
+        sectorSpan = 4 + Math.floor(Math.random() * 2);
       } else if (sizeRand > 0.4) {
         // Medium-large: 2x3 or 3x3
-        ringSpan = 2 + Math.floor(seededRandom(imgIdx + 701, imgIdx + 801) * 2);
-        sectorSpan = 3 + Math.floor(seededRandom(imgIdx + 702, imgIdx + 802) * 2);
+        ringSpan = 2 + Math.floor(Math.random() * 2);
+        sectorSpan = 3 + Math.floor(Math.random() * 2);
       } else {
         // Medium: 2x2 or 2x3
         ringSpan = 2;
-        sectorSpan = 2 + Math.floor(seededRandom(imgIdx + 703, imgIdx + 803) * 2);
+        sectorSpan = 2 + Math.floor(Math.random() * 2);
       }
 
-      // Find a valid position for this image - start from distributed position
+      // Find a valid position for this image - fully random placement
       let attempts = 0;
       let placed = false;
-      const baseSector = (imgIdx * sectorStep) % numRadialLines;
 
-      while (attempts < 80 && !placed) {
-        // Distribute across different rings and sectors
-        const ringOffset = Math.floor(seededRandom(imgIdx + attempts * 7, attempts * 13) * Math.max(1, numCircles - ringSpan - 1));
-        const ring = 1 + ringOffset;
-        const sectorOffset = Math.floor(seededRandom(imgIdx + attempts * 11, attempts * 17) * 6) - 3; // +/- 3 sectors from base
-        const sector = (baseSector + sectorOffset + numRadialLines) % numRadialLines;
+      while (attempts < 100 && !placed) {
+        // Random ring and sector (avoiding text rows is handled by usedCells)
+        const ring = 1 + Math.floor(Math.random() * Math.max(1, numCircles - ringSpan));
+        const sector = Math.floor(Math.random() * numRadialLines);
 
         // Ensure ring doesn't go out of bounds
         if (ring + ringSpan > numCircles) {
