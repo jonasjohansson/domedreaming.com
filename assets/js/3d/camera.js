@@ -7,7 +7,7 @@ import { touchMovement } from "./movement.js";
 export let isPointerLocked = false;
 export let isTouching = false;
 // Initialize euler with default rotation to match camera initialization
-export let euler = new THREE.Euler(-3, 0, 3.121154018741333, "YXZ");
+export let euler = new THREE.Euler(-2.85, 0, 3.121154018741333, "YXZ");
 export let modelLoaded = false;
 export let touchStartX = 0;
 export let touchStartY = 0;

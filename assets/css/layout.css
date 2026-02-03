@@ -12,6 +12,11 @@
   clip-path: none;
   -webkit-clip-path: none;
   z-index: 1;
+  pointer-events: none;
+}
+
+body.dome-mode #canvas-container {
+  pointer-events: auto;
 }
 
 #drop-zone {
@@ -37,6 +42,9 @@ canvas {
   height: 100% !important;
   display: block;
   object-fit: cover;
+}
+
+body.dome-mode canvas {
   pointer-events: auto;
 }
 
@@ -56,31 +64,6 @@ main.grid {
   width: 100%;
 }
 
-@media (min-width: 1800px) {
-  main.grid {
-    display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
-    grid-auto-rows: calc(var(--row-height) * var(--grid-rows)) !important;
-    grid-auto-flow: row !important;
-    gap: 0;
-    align-items: start;
-  }
-
-  main.grid > * {
-    width: 100%;
-    min-width: 0;
-  }
-
-  main.grid > .page-section {
-    grid-column: auto;
-  }
-
-  main.grid > .page-section.grid {
-    display: grid !important;
-    --section-grid-rows: 16 !important;
-  }
-}
-
 .center {
   text-align: center;
   display: flex;
@@ -95,6 +78,21 @@ a:visited {
   text-decoration: underline;
   cursor: pointer;
   display: inline;
+}
+
+/* Highlighted links with floor color background */
+a.join-open-call,
+a.enter-dome-link {
+  background-color: var(--bg-floor-color, #a68540);
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0.1em 0.3em;
+  border-radius: 0.2em;
+}
+
+a.join-open-call:hover,
+a.enter-dome-link:hover {
+  background-color: var(--bg-chairs-color, #8c5261);
 }
 
 a[disabled] {
@@ -147,6 +145,7 @@ main button[disabled] {
 }
 
 
+
 main button .small {
   font-size: calc(var(--font-size-base) * 0.875);
   display: block;
@@ -181,15 +180,21 @@ body:not(.dome-mode) .grid-overlay {
 }
 
 
-/* Alternating section backgrounds */
-/* Even sections (2, 4, 6, etc.): Main_Structure color → black */
-main > section.page-section:nth-child(even) {
-  background: linear-gradient(to bottom, var(--bg-black), var(--bg-floor-color));
+/* Section backgrounds using generated colors */
+
+/* First section (3D canvas): transparent to show 3D scene */
+main > section.page-section:first-of-type {
+  background: transparent;
 }
 
-/* Odd sections (3, 5, 7, etc.): black → Main_Structure color */
-main > section.page-section:nth-child(odd):not(:first-of-type) {
-  background: linear-gradient(to bottom, var(--bg-floor-color), var(--bg-black));
+/* Hide sections 2-6 for now */
+main > section.page-section:not(:first-of-type) {
+  display: none;
+}
+
+/* Blocks with non-SVG images */
+.block:has(img:not([src$=".svg"])) img {
+  /* No filter - show images in full color */
 }
 
 /* Column classes - kept for backwards compatibility if needed elsewhere */
@@ -208,7 +213,7 @@ main > section.page-section:nth-child(odd):not(:first-of-type) {
 
 @media (min-width: 769px) {
   .page-section.responsive .block {
-    column-count: 2;
+    column-count: 3;
     column-gap: calc(var(--col-width) / 2);
   }
 }

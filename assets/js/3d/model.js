@@ -91,15 +91,19 @@ export function loadModel() {
       if (glbLights.length > 0) {
         scene.add(glbLightsGroup);
 
-        // Set default intensity for lights
+        // Set default intensity for lights - turn off point lights for now
         glbLights.forEach((light) => {
           if (light instanceof THREE.DirectionalLight) {
-            // Directional light: intensity 5, position (2, 15, 5)
-            light.intensity = 5;
+            // Directional light: keep on with moderate intensity
+            light.intensity = 3;
             light.position.set(2, 15, 5);
+          } else if (light instanceof THREE.PointLight) {
+            // Turn off point lights
+            light.intensity = 0;
+            light.visible = false;
           } else {
-            // Other lights (chaser lights): intensity 10
-            light.intensity = 10;
+            // Other lights: turn off
+            light.intensity = 0;
           }
         });
       }

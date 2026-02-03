@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 // Import core 3D scene (needed immediately for canvas setup)
 import {
   scene,
@@ -19,6 +21,8 @@ let loadModel, updateMovement, updateRotation, fbxMeshes, glbLights;
 let getCurrentImageTexture, getCurrentVideoTexture, connectWebcam;
 let loadImage, loadVideo, disconnectWebcam, loadDefaultScreenTexture;
 let updateScreenLighting, touchMovement;
+let updateListenerPosition;
+let startAudio, stopAudio;
 
 import {
   loadSettings,
@@ -195,6 +199,7 @@ async function load3DModules() {
     const movementModule = await import("./3d/movement.js");
     const textureModule = await import("./3d/texture.js");
     const screenLightingModule = await import("./3d/screen-lighting.js");
+    const pulseAudioModule = await import("./3d/pulse-audio.js");
 
     // Assign to module-level variables
     loadModel = modelModule.loadModel;
@@ -211,6 +216,9 @@ async function load3DModules() {
     loadDefaultScreenTexture = textureModule.loadDefaultScreenTexture;
     updateScreenLighting = screenLightingModule.updateScreenLighting;
     touchMovement = movementModule.touchMovement;
+    updateListenerPosition = pulseAudioModule.updateListenerPosition;
+    startAudio = pulseAudioModule.startAudio;
+    stopAudio = pulseAudioModule.stopAudio;
 
     // Make available globally for other modules
     window.loadModel = loadModel;
@@ -500,17 +508,23 @@ function setupEventListeners() {
     btn.addEventListener("click", (e) => {
       btn.classList.remove("active");
     });
-
-    btn.addEventListener("mouseleave", () => {
-      btn.classList.remove("active");
-      if (key === "w") touchMovement.forward = false;
-      if (key === "s") touchMovement.backward = false;
-      if (key === "a") touchMovement.left = false;
-      if (key === "d") touchMovement.right = false;
-      if (key === "q") touchMovement.rotateLeft = false;
-      if (key === "e") touchMovement.rotateRight = false;
-    });
   });
+
+  // "Enter the dome" link handler
+  const enterDomeLink = document.getElementById("enter-dome-link");
+  if (enterDomeLink) {
+    enterDomeLink.addEventListener("click", async (e) => {
+      e.preventDefault();
+      // Ensure 3D modules are loaded
+      if (!startAudio) {
+        await load3DModules();
+      }
+      // Enter dome mode with audio
+      if (window.enterDomeModeWithAudio) {
+        window.enterDomeModeWithAudio();
+      }
+    });
+  }
 
   // Load 3D model and start rendering after a short delay
   setTimeout(async () => {
@@ -555,6 +569,18 @@ function animate(currentTime) {
   updateTextureRotation(deltaTime);
   updateScreenLighting(currentTime);
 
+  // Update spatial audio listener position based on camera
+  if (updateListenerPosition) {
+    // Get camera forward direction
+    const forward = new THREE.Vector3(0, 0, -1);
+    forward.applyQuaternion(camera.quaternion);
+
+    updateListenerPosition(
+      { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+      { x: forward.x, y: forward.y, z: forward.z }
+    );
+  }
+
   updatePostProcessing();
 }
 
@@ -591,6 +617,7 @@ function initDomeMode() {
   const keyboardExitBtn = document.getElementById("keyboard-exit-btn");
   const body = document.body;
   let isExitingDomeMode = false; // Flag to prevent double-exit
+  let usingPointerLock = false; // Track if we requested pointer lock
 
   function isMobile() {
     return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
@@ -638,6 +665,9 @@ function initDomeMode() {
     }
 
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
+    // Track if we're using pointer lock mode
+    usingPointerLock = shouldRequestPointerLock && !isMobile;
 
     if (shouldRequestPointerLock && canvas && !isMobile) {
       // Check if pointer lock is already active before requesting
@@ -751,6 +781,20 @@ function initDomeMode() {
     enterDomeMode(true);
   };
 
+  // Enter dome mode with audio (for "Enter the dome" link)
+  // Don't request pointer lock so mouse drag to look still works
+  window.enterDomeModeWithAudio = async () => {
+    enterDomeMode(false);
+    // Start audio after entering dome mode
+    if (startAudio) {
+      try {
+        await startAudio();
+      } catch (error) {
+        console.warn("Could not start audio:", error);
+      }
+    }
+  };
+
   // Keyboard enter/exit button - behaves like old "dome simulator" link
   if (keyboardExitBtn) {
     // Click event - exactly like old "dome simulator" link
@@ -762,6 +806,14 @@ function initDomeMode() {
       } else if (isMobile()) {
         // Only allow exit on mobile when already in dome mode
         exitDomeMode();
+        // Stop audio when exiting
+        if (stopAudio) {
+          try {
+            stopAudio();
+          } catch (error) {
+            console.warn("Could not stop audio:", error);
+          }
+        }
       }
       // On desktop when in dome mode, do nothing (user presses ESC)
     });
@@ -776,6 +828,14 @@ function initDomeMode() {
       } else if (isMobile()) {
         // Only allow exit on mobile when already in dome mode
         exitDomeMode();
+        // Stop audio when exiting
+        if (stopAudio) {
+          try {
+            stopAudio();
+          } catch (error) {
+            console.warn("Could not stop audio:", error);
+          }
+        }
       }
       // On desktop when in dome mode, do nothing (user presses ESC)
     });
@@ -788,6 +848,14 @@ function initDomeMode() {
     if (e.key === "Escape" && body.classList.contains("dome-mode")) {
       // Always call exitDomeMode directly - it will handle pointer lock exit
       exitDomeMode();
+      // Stop audio when exiting dome mode
+      if (stopAudio) {
+        try {
+          stopAudio();
+        } catch (error) {
+          console.warn("Could not stop audio:", error);
+        }
+      }
     }
   });
 
@@ -804,8 +872,8 @@ function initDomeMode() {
       (document.pointerLockElement === canvas || document.mozPointerLockElement === canvas || document.webkitPointerLockElement === canvas);
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
-    // Only exit if pointer lock was lost and we're still in dome mode (user might have pressed ESC outside our handler)
-    if (!isLocked && body.classList.contains("dome-mode") && !isMobile) {
+    // Only exit if pointer lock was lost and we're still in dome mode AND we were using pointer lock
+    if (!isLocked && body.classList.contains("dome-mode") && !isMobile && usingPointerLock) {
       // Small delay to avoid race condition with exitDomeMode() being called from ESC handler
       setTimeout(() => {
         // Double-check we're still in dome mode and pointer lock is still not active, and we're not already exiting

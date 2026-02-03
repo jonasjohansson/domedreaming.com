@@ -20,7 +20,7 @@ export let cameraSettings = {
   rotationSpeed: 120,
 };
 export let startCameraPosition = { x: 0, y: 5.4, z: -4.3 };
-export let startCameraRotation = { x: -3, y: 0, z: 3.121154018741333 };
+export let startCameraRotation = { x: -2.85, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
 export let bloomSettings = {
@@ -58,11 +58,11 @@ export let canvasSettings = {
 };
 
 export let screenSettings = {
-  defaultImage: "assets/img/background-dome-dreaming.jpg",
+  defaultImage: "assets/img/jpg/background-dome-dreaming.jpg",
 };
 
 export let textureRotationSettings = {
-  enabled: true,
+  enabled: true, // Grid/texture rotation enabled
   speed: 0.02,
 };
 
@@ -345,97 +345,87 @@ export async function loadSettings(forceFromJSON = false) {
 }
 
 /**
- * Predefined color palette: purple, teal/blue, orange-amber
- * Colors are in RGB 0-1 format for Three.js
+ * Default colors (from screenshot)
+ * Main Structure: #667380, Chairs: #8c5261, Floor: #a68540
  */
-const COLOR_PALETTE = [
-  // Purple
-  { r: 0.4, g: 0.2, b: 0.6 },
-  // Teal/Blue
-  { r: 0.2, g: 0.5, b: 0.6 },
-  // Orange-amber
-  { r: 0.7, g: 0.4, b: 0.2 },
+const DEFAULT_COLORS = {
+  Main_Structure: { r: 0.4, g: 0.45, b: 0.5 },   // #667380
+  Chairs: { r: 0.55, g: 0.32, b: 0.38 },          // #8c5261
+  Floor: { r: 0.65, g: 0.52, b: 0.25 },           // #a68540
+};
+
+// Flag to use default colors on first load
+let useDefaultColors = true;
+
+/**
+ * Muted gray-blue tones for Main_Structure
+ */
+const MAIN_COLORS = [
+  // Steel blue-gray (like screenshot)
+  { r: 0.38, g: 0.42, b: 0.48 },
+  // Slate gray
+  { r: 0.45, g: 0.48, b: 0.52 },
+  // Cool gray
+  { r: 0.42, g: 0.45, b: 0.50 },
+  // Warm gray
+  { r: 0.48, g: 0.45, b: 0.42 },
 ];
 
 /**
- * Generate a random color from the predefined palette
- * Returns RGB values between 0 and 1
+ * Muted earthy/dusty colors for Chairs/Floor
+ */
+const VIBRANT_COLORS = [
+  // Dusty rose / mauve (like screenshot chairs)
+  { r: 0.55, g: 0.32, b: 0.38 },
+  // Ochre / mustard (like screenshot floor)
+  { r: 0.65, g: 0.52, b: 0.25 },
+  // Sage green
+  { r: 0.45, g: 0.55, b: 0.42 },
+  // Terracotta
+  { r: 0.60, g: 0.40, b: 0.32 },
+  // Dusty blue
+  { r: 0.40, g: 0.50, b: 0.58 },
+  // Plum
+  { r: 0.48, g: 0.30, b: 0.45 },
+];
+
+/**
+ * Generate a random muted/gray color for Main_Structure
+ */
+function generateMainColor() {
+  const randomIndex = Math.floor(Math.random() * MAIN_COLORS.length);
+  return MAIN_COLORS[randomIndex];
+}
+
+/**
+ * Generate a random vibrant CMYK color for Chairs/Floor
+ */
+function generateVibrantColor() {
+  const randomIndex = Math.floor(Math.random() * VIBRANT_COLORS.length);
+  return VIBRANT_COLORS[randomIndex];
+}
+
+/**
+ * Legacy function - returns vibrant color for backwards compatibility
  */
 function generateRandomMutedColor() {
-  // Randomly select from the color palette
-  const randomIndex = Math.floor(Math.random() * COLOR_PALETTE.length);
-  return COLOR_PALETTE[randomIndex];
+  return generateVibrantColor();
 }
 
 /**
- * Create a more muted version of a color for CSS backgrounds
- * Reduces saturation while maintaining better lightness for visibility
+ * Darken a color for CSS backgrounds while keeping character
  */
-function muteColorForCSS(color) {
-  // Convert RGB to HSL for easier manipulation
-  const threeColor = new THREE.Color(color.r, color.g, color.b);
-  const hsl = { h: 0, s: 0, l: 0 };
-  threeColor.getHSL(hsl);
-
-  // Reduce saturation to 40-50% of original (more visible than before)
-  const mutedSaturation = Math.max(0.15, hsl.s * 0.5); // Reduce saturation to 50% of original
-  // Keep lightness in a better range (0.25-0.45) so colors are visible but still muted
-  const mutedLightness = Math.max(0.25, Math.min(0.45, hsl.l * 1.1)); // Slightly lighter for visibility
-
-  // Convert back to RGB
-  const mutedColor = new THREE.Color();
-  mutedColor.setHSL(hsl.h, mutedSaturation, mutedLightness);
-
+function darkenForCSS(color, factor = 0.4) {
   return {
-    r: mutedColor.r,
-    g: mutedColor.g,
-    b: mutedColor.b,
+    r: color.r * factor,
+    g: color.g * factor,
+    b: color.b * factor,
   };
 }
 
 /**
- * Create a darker version of a color
- * @param {Object} color - Color object with r, g, b values (0-1)
- * @param {number} darkenFactor - Factor to darken by (0-1, lower = darker)
- * @returns {Object} Darker color object
- */
-function darkenColor(color, darkenFactor = 0.5) {
-  return {
-    r: color.r * darkenFactor,
-    g: color.g * darkenFactor,
-    b: color.b * darkenFactor,
-  };
-}
-
-/**
- * Mute a color by reducing saturation
- * @param {Object} color - Color object with r, g, b values (0-1)
- * @param {number} saturationFactor - Factor to reduce saturation by (0-1, lower = more muted)
- * @returns {Object} Muted color object
- */
-function muteColor(color, saturationFactor = 0.3) {
-  // Convert RGB to HSL, reduce saturation, convert back
-  const threeColor = new THREE.Color(color.r, color.g, color.b);
-  const hsl = { h: 0, s: 0, l: 0 };
-  threeColor.getHSL(hsl);
-
-  // Reduce saturation
-  hsl.s = hsl.s * saturationFactor;
-
-  // Convert back to RGB
-  threeColor.setHSL(hsl.h, hsl.s, hsl.l);
-
-  return {
-    r: threeColor.r,
-    g: threeColor.g,
-    b: threeColor.b,
-  };
-}
-
-/**
- * Apply Main_Structure color from 3D scene to alternating sections
- * Even sections (2, 4, 6): black → Main_Structure color
- * Odd sections (3, 5, 7): Main_Structure color → black
+ * Apply generated colors to alternating sections
+ * Uses two vibrant colors for gradients (no black)
  */
 function applyBackgroundColors() {
   // Helper function to convert RGB (0-1) to CSS rgb string
@@ -446,18 +436,31 @@ function applyBackgroundColors() {
     return `rgb(${r}, ${g}, ${b})`;
   };
 
-  // Get Main_Structure color directly from 3D scene material (more accurate than saved settings)
+  // Get Main_Structure and Floor colors from 3D scene
   let mainColor = null;
+  let floorColor = null;
 
-  // Try to get Main_Structure mesh from 3D scene and read its actual material color
   import("../3d/model.js").then((model) => {
     if (model.fbxMeshes && model.fbxMeshes.length > 0) {
+      // Get Main_Structure color
       const mainMesh = model.fbxMeshes.find((item) => item.name === "Main_Structure");
       if (mainMesh) {
         const material = getMaterial(mainMesh.mesh);
         if (material && material.color) {
-          // Read the actual color from the material (what's displayed in 3D)
           mainColor = {
+            r: material.color.r,
+            g: material.color.g,
+            b: material.color.b,
+          };
+        }
+      }
+
+      // Get Floor color for second gradient color
+      const floorMesh = model.fbxMeshes.find((item) => item.name === "Floor");
+      if (floorMesh) {
+        const material = getMaterial(floorMesh.mesh);
+        if (material && material.color) {
+          floorColor = {
             r: material.color.r,
             g: material.color.g,
             b: material.color.b,
@@ -466,22 +469,66 @@ function applyBackgroundColors() {
       }
     }
 
-    // Fallback to savedColorSettings if material color not available
+    // Fallback to savedColorSettings if material colors not available
     if (!mainColor) {
       if (window.savedColorSettings && window.savedColorSettings.Main_Structure) {
         mainColor = window.savedColorSettings.Main_Structure;
       } else {
-        // If Main_Structure color not available yet, generate a random color as fallback
         mainColor = generateRandomMutedColor();
       }
     }
 
-    // Create a muted version of the Main_Structure color for CSS backgrounds
-    const mutedMainColor = muteColorForCSS(mainColor);
+    if (!floorColor) {
+      if (window.savedColorSettings && window.savedColorSettings.Floor) {
+        floorColor = window.savedColorSettings.Floor;
+      } else {
+        floorColor = generateRandomMutedColor();
+      }
+    }
 
-    // Set Main_Structure color CSS variable (muted version for backgrounds)
-    // CSS nth-child selectors will automatically apply gradients to alternating sections
-    document.documentElement.style.setProperty(`--bg-floor-color`, rgbToCSS(mutedMainColor));
+    // Helper to convert RGB (0-1) to hex
+    const rgbToHex = (color) => {
+      const r = Math.round(color.r * 255).toString(16).padStart(2, '0');
+      const g = Math.round(color.g * 255).toString(16).padStart(2, '0');
+      const b = Math.round(color.b * 255).toString(16).padStart(2, '0');
+      return `#${r}${g}${b}`;
+    };
+
+    // Get Chairs color too for logging
+    let chairsColor = null;
+    if (model.fbxMeshes) {
+      const chairsMesh = model.fbxMeshes.find((item) => item.name === "Chairs");
+      if (chairsMesh) {
+        const material = getMaterial(chairsMesh.mesh);
+        if (material && material.color) {
+          chairsColor = { r: material.color.r, g: material.color.g, b: material.color.b };
+        }
+      }
+    }
+    if (!chairsColor && window.savedColorSettings?.Chairs) {
+      chairsColor = window.savedColorSettings.Chairs;
+    }
+
+    // Log color palette to console
+    console.log('%c Color Palette ', 'background: #222; color: #fff; font-size: 14px; padding: 4px 8px;');
+    console.log(`  Main:   ${rgbToHex(mainColor)}`);
+    console.log(`  Chairs: ${chairsColor ? rgbToHex(chairsColor) : 'N/A'}`);
+    console.log(`  Floor:  ${rgbToHex(floorColor)}`);
+
+    // Use colors directly for backgrounds
+    const bgMainColor = mainColor;
+    const bgFloorColor = darkenForCSS(floorColor, 0.6);
+    const bgChairsColor = chairsColor ? darkenForCSS(chairsColor, 0.6) : bgFloorColor;
+
+    // Set CSS variables for all colors (used in gradients)
+    document.documentElement.style.setProperty(`--bg-main-color`, rgbToCSS(bgMainColor));
+    document.documentElement.style.setProperty(`--bg-floor-color`, rgbToCSS(bgFloorColor));
+    document.documentElement.style.setProperty(`--bg-chairs-color`, rgbToCSS(bgChairsColor));
+
+    // Set 3D scene background to match Main color so canvas blends with sections
+    import("../3d/scene.js").then((sceneModule) => {
+      sceneModule.setSceneBackground(bgMainColor);
+    });
   });
 }
 
@@ -507,10 +554,18 @@ export async function applySettingsToScene() {
           if (material) {
             let colorToApply;
 
-            // Generate random color for Main_Structure (interior), Floor, and Screen on each load
-            if (item.name === "Main_Structure" || item.name === "Floor" || item.name === "Screen") {
-              colorToApply = generateRandomMutedColor();
-              // Update saved settings so it persists for this session
+            // Use default colors on first load, or random if randomize was called
+            if (item.name === "Main_Structure") {
+              colorToApply = useDefaultColors ? DEFAULT_COLORS.Main_Structure : generateMainColor();
+              window.savedColorSettings[item.name] = colorToApply;
+            } else if (item.name === "Chairs") {
+              colorToApply = useDefaultColors ? DEFAULT_COLORS.Chairs : generateVibrantColor();
+              window.savedColorSettings[item.name] = colorToApply;
+            } else if (item.name === "Floor") {
+              colorToApply = useDefaultColors ? DEFAULT_COLORS.Floor : generateVibrantColor();
+              window.savedColorSettings[item.name] = colorToApply;
+            } else if (item.name === "Screen") {
+              colorToApply = generateVibrantColor();
               window.savedColorSettings[item.name] = colorToApply;
             } else if (window.savedColorSettings[item.name]) {
               colorToApply = window.savedColorSettings[item.name];
@@ -608,6 +663,22 @@ export async function applySettingsToScene() {
 
 export async function reloadFromJSON() {
   await loadSettings(true);
+  await applySettingsToScene();
+}
+
+/**
+ * Randomize colors for Main_Structure, Chairs, and Floor
+ */
+export async function randomizeColors() {
+  useDefaultColors = false;
+  await applySettingsToScene();
+}
+
+/**
+ * Reset to default colors
+ */
+export async function resetToDefaultColors() {
+  useDefaultColors = true;
   await applySettingsToScene();
 }
 

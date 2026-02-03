@@ -1,7 +1,15 @@
 import * as THREE from "three";
 import { configureTexture, applyTextureToScreen, getMaterial } from "./utils.js";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
-import { screenSettings, textureRotationSettings } from "../core/settings.js";
+import { screenSettings, textureRotationSettings, randomizeColors } from "../core/settings.js";
+import { camera } from "./scene.js";
+import { generatePolarGridTexture, polarGridSettings, startPulseAnimation, stopPulseAnimation, reinitializePulses, preloadCellImages, triggerScrambleBurst } from "./polar-grid-texture.js";
+import { audioSettings, startAudio, stopAudio, setMasterVolume, setReverbWet, setSpatialSpread, initAudio, setScrambleTrigger } from "./pulse-audio.js";
+import { lightingSettings, setAmbientIntensity, setAmbientColor, setFogEnabled, setFogColor, setFogNear, setFogFar, setToneMapping, setExposure, setDirectLightEnabled, setDirectIntensity, setDirectColor, getToneMappingOptions, setGradientStart, setGradientEnd, setSection1FadeStart, setSection2FadeEnd } from "./lighting.js";
+
+// Connect audio ticks to scramble effect
+setScrambleTrigger(triggerScrambleBurst);
+import GUI from "lil-gui";
 
 let screenObject = null;
 let currentVideoTexture = null;
@@ -40,27 +48,524 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     currentImageTexture = null;
   }
 
-  return new Promise((resolve, reject) => {
-    const textureLoader = new THREE.TextureLoader();
-    // Add cache-busting query parameter to force reload of updated images
-    const cacheBustUrl = imagePath + (imagePath.includes('?') ? '&' : '?') + '_t=' + Date.now();
-    
-    textureLoader.load(
-      cacheBustUrl,
-      (texture) => {
-        configureTexture(texture);
-        texture.rotation = 0;
-        applyTextureToScreen(texture, screenObject);
-        currentImageTexture = texture;
-        resolve(texture);
-      },
-      undefined,
-      (error) => {
-        console.warn("Error loading default texture:", error);
-        reject(error);
-      }
-    );
+  // Generate polar grid texture with mesh colors
+  return new Promise(async (resolve) => {
+    // Preload cell images first
+    await preloadCellImages();
+
+    // Get colors from saved settings or use defaults
+    const colors = window.savedColorSettings || {};
+    const mainColor = colors.Main_Structure || { r: 0.4, g: 0.45, b: 0.5 };
+    const chairsColor = colors.Chairs || { r: 0.55, g: 0.32, b: 0.38 };
+    const floorColor = colors.Floor || { r: 0.65, g: 0.52, b: 0.25 };
+
+    // Higher resolution for better quality and less aliasing
+    const texture = generatePolarGridTexture(4096, {
+      backgroundColor: "#000000",
+      numCircles: 8,
+      numRadialLines: 36,
+      showLabels: true,
+      labelColor: "#ffffff",
+      mainColor,
+      chairsColor,
+      floorColor,
+      curvedTexts: [
+        {
+          text: polarGridSettings.text1Content,
+          row: polarGridSettings.text1Row,
+          startSector: polarGridSettings.text1StartSector,
+          textFontSize: polarGridSettings.text1FontSize,
+          color: "#ffffff",
+          flipX: polarGridSettings.text1FlipX,
+          flipY: polarGridSettings.text1FlipY,
+          cellMode: polarGridSettings.text1CellMode,
+        },
+        {
+          text: polarGridSettings.text2Content,
+          row: polarGridSettings.text2Row,
+          startSector: polarGridSettings.text2StartSector,
+          textFontSize: polarGridSettings.text2FontSize,
+          color: "#ffffff",
+          flipX: polarGridSettings.text2FlipX,
+          flipY: polarGridSettings.text2FlipY,
+          cellMode: polarGridSettings.text2CellMode,
+        },
+        {
+          text: polarGridSettings.text3Content,
+          row: polarGridSettings.text3Row,
+          startSector: polarGridSettings.text3StartSector,
+          textFontSize: polarGridSettings.text3FontSize,
+          color: "#ffffff",
+          flipX: polarGridSettings.text3FlipX,
+          flipY: polarGridSettings.text3FlipY,
+          cellMode: polarGridSettings.text3CellMode,
+        },
+        {
+          text: polarGridSettings.text4Content,
+          row: polarGridSettings.text4Row,
+          startSector: polarGridSettings.text4StartSector,
+          textFontSize: polarGridSettings.text4FontSize,
+          color: "#ffffff",
+          flipX: polarGridSettings.text4FlipX,
+          flipY: polarGridSettings.text4FlipY,
+          cellMode: polarGridSettings.text4CellMode,
+        },
+      ],
+    });
+
+    configureTexture(texture);
+    texture.rotation = 0;
+    applyTextureToScreen(texture, screenObject);
+    currentImageTexture = texture;
+
+    // Setup GUI on first load
+    setupPolarGridGUI();
+
+    // Start pulse animation if enabled
+    if (polarGridSettings.pulsesEnabled) {
+      startPulseAnimation(texture);
+    }
+
+    resolve(texture);
   });
+}
+
+/**
+ * Regenerate the polar grid texture with current mesh colors
+ * Call this after colors change to update the screen texture
+ */
+export function regeneratePolarGridTexture() {
+  if (!screenObject) return;
+  // Stop current animation before regenerating
+  stopPulseAnimation();
+  loadDefaultScreenTexture();
+}
+
+// Store reference to GUI
+let polarGridGUI = null;
+
+/**
+ * Helper to convert hex color to RGB object (0-1 range)
+ */
+function hexToRgb(hex) {
+  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16) / 255,
+    g: parseInt(result[2], 16) / 255,
+    b: parseInt(result[3], 16) / 255
+  } : null;
+}
+
+/**
+ * Helper to convert RGB object (0-1 range) to hex
+ */
+function rgbToHex(color) {
+  const r = Math.round(color.r * 255).toString(16).padStart(2, '0');
+  const g = Math.round(color.g * 255).toString(16).padStart(2, '0');
+  const b = Math.round(color.b * 255).toString(16).padStart(2, '0');
+  return `#${r}${g}${b}`;
+}
+
+/**
+ * Apply a color to a mesh by name
+ */
+async function applyColorToMesh(meshName, color) {
+  const model = await import("./model.js");
+  const { getMaterial } = await import("./utils.js");
+
+  if (model.fbxMeshes) {
+    const meshItem = model.fbxMeshes.find(item => item.name === meshName);
+    if (meshItem) {
+      const material = getMaterial(meshItem.mesh);
+      if (material) {
+        material.color.setRGB(color.r, color.g, color.b);
+        material.needsUpdate = true;
+      }
+    }
+  }
+
+  // Also update savedColorSettings
+  if (!window.savedColorSettings) {
+    window.savedColorSettings = {};
+  }
+  window.savedColorSettings[meshName] = color;
+}
+
+/**
+ * Setup GUI for polar grid texture controls
+ */
+export function setupPolarGridGUI() {
+  if (polarGridGUI) return; // Already setup
+
+  polarGridGUI = new GUI({ title: "Dome Dreaming" });
+  polarGridGUI.domElement.style.position = "fixed";
+  polarGridGUI.domElement.style.top = "10px";
+  polarGridGUI.domElement.style.left = "10px";
+  polarGridGUI.domElement.style.zIndex = "99999";
+
+  // Hide GUI by default
+  polarGridGUI.domElement.style.display = "none";
+
+  // Toggle GUI with CMD/CTRL + G
+  window.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "g") {
+      e.preventDefault();
+      const isHidden = polarGridGUI.domElement.style.display === "none";
+      polarGridGUI.domElement.style.display = isHidden ? "" : "none";
+    }
+  });
+
+  // ============ TYPOGRAPHY GROUP ============
+  const typographyFolder = polarGridGUI.addFolder("Typography");
+
+  // Text 1 subfolder
+  const text1Folder = typographyFolder.addFolder("Text 1");
+  text1Folder.add(polarGridSettings, "text1Content")
+    .name("Text")
+    .onChange(() => regeneratePolarGridTexture());
+  text1Folder.add(polarGridSettings, "text1Row", 1, 8, 1)
+    .name("Row (Circle)")
+    .onChange(() => regeneratePolarGridTexture());
+  text1Folder.add(polarGridSettings, "text1StartSector", 0, 35, 1)
+    .name("Start Sector")
+    .onChange(() => regeneratePolarGridTexture());
+  text1Folder.add(polarGridSettings, "text1FontSize", 20, 200, 5)
+    .name("Font Size %")
+    .onChange(() => regeneratePolarGridTexture());
+  text1Folder.close();
+
+  // Text 2 subfolder
+  const text2Folder = typographyFolder.addFolder("Text 2");
+  text2Folder.add(polarGridSettings, "text2Content")
+    .name("Text")
+    .onChange(() => regeneratePolarGridTexture());
+  text2Folder.add(polarGridSettings, "text2Row", 1, 8, 1)
+    .name("Row (Circle)")
+    .onChange(() => regeneratePolarGridTexture());
+  text2Folder.add(polarGridSettings, "text2StartSector", 0, 35, 1)
+    .name("Start Sector")
+    .onChange(() => regeneratePolarGridTexture());
+  text2Folder.add(polarGridSettings, "text2FontSize", 20, 200, 5)
+    .name("Font Size %")
+    .onChange(() => regeneratePolarGridTexture());
+  text2Folder.close();
+
+  // Text 3 subfolder
+  const text3Folder = typographyFolder.addFolder("Text 3");
+  text3Folder.add(polarGridSettings, "text3Content")
+    .name("Text")
+    .onChange(() => regeneratePolarGridTexture());
+  text3Folder.add(polarGridSettings, "text3Row", 1, 8, 1)
+    .name("Row (Circle)")
+    .onChange(() => regeneratePolarGridTexture());
+  text3Folder.add(polarGridSettings, "text3StartSector", 0, 35, 1)
+    .name("Start Sector")
+    .onChange(() => regeneratePolarGridTexture());
+  text3Folder.add(polarGridSettings, "text3FontSize", 20, 200, 5)
+    .name("Font Size %")
+    .onChange(() => regeneratePolarGridTexture());
+  text3Folder.close();
+
+  // Text 4 subfolder
+  const text4Folder = typographyFolder.addFolder("Text 4");
+  text4Folder.add(polarGridSettings, "text4Content")
+    .name("Text")
+    .onChange(() => regeneratePolarGridTexture());
+  text4Folder.add(polarGridSettings, "text4Row", 1, 8, 1)
+    .name("Row (Circle)")
+    .onChange(() => regeneratePolarGridTexture());
+  text4Folder.add(polarGridSettings, "text4StartSector", 0, 35, 1)
+    .name("Start Sector")
+    .onChange(() => regeneratePolarGridTexture());
+  text4Folder.add(polarGridSettings, "text4FontSize", 20, 200, 5)
+    .name("Font Size %")
+    .onChange(() => regeneratePolarGridTexture());
+  text4Folder.close();
+
+  // Style subfolder under Typography
+  const textStyleFolder = typographyFolder.addFolder("Style");
+  textStyleFolder.add(polarGridSettings, "textOutline")
+    .name("Outline")
+    .onChange(() => regeneratePolarGridTexture());
+  textStyleFolder.addColor(polarGridSettings, "textOutlineColor")
+    .name("Outline Color")
+    .onChange(() => regeneratePolarGridTexture());
+  textStyleFolder.add(polarGridSettings, "textOutlineWidth", 1, 10, 1)
+    .name("Outline Width")
+    .onChange(() => regeneratePolarGridTexture());
+  textStyleFolder.add(polarGridSettings, "textShadow")
+    .name("Shadow")
+    .onChange(() => regeneratePolarGridTexture());
+  textStyleFolder.add(polarGridSettings, "textShadowBlur", 0, 20, 1)
+    .name("Shadow Blur")
+    .onChange(() => regeneratePolarGridTexture());
+  textStyleFolder.add(polarGridSettings, "textVerticalOffset", 0.1, 0.9, 0.05)
+    .name("Radial Position")
+    .onChange(() => regeneratePolarGridTexture());
+  textStyleFolder.close();
+
+  typographyFolder.close();
+
+  // ============ GRID GROUP ============
+  const gridFolder = polarGridGUI.addFolder("Grid");
+
+  // Lines subfolder
+  const linesFolder = gridFolder.addFolder("Lines");
+  linesFolder.addColor(polarGridSettings, "gridLineColor")
+    .name("Color")
+    .onChange(() => regeneratePolarGridTexture());
+  linesFolder.add(polarGridSettings, "lineWidth", 0.5, 5, 0.5)
+    .name("Width")
+    .onChange(() => regeneratePolarGridTexture());
+  linesFolder.add(polarGridSettings, "tickWidth", 0.5, 4, 0.5)
+    .name("Tick Width")
+    .onChange(() => regeneratePolarGridTexture());
+  linesFolder.add(polarGridSettings, "rimOffset", 0, 0.2, 0.01)
+    .name("Rim Offset")
+    .onChange(() => regeneratePolarGridTexture());
+  linesFolder.add(polarGridSettings, "dotSize", 1, 20, 1)
+    .name("Dot Size")
+    .onChange(() => regeneratePolarGridTexture());
+  linesFolder.close();
+
+  // Images subfolder under Grid
+  const imageFolder = gridFolder.addFolder("Images");
+  imageFolder.add(polarGridSettings, "imageCellsEnabled")
+    .name("Enable")
+    .onChange(() => regeneratePolarGridTexture());
+  imageFolder.add(polarGridSettings, "imageCellCount", 1, 12, 1)
+    .name("Count")
+    .onChange(() => regeneratePolarGridTexture());
+  imageFolder.add(polarGridSettings, "imageThreshold")
+    .name("Threshold")
+    .onChange(() => regeneratePolarGridTexture());
+  imageFolder.add(polarGridSettings, "imageThresholdLevel", 0.2, 0.8, 0.05)
+    .name("Threshold Level")
+    .onChange(() => regeneratePolarGridTexture());
+  imageFolder.close();
+
+  // Rendering subfolder under Grid
+  const renderFolder = gridFolder.addFolder("Rendering");
+  renderFolder.add(polarGridSettings, "antialias")
+    .name("Antialiasing")
+    .onChange(() => regeneratePolarGridTexture());
+  renderFolder.close();
+
+  gridFolder.close();
+
+  // ============ ANIMATION GROUP ============
+  const animationFolder = polarGridGUI.addFolder("Animation");
+
+  // Rotation subfolder
+  const rotationFolder = animationFolder.addFolder("Rotation");
+  rotationFolder.add(polarGridSettings, "textRotationEnabled")
+    .name("Rotate Text");
+  rotationFolder.add(polarGridSettings, "textStepRotation")
+    .name("Step Mode (BPM)");
+  rotationFolder.add(polarGridSettings, "textRotationBPM", 10, 120, 5)
+    .name("Text BPM");
+  rotationFolder.add(polarGridSettings, "textRotationSpeed", -2, 2, 0.1)
+    .name("Continuous Speed");
+  rotationFolder.add(textureRotationSettings, "enabled")
+    .name("Rotate Grid");
+  rotationFolder.add(textureRotationSettings, "speed", -0.1, 0.1, 0.005)
+    .name("Grid Speed");
+  rotationFolder.close();
+
+  // Pulses subfolder
+  const pulseFolder = animationFolder.addFolder("Pulses");
+  pulseFolder.add(polarGridSettings, "pulsesEnabled")
+    .name("Enable")
+    .onChange((enabled) => {
+      if (enabled && currentImageTexture) {
+        startPulseAnimation(currentImageTexture);
+      } else {
+        stopPulseAnimation();
+      }
+    });
+  pulseFolder.add(polarGridSettings, "pulseCount", 1, 20, 1)
+    .name("Count")
+    .onChange(() => reinitializePulses());
+  pulseFolder.add(polarGridSettings, "pulseSpeed", 0.1, 2, 0.1)
+    .name("Speed");
+  pulseFolder.add(polarGridSettings, "pulseSize", 4, 30, 1)
+    .name("Size");
+  pulseFolder.add(polarGridSettings, "pulseGlow")
+    .name("Glow");
+  pulseFolder.close();
+
+  animationFolder.close();
+
+  // ============ AUDIO GROUP ============
+  const audioFolder = polarGridGUI.addFolder("Audio");
+  audioFolder.add(audioSettings, "enabled")
+    .name("Enable Sound")
+    .onChange(async (enabled) => {
+      if (enabled) {
+        await startAudio();
+      } else {
+        stopAudio();
+      }
+    });
+  audioFolder.add(audioSettings, "masterVolume", 0, 1, 0.05)
+    .name("Volume")
+    .onChange((v) => setMasterVolume(v));
+  audioFolder.add(audioSettings, "tickBPM", 20, 180, 5)
+    .name("Tick BPM");
+  audioFolder.add(audioSettings, "reverbWet", 0, 1, 0.05)
+    .name("Reverb")
+    .onChange((v) => setReverbWet(v));
+  audioFolder.add(audioSettings, "spatialSpread", 1, 20, 1)
+    .name("3D Spread")
+    .onChange((v) => setSpatialSpread(v));
+  audioFolder.close();
+
+  // Colors folder - editable colors that update 3D scene and texture
+  const colorsFolder = polarGridGUI.addFolder("Colors");
+
+  // Create color object with getters/setters for live editing
+  const colorControls = {
+    get mainColor() {
+      const c = polarGridSettings.mainColor || { r: 0.4, g: 0.45, b: 0.5 };
+      return rgbToHex(c);
+    },
+    set mainColor(hex) {
+      const rgb = hexToRgb(hex);
+      if (rgb) {
+        polarGridSettings.mainColor = rgb;
+        window.savedColorSettings = window.savedColorSettings || {};
+        window.savedColorSettings.Main_Structure = rgb;
+        applyColorToMesh("Main_Structure", rgb);
+        regeneratePolarGridTexture();
+      }
+    },
+    get chairsColor() {
+      const c = polarGridSettings.chairsColor || { r: 0.55, g: 0.32, b: 0.38 };
+      return rgbToHex(c);
+    },
+    set chairsColor(hex) {
+      const rgb = hexToRgb(hex);
+      if (rgb) {
+        polarGridSettings.chairsColor = rgb;
+        window.savedColorSettings = window.savedColorSettings || {};
+        window.savedColorSettings.Chairs = rgb;
+        applyColorToMesh("Chairs", rgb);
+        regeneratePolarGridTexture();
+      }
+    },
+    get floorColor() {
+      const c = polarGridSettings.floorColor || { r: 0.65, g: 0.52, b: 0.25 };
+      return rgbToHex(c);
+    },
+    set floorColor(hex) {
+      const rgb = hexToRgb(hex);
+      if (rgb) {
+        polarGridSettings.floorColor = rgb;
+        window.savedColorSettings = window.savedColorSettings || {};
+        window.savedColorSettings.Floor = rgb;
+        applyColorToMesh("Floor", rgb);
+        regeneratePolarGridTexture();
+      }
+    },
+  };
+
+  colorsFolder.addColor(colorControls, "mainColor").name("Main Structure");
+  colorsFolder.addColor(colorControls, "chairsColor").name("Chairs");
+  colorsFolder.addColor(colorControls, "floorColor").name("Floor");
+  colorsFolder.add({ randomize: () => {
+    randomizeColors().then(() => {
+      regeneratePolarGridTexture();
+    });
+  }}, "randomize").name("Randomise Colors");
+  colorsFolder.close();
+
+  // ============ LIGHTING GROUP ============
+  const lightingFolder = polarGridGUI.addFolder("Lighting");
+
+  // Exposure/Tonemapping subfolder
+  const exposureFolder = lightingFolder.addFolder("Exposure");
+  exposureFolder.add(lightingSettings, "toneMapping", getToneMappingOptions())
+    .name("Tone Mapping")
+    .onChange((v) => setToneMapping(v));
+  exposureFolder.add(lightingSettings, "exposure", 0, 3, 0.1)
+    .name("Exposure")
+    .onChange((v) => setExposure(v));
+  exposureFolder.close();
+
+  // Ambient light subfolder
+  const ambientFolder = lightingFolder.addFolder("Ambient");
+  ambientFolder.add(lightingSettings, "ambientIntensity", 0, 2, 0.1)
+    .name("Intensity")
+    .onChange((v) => setAmbientIntensity(v));
+  ambientFolder.addColor(lightingSettings, "ambientColor")
+    .name("Color")
+    .onChange((v) => setAmbientColor(v));
+  ambientFolder.close();
+
+  // Direct light subfolder
+  const directFolder = lightingFolder.addFolder("Direct Light");
+  directFolder.add(lightingSettings, "directLightEnabled")
+    .name("Enable")
+    .onChange((v) => setDirectLightEnabled(v));
+  directFolder.add(lightingSettings, "directIntensity", 0, 5, 0.1)
+    .name("Intensity")
+    .onChange((v) => setDirectIntensity(v));
+  directFolder.addColor(lightingSettings, "directColor")
+    .name("Color")
+    .onChange((v) => setDirectColor(v));
+  directFolder.close();
+
+  // Fog subfolder
+  const fogFolder = lightingFolder.addFolder("Fog");
+  fogFolder.add(lightingSettings, "fogEnabled")
+    .name("Enable")
+    .onChange((v) => setFogEnabled(v));
+  fogFolder.addColor(lightingSettings, "fogColor")
+    .name("Color")
+    .onChange((v) => setFogColor(v));
+  fogFolder.add(lightingSettings, "fogNear", 1, 50, 1)
+    .name("Near")
+    .onChange((v) => setFogNear(v));
+  fogFolder.add(lightingSettings, "fogFar", 20, 100, 5)
+    .name("Far")
+    .onChange((v) => setFogFar(v));
+  fogFolder.close();
+
+  // Section gradient subfolder
+  const gradientFolder = lightingFolder.addFolder("Section Gradient");
+  gradientFolder.add(lightingSettings, "section1FadeStart", 0, 100, 5)
+    .name("Section 1 Fade %")
+    .onChange((v) => setSection1FadeStart(v));
+  gradientFolder.add(lightingSettings, "section2FadeEnd", 0, 100, 5)
+    .name("Section 2 Fade %")
+    .onChange((v) => setSection2FadeEnd(v));
+  gradientFolder.close();
+
+  lightingFolder.close();
+
+  // ============ CAMERA GROUP ============
+  const cameraFolder = polarGridGUI.addFolder("Camera");
+
+  // Position subfolder
+  const positionFolder = cameraFolder.addFolder("Position");
+  positionFolder.add(camera.position, "x", -20, 20, 0.01).name("X").listen();
+  positionFolder.add(camera.position, "y", -20, 20, 0.01).name("Y").listen();
+  positionFolder.add(camera.position, "z", -20, 20, 0.01).name("Z").listen();
+  positionFolder.close();
+
+  // Rotation subfolder
+  const cameraRotationFolder = cameraFolder.addFolder("Rotation");
+  cameraRotationFolder.add(camera.rotation, "x", -Math.PI, Math.PI, 0.01).name("X").listen();
+  cameraRotationFolder.add(camera.rotation, "y", -Math.PI, Math.PI, 0.01).name("Y").listen();
+  cameraRotationFolder.add(camera.rotation, "z", -Math.PI, Math.PI, 0.01).name("Z").listen();
+  cameraRotationFolder.close();
+
+  cameraFolder.close();
+
+  // Main GUI panel stays open
+
+  // Store regenerate function for external use
+  polarGridSettings.regenerate = regeneratePolarGridTexture;
 }
 
 export function loadImage(file) {

@@ -1,0 +1,50 @@
+{#
+  Reusable block macros for DRY templates
+#}
+
+{# Image block with optional caption #}
+{% macro imageBlock(src, alt, x, w, h, y, caption, classes="") %}
+<div class="block {{ classes }} x-{{ x }} w-{{ w }} h-{{ h }} y-{{ y }}">
+  <img
+    src="{{ src }}"
+    alt="{{ alt }}"
+    loading="lazy"
+    decoding="async"
+    width="1200"
+    height="1200" />
+  {% if caption %}<figcaption class="image-caption">{{ caption }}</figcaption>{% endif %}
+</div>
+{% endmacro %}
+
+{# Text block #}
+{% macro textBlock(content, x, w, h, y, classes="") %}
+<div class="block {{ classes }} x-{{ x }} w-{{ w }} h-{{ h }} y-{{ y }}">
+  {{ content | safe }}
+</div>
+{% endmacro %}
+
+{# Logo/SVG block #}
+{% macro logoBlock(src, alt, x, w, h, y) %}
+<div class="block center x-{{ x }} w-{{ w }} h-{{ h }} y-{{ y }}">
+  <img
+    src="{{ src }}"
+    alt="{{ alt }}"
+    loading="lazy"
+    decoding="async"
+    style="padding: 0.5rem; object-fit: contain" />
+</div>
+{% endmacro %}
+
+{# Person block with image and caption #}
+{% macro personBlock(src, alt, name, x, w, h, y) %}
+<div class="block x-{{ x }} w-{{ w }} h-{{ h }} y-{{ y }}">
+  <img
+    src="{{ src }}"
+    alt="{{ alt }}"
+    loading="lazy"
+    decoding="async"
+    width="800"
+    height="800" />
+  <figcaption class="image-caption">{{ name }}</figcaption>
+</div>
+{% endmacro %}

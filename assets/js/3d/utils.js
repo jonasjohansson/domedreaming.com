@@ -93,6 +93,11 @@ export function configureTexture(texture) {
   texture.colorSpace = THREE.SRGBColorSpace;
   // Set center to (0.5, 0.5) for rotation around center
   texture.center.set(0.5, 0.5);
+  // Better filtering for reduced aliasing
+  texture.minFilter = THREE.LinearMipmapLinearFilter; // Trilinear filtering
+  texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = 16; // High anisotropic filtering
+  texture.generateMipmaps = true;
   texture.needsUpdate = true;
 }
 

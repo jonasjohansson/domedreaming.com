@@ -42,3 +42,34 @@ export function getRowHeight() {
   return getActualViewportHeight() / gridRows;
 }
 
+/**
+ * Defer work to idle time or next frame
+ * Uses requestIdleCallback when available, falls back to setTimeout
+ * @param {Function} callback - The work to defer
+ * @param {number} timeout - Max time to wait before forcing execution (ms)
+ */
+export function deferWork(callback, timeout = 100) {
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(callback, { timeout });
+  } else {
+    setTimeout(callback, 0);
+  }
+}
+
+/**
+ * Batch multiple callbacks to run in idle time
+ * @param {Function[]} callbacks - Array of functions to run
+ * @param {number} timeout - Max time per batch
+ */
+export function batchDeferWork(callbacks, timeout = 100) {
+  if (!callbacks.length) return;
+
+  deferWork(() => {
+    const batch = callbacks.splice(0, 3); // Process 3 at a time
+    batch.forEach(cb => cb());
+    if (callbacks.length) {
+      batchDeferWork(callbacks, timeout);
+    }
+  }, timeout);
+}
+
