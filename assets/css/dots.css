@@ -9,8 +9,8 @@
   top: 0;
   left: 0;
   width: 100vw;
-  pointer-events: none;
-  z-index: 10002;
+  pointer-events: none !important;
+  z-index: 1;
   overflow: hidden;
   display: grid;
   grid-template-columns: repeat(16, 1fr);

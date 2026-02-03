@@ -8,6 +8,7 @@
   position: relative;
   max-width: 960px;
   justify-self: center;
+  pointer-events: auto;
 }
 
 .block.center {
@@ -125,6 +126,9 @@ body.dome-mode .page-section:has(#canvas-container) .block.keep-visible {
 
 body:not(.dome-mode) .page-section:has(#canvas-container) .block {
   opacity: 1;
+  pointer-events: auto;
+  position: relative;
+  z-index: 10;
 }
 
 /* Page sections */
@@ -189,6 +193,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   column-gap: 0;
   row-gap: 0;
   gap: 0;
+  pointer-events: auto;
 }
 
 .page-section.responsive .page-content .block {
@@ -204,9 +209,11 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   cursor: default;
 }
 
-/* SVG images should use contain to preserve aspect ratio */
-.page-content .block img[src$=".svg"] {
+/* SVG images should use contain to preserve aspect ratio, no border-radius */
+.page-content .block img[src$=".svg"],
+.block img[src$=".svg"] {
   object-fit: contain;
+  border-radius: 0 !important;
 }
 
 /* Non-SVG images in page content blocks get border-radius and background color on parent */

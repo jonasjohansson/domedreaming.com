@@ -148,6 +148,12 @@ function handleTouchStart(e) {
   // Don't interfere with dome mode
   if (document.body.classList.contains("dome-mode")) return;
 
+  // Don't interfere with links or buttons
+  const target = e.target;
+  if (target.closest('a') || target.closest('button') || target.tagName === 'A' || target.tagName === 'BUTTON') {
+    return;
+  }
+
   // Only handle single touch
   if (e.touches.length !== 1) return;
 
@@ -161,6 +167,12 @@ function handleTouchStart(e) {
 function handleTouchMove(e) {
   // Don't interfere with dome mode
   if (document.body.classList.contains("dome-mode")) return;
+
+  // Don't interfere with links or buttons
+  const target = e.target;
+  if (target.closest('a') || target.closest('button') || target.tagName === 'A' || target.tagName === 'BUTTON') {
+    return;
+  }
 
   if (e.touches.length !== 1) return;
 
@@ -201,6 +213,12 @@ function handleTouchMove(e) {
 function handleTouchEnd(e) {
   // Don't interfere with dome mode
   if (document.body.classList.contains("dome-mode")) return;
+
+  // Don't interfere with links or buttons
+  const target = e.target;
+  if (target.closest('a') || target.closest('button') || target.tagName === 'A' || target.tagName === 'BUTTON') {
+    return;
+  }
 
   // Prevent default scrolling
   e.preventDefault();
