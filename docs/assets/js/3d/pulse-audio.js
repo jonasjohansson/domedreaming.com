@@ -61,12 +61,12 @@ let synths = [];
 let masterGain = null;
 let reverb = null;
 
-// Drone frequencies - rich bass for ambient drones
+// Drone frequencies - audible bass for ambient drones
 const DRONE_FREQUENCIES = [
   55,    // A1
+  65.41, // C2
+  73.42, // D2
   82.41, // E2
-  110,   // A2
-  130.81,// C3
 ];
 
 // Tick frequencies - higher pitched for rhythmic elements
@@ -184,18 +184,18 @@ export function createPulseSynths(count) {
         volume: -6, // Louder
       }).connect(panner);
     } else {
-      // Drone synth - sustained atmospheric sounds
+      // Drone synth - bass atmospheric sounds
       synth = new Tone.Synth({
         oscillator: {
-          type: "sawtooth", // Simpler oscillator type
+          type: "triangle", // Triangle has bass with some harmonics for audibility
         },
         envelope: {
           attack: 2,
           decay: 0.5,
-          sustain: 0.6,
+          sustain: 0.7,
           release: 2,
         },
-        volume: -8, // Louder
+        volume: 0, // Louder for bass presence
       }).connect(panner);
     }
 
@@ -343,7 +343,7 @@ export function updatePulseAudio(pulses, params) {
       }
     } else {
       // Drones - subtle volume variation based on position
-      const baseVol = -12;
+      const baseVol = -6;
       const variation = Math.sin(pulse.angle * 2) * 2;
       s.synth.volume.value = baseVol + variation;
     }

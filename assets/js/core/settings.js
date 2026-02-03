@@ -315,30 +315,11 @@ export function applyVignetteSettings() {
 }
 
 export async function loadSettings(forceFromJSON = false) {
-  // First load defaults from JSON (always, as primary source)
+  // Load defaults from JSON
   const jsonLoaded = await loadDefaultSettings(forceFromJSON);
 
-  // Only use localStorage as fallback if JSON failed to load
-  if (!jsonLoaded && !forceFromJSON) {
-    try {
-      const saved = localStorage.getItem("domeDreamingSettings");
-      if (!saved) {
-        // Apply default page colors even if no saved settings
-        applyPageColors();
-        return;
-      }
-
-      const settings = JSON.parse(saved);
-      applySettings(settings);
-    } catch (error) {
-      console.warn("Failed to load settings from localStorage:", error);
-      // Apply default page colors on error
-      applyPageColors();
-    }
-  } else if (jsonLoaded) {
-    // Ensure page colors are applied after loading from JSON
-    applyPageColors();
-  }
+  // Apply page colors
+  applyPageColors();
 
   // Apply page backgrounds after loading settings
   applyPageBackgrounds();
@@ -728,9 +709,9 @@ export function saveSettings(fbxMeshes, glbLights) {
       pageBackgroundSettings,
     };
 
-    localStorage.setItem("domeDreamingSettings", JSON.stringify(settings));
+    // Settings not saved to localStorage - use JSON defaults only
   } catch (error) {
-    console.warn("Failed to save settings:", error);
+    console.warn("Failed to collect settings:", error);
   }
 }
 
