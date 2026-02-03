@@ -30,8 +30,8 @@
 }
 
 .dot {
-  width: 1px;
-  height: 1px;
+  width: var(--dot-size);
+  height: var(--dot-size);
   border-radius: 50%;
   background-color: var(--color-dot);
   justify-self: start;

@@ -57,6 +57,9 @@
 
   /* Animation */
   --dot-animation-delay-constant: 10ms;
+
+  /* Dots */
+  --dot-size: 1px;
 }
 
 /* Mobile devices */
