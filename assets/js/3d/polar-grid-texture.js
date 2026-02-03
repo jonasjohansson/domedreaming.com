@@ -34,7 +34,7 @@ export const polarGridSettings = {
   text4FlipX: true,
   text4FlipY: true,
   text4FontSize: 100,
-  text4StartSector: 19,
+  text4StartSector: 28,
   text4Content: "FULLDOME FILM FESTIVAL",
   text4CellMode: true,
   // Text 5 settings
@@ -42,7 +42,7 @@ export const polarGridSettings = {
   text5FlipX: true,
   text5FlipY: true,
   text5FontSize: 100,
-  text5StartSector: 21,
+  text5StartSector: 27,
   text5Content: "OPEN CALL IS LIVE!",
   text5CellMode: true,
   // Label flip options
