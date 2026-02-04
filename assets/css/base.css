@@ -15,10 +15,10 @@
   --color-primary: #616b7a;
   --color-secondary: #8c5261;
   --color-tertiary: #a68540;
-  /* Legacy color names (for backwards compatibility) */
-  --bg-main-color: #616b7a;
-  --bg-floor-color: #8c5261;
-  --bg-chairs-color: #5e8c52;
+  /* Background colors (darkened for link backgrounds) */
+  --bg-main-color: #667380;
+  --bg-chairs-color: #54313a;
+  --bg-floor-color: #645026;
   --bg-gradient-start: 20%;
   --bg-gradient-end: 80%;
   --section1-fade-start: 70%;
