@@ -8,7 +8,7 @@ const docsCssPath = path.join(docsPath, 'assets/css');
  * Purge unused CSS using a simple regex-based approach
  * For production, consider using PurgeCSS library
  */
-function purgeCSS() {
+async function purgeCSS() {
   console.log('Purging unused CSS...\n');
   
   // Check if PurgeCSS is available
@@ -63,8 +63,8 @@ function purgeCSS() {
   }
   
   const purgeCSS = new PurgeCSS.PurgeCSS();
-  
-  const purgeCSSResult = purgeCSS.purge({
+
+  const purgeCSSResult = await purgeCSS.purge({
     content: htmlFiles,
     css: cssFiles,
     // Safelist for dynamic classes
