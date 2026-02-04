@@ -24,13 +24,13 @@ export let startCameraRotation = { x: -2.8, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
 export let bloomSettings = {
-  enabled: true,
+  enabled: false,
   strength: 1.5,
   radius: 0.4,
   threshold: 0.85,
 };
 export let dofSettings = {
-  enabled: true,
+  enabled: false,
   focus: 12,       // Focus distance - objects at this distance are sharp
   aperture: 0.0014, // Aperture size - higher = more blur
   maxblur: 0.05,   // Maximum blur amount
