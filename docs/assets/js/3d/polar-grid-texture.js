@@ -100,9 +100,9 @@ export const polarGridSettings = {
   regenerate: null,
 };
 
-// Animation throttling for mobile
+// Animation throttling for all devices
 let lastAnimFrame = 0;
-const MOBILE_FRAME_INTERVAL = 33; // ~30fps on mobile vs 60fps on desktop
+const FRAME_INTERVAL = 33; // ~30fps for better performance
 
 /**
  * Draw a single line of text along a circular arc with flip options
@@ -1496,8 +1496,8 @@ export function startPulseAnimation(texture) {
   let globalAnimTime = 0;
 
   function animate(currentTime) {
-    // Throttle animation on mobile for better performance
-    if (isMobile() && currentTime - lastAnimFrame < MOBILE_FRAME_INTERVAL) {
+    // Throttle animation to 30fps for better performance
+    if (currentTime - lastAnimFrame < FRAME_INTERVAL) {
       pulseAnimationId = requestAnimationFrame(animate);
       return;
     }
