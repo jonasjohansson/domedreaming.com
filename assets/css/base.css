@@ -12,6 +12,10 @@
   --color-bg: #ffffff;
   --color-text: #000000;
   --color-dot: #ffffff;
+  --color-primary: #616b7a;
+  --color-secondary: #8c5261;
+  --color-tertiary: #a68540;
+  /* Legacy color names (for backwards compatibility) */
   --bg-main-color: #616b7a;
   --bg-floor-color: #8c5261;
   --bg-chairs-color: #5e8c52;

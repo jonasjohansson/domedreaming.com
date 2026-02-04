@@ -336,14 +336,39 @@ export async function loadSettings(forceFromJSON = false) {
 }
 
 /**
- * Default colors (from screenshot)
- * Main Structure: #667380, Chairs: #8c5261, Floor: #a68540
+ * Default colors
+ * Primary (Main Structure): #667380, Secondary (Chairs): #8c5261, Tertiary (Floor): #a68540
  */
 const DEFAULT_COLORS = {
-  Main_Structure: { r: 0.4, g: 0.45, b: 0.5 },   // #667380
-  Chairs: { r: 0.55, g: 0.32, b: 0.38 },          // #8c5261
-  Floor: { r: 0.65, g: 0.52, b: 0.25 },           // #a68540
+  primary: { r: 0.4, g: 0.45, b: 0.5 },     // #667380 - Main Structure
+  secondary: { r: 0.55, g: 0.32, b: 0.38 }, // #8c5261 - Chairs
+  tertiary: { r: 0.65, g: 0.52, b: 0.25 },  // #a68540 - Floor
 };
+
+// Mesh name to color key mapping
+const MESH_COLOR_MAP = {
+  Main_Structure: 'primary',
+  Chairs: 'secondary',
+  Floor: 'tertiary',
+};
+
+// Store generated colors for random access
+let generatedColors = {
+  primary: null,
+  secondary: null,
+  tertiary: null,
+};
+
+/**
+ * Get a random color from the three generated colors
+ */
+export function getRandomGeneratedColor() {
+  const colors = Object.values(generatedColors).filter(c => c !== null);
+  if (colors.length === 0) {
+    return DEFAULT_COLORS.primary;
+  }
+  return colors[Math.floor(Math.random() * colors.length)];
+}
 
 // Flag to use default colors on first load
 let useDefaultColors = true;
@@ -416,7 +441,7 @@ function darkenForCSS(color, factor = 0.4) {
 
 /**
  * Apply generated colors to alternating sections
- * Uses two vibrant colors for gradients (no black)
+ * Uses the three colors for gradients (no black)
  */
 function applyBackgroundColors() {
   // Helper function to convert RGB (0-1) to CSS rgb string
@@ -427,98 +452,88 @@ function applyBackgroundColors() {
     return `rgb(${r}, ${g}, ${b})`;
   };
 
-  // Get Main_Structure and Floor colors from 3D scene
-  let mainColor = null;
-  let floorColor = null;
+  // Helper to convert RGB (0-1) to hex
+  const rgbToHex = (color) => {
+    const r = Math.round(color.r * 255).toString(16).padStart(2, '0');
+    const g = Math.round(color.g * 255).toString(16).padStart(2, '0');
+    const b = Math.round(color.b * 255).toString(16).padStart(2, '0');
+    return `#${r}${g}${b}`;
+  };
 
   import("../3d/model.js").then((model) => {
+    // Get colors from 3D scene meshes
+    let primaryColor = null;
+    let secondaryColor = null;
+    let tertiaryColor = null;
+
     if (model.fbxMeshes && model.fbxMeshes.length > 0) {
-      // Get Main_Structure color
+      // Get Primary (Main_Structure) color
       const mainMesh = model.fbxMeshes.find((item) => item.name === "Main_Structure");
       if (mainMesh) {
         const material = getMaterial(mainMesh.mesh);
         if (material && material.color) {
-          mainColor = {
-            r: material.color.r,
-            g: material.color.g,
-            b: material.color.b,
-          };
+          primaryColor = { r: material.color.r, g: material.color.g, b: material.color.b };
         }
       }
 
-      // Get Floor color for second gradient color
+      // Get Secondary (Chairs) color
+      const chairsMesh = model.fbxMeshes.find((item) => item.name === "Chairs");
+      if (chairsMesh) {
+        const material = getMaterial(chairsMesh.mesh);
+        if (material && material.color) {
+          secondaryColor = { r: material.color.r, g: material.color.g, b: material.color.b };
+        }
+      }
+
+      // Get Tertiary (Floor) color
       const floorMesh = model.fbxMeshes.find((item) => item.name === "Floor");
       if (floorMesh) {
         const material = getMaterial(floorMesh.mesh);
         if (material && material.color) {
-          floorColor = {
-            r: material.color.r,
-            g: material.color.g,
-            b: material.color.b,
-          };
+          tertiaryColor = { r: material.color.r, g: material.color.g, b: material.color.b };
         }
       }
     }
 
     // Fallback to savedColorSettings if material colors not available
-    if (!mainColor) {
-      if (window.savedColorSettings && window.savedColorSettings.Main_Structure) {
-        mainColor = window.savedColorSettings.Main_Structure;
-      } else {
-        mainColor = generateRandomMutedColor();
-      }
+    if (!primaryColor) {
+      primaryColor = window.savedColorSettings?.primary || window.savedColorSettings?.Main_Structure || generateRandomMutedColor();
+    }
+    if (!secondaryColor) {
+      secondaryColor = window.savedColorSettings?.secondary || window.savedColorSettings?.Chairs || generateRandomMutedColor();
+    }
+    if (!tertiaryColor) {
+      tertiaryColor = window.savedColorSettings?.tertiary || window.savedColorSettings?.Floor || generateRandomMutedColor();
     }
 
-    if (!floorColor) {
-      if (window.savedColorSettings && window.savedColorSettings.Floor) {
-        floorColor = window.savedColorSettings.Floor;
-      } else {
-        floorColor = generateRandomMutedColor();
-      }
-    }
-
-    // Helper to convert RGB (0-1) to hex
-    const rgbToHex = (color) => {
-      const r = Math.round(color.r * 255).toString(16).padStart(2, '0');
-      const g = Math.round(color.g * 255).toString(16).padStart(2, '0');
-      const b = Math.round(color.b * 255).toString(16).padStart(2, '0');
-      return `#${r}${g}${b}`;
-    };
-
-    // Get Chairs color too for logging
-    let chairsColor = null;
-    if (model.fbxMeshes) {
-      const chairsMesh = model.fbxMeshes.find((item) => item.name === "Chairs");
-      if (chairsMesh) {
-        const material = getMaterial(chairsMesh.mesh);
-        if (material && material.color) {
-          chairsColor = { r: material.color.r, g: material.color.g, b: material.color.b };
-        }
-      }
-    }
-    if (!chairsColor && window.savedColorSettings?.Chairs) {
-      chairsColor = window.savedColorSettings.Chairs;
-    }
+    // Store generated colors for random access
+    generatedColors.primary = primaryColor;
+    generatedColors.secondary = secondaryColor;
+    generatedColors.tertiary = tertiaryColor;
 
     // Log color palette to console
     console.log('%c Color Palette ', 'background: #222; color: #fff; font-size: 14px; padding: 4px 8px;');
-    console.log(`  Main:   ${rgbToHex(mainColor)}`);
-    console.log(`  Chairs: ${chairsColor ? rgbToHex(chairsColor) : 'N/A'}`);
-    console.log(`  Floor:  ${rgbToHex(floorColor)}`);
+    console.log(`  Primary:   ${rgbToHex(primaryColor)}`);
+    console.log(`  Secondary: ${rgbToHex(secondaryColor)}`);
+    console.log(`  Tertiary:  ${rgbToHex(tertiaryColor)}`);
 
-    // Use colors directly for backgrounds
-    const bgMainColor = mainColor;
-    const bgFloorColor = darkenForCSS(floorColor, 0.6);
-    const bgChairsColor = chairsColor ? darkenForCSS(chairsColor, 0.6) : bgFloorColor;
+    // Use colors for backgrounds (darken secondary/tertiary for contrast)
+    const bgPrimaryColor = primaryColor;
+    const bgSecondaryColor = darkenForCSS(secondaryColor, 0.6);
+    const bgTertiaryColor = darkenForCSS(tertiaryColor, 0.6);
 
     // Set CSS variables for all colors (used in gradients)
-    document.documentElement.style.setProperty(`--bg-main-color`, rgbToCSS(bgMainColor));
-    document.documentElement.style.setProperty(`--bg-floor-color`, rgbToCSS(bgFloorColor));
-    document.documentElement.style.setProperty(`--bg-chairs-color`, rgbToCSS(bgChairsColor));
+    document.documentElement.style.setProperty(`--color-primary`, rgbToCSS(primaryColor));
+    document.documentElement.style.setProperty(`--color-secondary`, rgbToCSS(secondaryColor));
+    document.documentElement.style.setProperty(`--color-tertiary`, rgbToCSS(tertiaryColor));
+    // Keep old names for backwards compatibility
+    document.documentElement.style.setProperty(`--bg-main-color`, rgbToCSS(bgPrimaryColor));
+    document.documentElement.style.setProperty(`--bg-floor-color`, rgbToCSS(bgTertiaryColor));
+    document.documentElement.style.setProperty(`--bg-chairs-color`, rgbToCSS(bgSecondaryColor));
 
-    // Set 3D scene background to match Main color so canvas blends with sections
+    // Set 3D scene background to match Primary color so canvas blends with sections
     import("../3d/scene.js").then((sceneModule) => {
-      sceneModule.setSceneBackground(bgMainColor);
+      sceneModule.setSceneBackground(bgPrimaryColor);
     });
   });
 }
@@ -546,15 +561,19 @@ export async function applySettingsToScene() {
             let colorToApply;
 
             // Use default colors on first load, or random if randomize was called
+            const colorKey = MESH_COLOR_MAP[item.name];
             if (item.name === "Main_Structure") {
-              colorToApply = useDefaultColors ? DEFAULT_COLORS.Main_Structure : generateMainColor();
-              window.savedColorSettings[item.name] = colorToApply;
+              colorToApply = useDefaultColors ? DEFAULT_COLORS.primary : generateMainColor();
+              window.savedColorSettings.primary = colorToApply;
+              window.savedColorSettings[item.name] = colorToApply; // backwards compat
             } else if (item.name === "Chairs") {
-              colorToApply = useDefaultColors ? DEFAULT_COLORS.Chairs : generateVibrantColor();
-              window.savedColorSettings[item.name] = colorToApply;
+              colorToApply = useDefaultColors ? DEFAULT_COLORS.secondary : generateVibrantColor();
+              window.savedColorSettings.secondary = colorToApply;
+              window.savedColorSettings[item.name] = colorToApply; // backwards compat
             } else if (item.name === "Floor") {
-              colorToApply = useDefaultColors ? DEFAULT_COLORS.Floor : generateVibrantColor();
-              window.savedColorSettings[item.name] = colorToApply;
+              colorToApply = useDefaultColors ? DEFAULT_COLORS.tertiary : generateVibrantColor();
+              window.savedColorSettings.tertiary = colorToApply;
+              window.savedColorSettings[item.name] = colorToApply; // backwards compat
             } else if (item.name === "Screen") {
               colorToApply = generateVibrantColor();
               window.savedColorSettings[item.name] = colorToApply;
