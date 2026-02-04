@@ -62,7 +62,7 @@ export const polarGridSettings = {
   dotSize: 4,
   // Pulse animation settings
   pulsesEnabled: true,
-  pulseCount: 8,
+  pulseCount: 4,
   pulseSpeed: 0.5,
   pulseSize: 12,
   pulseGlow: false,
@@ -1238,6 +1238,7 @@ let pulses = [];
 let pulseAnimationId = null;
 let currentTexture = null;
 let baseImageData = null;
+let previousPulseRects = []; // Track previous pulse positions for partial redraw
 
 // Track text rotation offset
 let textRotationOffset = 0;
@@ -1476,6 +1477,31 @@ function updatePulses(deltaTime, speed) {
 }
 
 /**
+ * Get bounding rectangles for all pulses (for partial redraw)
+ */
+function getPulseRects(params, pulseSize) {
+  const { centerX, centerY, circleStep } = params;
+  const rects = [];
+  const padding = 10; // Extra padding to ensure full coverage
+
+  for (const pulse of pulses) {
+    const radius = circleStep * pulse.circle;
+    const x = centerX + Math.cos(pulse.angle) * radius;
+    const y = centerY + Math.sin(pulse.angle) * radius;
+    const size = pulseSize * pulse.size * 4; // Account for glow size
+
+    rects.push({
+      x: Math.floor(x - size - padding),
+      y: Math.floor(y - size - padding),
+      w: Math.ceil(size * 2 + padding * 2),
+      h: Math.ceil(size * 2 + padding * 2)
+    });
+  }
+
+  return rects;
+}
+
+/**
  * Start pulse animation
  */
 export function startPulseAnimation(texture) {
@@ -1551,10 +1577,20 @@ export function startPulseAnimation(texture) {
 
     // Restore base image WITHOUT text if text needs redrawing (rotation or scramble)
     const needsTextRedraw = textRotEnabled || textScrambleEnabled;
-    if (needsTextRedraw && params.baseImageWithoutText) {
-      ctx.putImageData(params.baseImageWithoutText, 0, 0);
-    } else {
-      ctx.putImageData(baseImageData, 0, 0);
+    const needsFullRedraw = needsTextRedraw || cellAnimEnabled;
+
+    if (needsFullRedraw) {
+      // Full redraw needed for text/cell animations
+      if (needsTextRedraw && params.baseImageWithoutText) {
+        ctx.putImageData(params.baseImageWithoutText, 0, 0);
+      } else {
+        ctx.putImageData(baseImageData, 0, 0);
+      }
+    } else if (pulsesEnabled && previousPulseRects.length > 0) {
+      // Partial redraw - only restore previous pulse regions
+      for (const rect of previousPulseRects) {
+        ctx.putImageData(baseImageData, rect.x, rect.y, rect.x, rect.y, rect.w, rect.h);
+      }
     }
 
     // Draw animated cell patterns
@@ -1583,6 +1619,8 @@ export function startPulseAnimation(texture) {
     // Update and draw pulses
     if (pulsesEnabled) {
       updatePulses(deltaTime, polarGridSettings.pulseSpeed);
+      // Track pulse positions for partial redraw
+      previousPulseRects = getPulseRects(params, polarGridSettings.pulseSize);
       drawPulses(ctx, params, polarGridSettings.pulseSize, polarGridSettings.pulseGlow);
 
       // Update audio based on pulse positions
