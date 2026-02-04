@@ -32,10 +32,10 @@ function updateSwVersion(filePath) {
   }
 }
 
-// Update root sw.js (will be copied by eleventy)
-updateSwVersion(swPath);
-
-// Also update docs/sw.js if it exists (for post-build updates)
+// Only update docs/sw.js (the built output)
+// The source sw.js keeps BUILD_TIMESTAMP as a placeholder
 if (fs.existsSync(docsSwPath)) {
   updateSwVersion(docsSwPath);
+} else {
+  console.log("[Service Worker] docs/sw.js not found yet, will be updated after eleventy build");
 }
