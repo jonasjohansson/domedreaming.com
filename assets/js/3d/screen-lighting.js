@@ -17,23 +17,27 @@ const hsl = { h: 0, s: 0, l: 0 }; // Reusable HSL object for color manipulation
  */
 export function initScreenLighting(screenObj) {
   screenObject = screenObj;
-  
+
+  // DISABLED FOR PERFORMANCE TESTING
+  // TODO: Re-enable for production
+  return { screenLight: null, hemisphereLight: null, secondaryLight: null };
+
   // Create a point light positioned near the screen with higher intensity
   // Position will be set based on screen object position
   screenLight = new THREE.PointLight(0xffffff, 2.0, 30); // Increased intensity and range
   screenLight.position.set(0, 0, 0);
   scene.add(screenLight);
-  
+
   // Also create a hemisphere light for ambient color bleeding with stronger effect
   hemisphereLight = new THREE.HemisphereLight(0xffffff, 0x1a1a1a, 0.8); // Increased intensity
   hemisphereLight.position.set(0, 5, 0);
   scene.add(hemisphereLight);
-  
+
   // Add a second point light for more color spread
   secondaryLight = new THREE.PointLight(0xffffff, 1.5, 25);
   secondaryLight.position.set(0, 0, 0);
   scene.add(secondaryLight);
-  
+
   return { screenLight, hemisphereLight, secondaryLight };
 }
 
