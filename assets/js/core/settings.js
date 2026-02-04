@@ -522,14 +522,16 @@ function applyBackgroundColors() {
     const bgSecondaryColor = darkenForCSS(secondaryColor, 0.6);
     const bgTertiaryColor = darkenForCSS(tertiaryColor, 0.6);
 
-    // Set CSS variables for all colors (used in gradients)
-    document.documentElement.style.setProperty(`--color-primary`, rgbToCSS(primaryColor));
-    document.documentElement.style.setProperty(`--color-secondary`, rgbToCSS(secondaryColor));
-    document.documentElement.style.setProperty(`--color-tertiary`, rgbToCSS(tertiaryColor));
-    // Keep old names for backwards compatibility
-    document.documentElement.style.setProperty(`--bg-main-color`, rgbToCSS(bgPrimaryColor));
-    document.documentElement.style.setProperty(`--bg-floor-color`, rgbToCSS(bgTertiaryColor));
-    document.documentElement.style.setProperty(`--bg-chairs-color`, rgbToCSS(bgSecondaryColor));
+    // Only update CSS variables if colors were randomized (not using defaults)
+    // CSS already has correct default values, so we skip this on first load
+    if (!useDefaultColors) {
+      document.documentElement.style.setProperty(`--color-primary`, rgbToCSS(primaryColor));
+      document.documentElement.style.setProperty(`--color-secondary`, rgbToCSS(secondaryColor));
+      document.documentElement.style.setProperty(`--color-tertiary`, rgbToCSS(tertiaryColor));
+      document.documentElement.style.setProperty(`--bg-main-color`, rgbToCSS(bgPrimaryColor));
+      document.documentElement.style.setProperty(`--bg-floor-color`, rgbToCSS(bgTertiaryColor));
+      document.documentElement.style.setProperty(`--bg-chairs-color`, rgbToCSS(bgSecondaryColor));
+    }
 
     // Set 3D scene background to match Primary color so canvas blends with sections
     import("../3d/scene.js").then((sceneModule) => {
