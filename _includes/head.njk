@@ -101,10 +101,20 @@
   as="fetch"
   crossorigin="anonymous" />
 
-<!-- Import map for external dependencies (recast-navigation from CDN) -->
+<!-- Import map - vendor bundle for Three.js, CDN for recast-navigation -->
 <script type="importmap">
   {
     "imports": {
+      "three": "/assets/js/vendor.bundle.js",
+      "three/addons/loaders/GLTFLoader.js": "/assets/js/vendor.bundle.js",
+      "three/addons/loaders/DRACOLoader.js": "/assets/js/vendor.bundle.js",
+      "three/addons/postprocessing/EffectComposer.js": "/assets/js/vendor.bundle.js",
+      "three/addons/postprocessing/RenderPass.js": "/assets/js/vendor.bundle.js",
+      "three/addons/postprocessing/UnrealBloomPass.js": "/assets/js/vendor.bundle.js",
+      "three/addons/postprocessing/BokehPass.js": "/assets/js/vendor.bundle.js",
+      "three/addons/postprocessing/OutputPass.js": "/assets/js/vendor.bundle.js",
+      "three/addons/postprocessing/FXAAPass.js": "/assets/js/vendor.bundle.js",
+      "lil-gui": "/assets/js/vendor.bundle.js",
       "@recast-navigation/core": "https://cdn.jsdelivr.net/npm/@recast-navigation/core@0.43.0/dist/index.mjs",
       "@recast-navigation/wasm": "https://cdn.jsdelivr.net/npm/@recast-navigation/wasm@0.43.0/dist/recast-navigation.wasm-compat.js",
       "@recast-navigation/generators": "https://cdn.jsdelivr.net/npm/@recast-navigation/generators@0.43.0/dist/index.mjs",
