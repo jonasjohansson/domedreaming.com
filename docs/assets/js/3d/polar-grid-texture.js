@@ -65,7 +65,7 @@ export const polarGridSettings = {
   pulseCount: 8,
   pulseSpeed: 0.5,
   pulseSize: 12,
-  pulseGlow: true,
+  pulseGlow: false,
   // Typography rotation (independent of grid)
   textRotationEnabled: false, // Typography rotation disabled by default
   textRotationSpeed: -0.3, // Negative = opposite direction (used for continuous mode)
