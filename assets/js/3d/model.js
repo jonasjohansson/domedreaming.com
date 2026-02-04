@@ -25,15 +25,10 @@ export function loadModel() {
   dracoLoader.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/libs/draco/gltf/");
   loader.setDRACOLoader(dracoLoader);
 
-  // Store original title for loading progress
-  const originalTitle = document.title;
-
   // Use fetchpriority="low" hint for 3D model to not block LCP
   loader.load(
     "assets/models/wisdome.glb",
     (gltf) => {
-      // Restore original title when loaded
-      document.title = originalTitle;
       if (!gltf || !gltf.scene) {
         console.error("GLB loaded but scene is missing");
         const loadingOverlay = document.getElementById("loading-overlay");
@@ -304,16 +299,9 @@ export function loadModel() {
         setTimeout(showScene, 1000);
       });
     },
-    (progress) => {
-      // Update document title with loading percentage
-      if (progress.lengthComputable) {
-        const percent = Math.round((progress.loaded / progress.total) * 100);
-        document.title = `${percent}% ${originalTitle}`;
-      }
-    },
+    undefined,
     (error) => {
       console.error("Error loading 3D model:", error);
-      document.title = originalTitle;
       const loadingOverlay = document.getElementById("loading-overlay");
       if (loadingOverlay) {
         loadingOverlay.innerHTML = '<div style="color: #ff4444; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">Error loading 3D model.</div>';
