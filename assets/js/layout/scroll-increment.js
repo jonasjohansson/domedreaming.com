@@ -3,7 +3,7 @@
  */
 
 import { scrollSettings } from "../core/settings.js";
-import { getRowHeight } from "../core/utils.js";
+import { getRowHeight, isMobile } from "../core/utils.js";
 
 let isScrolling = false;
 let lastScrollTime = 0;
@@ -64,8 +64,8 @@ function handleScroll() {
   const nearestRow = getNearestRowIncrement(scrollTop);
 
   // On mobile/iOS, use larger tolerance to avoid interfering with momentum scrolling
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  const tolerance = isMobile ? 5 : 1; // Larger tolerance on mobile
+  const mobile = isMobile();
+  const tolerance = mobile ? 5 : 1; // Larger tolerance on mobile
 
   // If we're not at a row increment, snap to it
   const distance = Math.abs(scrollTop - nearestRow);

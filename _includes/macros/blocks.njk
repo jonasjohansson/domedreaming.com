@@ -36,15 +36,27 @@
 {% endmacro %}
 
 {# Person block with image and caption #}
-{% macro personBlock(src, alt, name, x, w, h, y) %}
+{% macro personBlock(src, alt, name, x, w, h, y, width="800", height="600") %}
 <div class="block x-{{ x }} w-{{ w }} h-{{ h }} y-{{ y }}">
   <img
     src="{{ src }}"
     alt="{{ alt }}"
     loading="lazy"
     decoding="async"
-    width="800"
-    height="800" />
+    width="{{ width }}"
+    height="{{ height }}" />
   <figcaption class="image-caption">{{ name }}</figcaption>
+</div>
+{% endmacro %}
+
+{# Logo block with link wrapper #}
+{% macro linkedLogoBlock(src, alt, href, x, w, h, y, padding="1.5rem") %}
+<div class="block center x-{{ x }} w-{{ w }} h-{{ h }} y-{{ y }}">
+  <img
+    src="{{ src }}"
+    alt="{{ alt }}"
+    loading="lazy"
+    decoding="async"
+    style="padding: {{ padding }}; object-fit: contain" />
 </div>
 {% endmacro %}

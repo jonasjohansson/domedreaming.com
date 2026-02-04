@@ -3,6 +3,16 @@
  */
 
 /**
+ * Detect if the current device is mobile
+ * @returns {boolean} True if mobile device
+ */
+export function isMobile() {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0;
+}
+
+/**
  * Get the actual viewport height, accounting for iOS Safari's address bar
  * Uses visualViewport API when available, falls back to clientHeight
  */

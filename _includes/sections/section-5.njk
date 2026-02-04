@@ -1,34 +1,8 @@
+{% from "macros/blocks.njk" import imageBlock %}
 <section class="page-section grid bg-3">
   <div class="page-content">
-    <div class="block x-2 w-12 h-12 y-2">
-      <img
-        src="assets/img/png/movie-drome.png"
-        alt="Movie-Drome"
-        loading="lazy"
-        decoding="async"
-        width="1200"
-        height="1200" />
-      <figcaption class="image-caption">Movie-Drome</figcaption>
-    </div>
-    <div class="block x-3 w-12 h-12 y-3">
-      <img
-        src="assets/img/jpg/la-sat-montreal.jpg"
-        alt="La SAT Montreal"
-        loading="lazy"
-        decoding="async"
-        width="1200"
-        height="1200" />
-      <figcaption class="image-caption">La SAT Montreal</figcaption>
-    </div>
-    <div class="block x-4 w-12 h-12 y-4">
-      <img
-        src="assets/img/jpg/the-new-infinity.jpg"
-        alt="The New Infinity"
-        loading="lazy"
-        decoding="async"
-        width="1200"
-        height="1200" />
-      <figcaption class="image-caption">The New Infinity</figcaption>
-    </div>
+    {{ imageBlock("assets/img/png/movie-drome.png", "Movie-Drome", 2, 12, 12, 2, "Movie-Drome") }}
+    {{ imageBlock("assets/img/jpg/la-sat-montreal.jpg", "La SAT Montreal", 3, 12, 12, 3, "La SAT Montreal") }}
+    {{ imageBlock("assets/img/jpg/the-new-infinity.jpg", "The New Infinity", 4, 12, 12, 4, "The New Infinity") }}
   </div>
 </section>

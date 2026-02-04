@@ -429,3 +429,8 @@ body::-webkit-scrollbar {
 .half {
   transform: translateY(calc(var(--row-height) / 2));
 }
+
+/* Background color utility using main accent color */
+.bg-accent {
+  background-color: var(--bg-main-color, #616b7a);
+}

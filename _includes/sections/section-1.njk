@@ -1,11 +1,17 @@
 <section class="page-section grid">
   <div class="page-content">
-    <div class="block x-2 w-14 y-10 h-3 center">
+    <div class="block x-2 w-14 y-11 h-2 center">
       <p>
-        DOME DREAMING<br />Stockholm, 7–9 May · Malmö, 12 May<br /><a href="mailto:info@domedreaming.com">info@domedreaming.com</a>
-      </p>
-      <p>
-        Interdisciplinary festival divided between Wisdome Stockholm and Malmö, two newly built state-of-the-art domes. Join the
+        DOME DREAMING<br /><a
+          href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome+Dreaming+Festival+%E2%80%93+Stockholm&dates=20260507T000000/20260510T000000&location=Stockholm">
+          Stockholm, 7–9 May</a
+        >
+        ·
+        <a
+          href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome+Dreaming+Festival+%E2%80%93+Malm%C3%B6&dates=20260512T000000/20260513T000000&location=Malm%C3%B6">
+          Malmö, 12 May </a
+        ><br /><br />
+        Fulldome film festival divided between Wisdome Stockholm and Malmö, two newly built state-of-the-art domes. Join the
         <a
           href="https://forms.gle/vatrcmZZBhLMNHsN7"
           target="_blank"
@@ -28,69 +34,11 @@
     </div>
 
     <div class="block center logos x-2 w-14 h-1 y-13 half">
-      <a
-        href="https://www.tekniskamuseet.se/"
-        target="_blank">
-        <img
-          src="assets/img/svg/tekniska-museet.svg"
-          alt="Tekniska museet"
-          loading="lazy"
-          decoding="async" />
+      {% for logo in logos.partners %}
+      <a href="{{ logo.href }}" target="_blank">
+        <img src="{{ logo.src }}" alt="{{ logo.alt }}" loading="lazy" decoding="async" />
       </a>
-      <a
-        href="https://www.aavistusfestival.fi"
-        target="_blank">
-        <img
-          src="assets/img/svg/aavistus.svg"
-          alt="Aavistus Festival"
-          loading="lazy"
-          decoding="async" />
-      </a>
-      <a
-        href="https://www.domedreaming.com"
-        target="_blank">
-        <img
-          src="assets/img/svg/dome-dreaming.svg"
-          alt="Dome Dreaming"
-          loading="lazy"
-          decoding="async" />
-      </a>
-      <a
-        href="https://www.kokong.ax"
-        target="_blank">
-        <img
-          src="assets/img/svg/kokong.svg"
-          alt="Kokong Festival"
-          loading="lazy"
-          decoding="async" />
-      </a>
-      <a
-        href="https://www.balticanaloglab.lv/"
-        target="_blank">
-        <img
-          src="assets/img/svg/baltic-analog-lab.svg"
-          alt="Baltic Analog Lab""
-          loading="lazy"
-          decoding="async" />
-      </a>
-      <a
-        href="https://www.nava.community"
-        target="_blank">
-        <img
-          src="assets/img/svg/nava.svg"
-          alt="Nordic Audiovisual Artists"
-          loading="lazy"
-          decoding="async" />
-      </a>
-      <a
-        href="https://kkh.se/"
-        target="_blank">
-        <img
-          src="assets/img/svg/kkh.svg"
-          alt="Kungliga Konsthögskolan"
-          loading="lazy"
-          decoding="async" />
-      </a>
+      {% endfor %}
     </div>
 
     <div class="block center x-2 w-14 h-2 y-15">
@@ -126,7 +74,8 @@
           href="https://www.balticanaloglab.lv/"
           target="_blank"
           >Baltic Analog Lab</a
-        > and
+        >
+        and
         <a
           href="https://www.nava.community"
           target="_blank"

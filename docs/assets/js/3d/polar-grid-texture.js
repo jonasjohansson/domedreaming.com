@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import { updatePulseAudio, createPulseSynths, isAudioEnabled, getTickIntensity, updateTickIntensity, getActivePulseIndex, setTotalPulseCount } from "./pulse-audio.js";
+import { isMobile } from "../core/utils.js";
+import { rgbToHex } from "./utils.js";
 
 // GUI settings - exported so they can be modified externally
 export const polarGridSettings = {
@@ -98,24 +100,9 @@ export const polarGridSettings = {
   regenerate: null,
 };
 
-// Mobile detection for performance optimization
-const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-  ('ontouchstart' in window) ||
-  (navigator.maxTouchPoints > 0);
-
 // Animation throttling for mobile
 let lastAnimFrame = 0;
 const MOBILE_FRAME_INTERVAL = 33; // ~30fps on mobile vs 60fps on desktop
-
-/**
- * Convert RGB object (0-1) to hex string
- */
-function rgbToHex(color) {
-  const r = Math.round(color.r * 255).toString(16).padStart(2, '0');
-  const g = Math.round(color.g * 255).toString(16).padStart(2, '0');
-  const b = Math.round(color.b * 255).toString(16).padStart(2, '0');
-  return `#${r}${g}${b}`;
-}
 
 /**
  * Draw a single line of text along a circular arc with flip options
@@ -1425,7 +1412,7 @@ function initializePulses(numPulses, numCircles) {
 function drawPulses(ctx, params, pulseSize, pulseGlow) {
   const { centerX, centerY, circleStep } = params;
   // Disable glow on mobile for performance
-  const useGlow = pulseGlow && !isMobile;
+  const useGlow = pulseGlow && !isMobile();
 
   // Get tick intensity and which pulse should react
   const tickIntensity = getTickIntensity();
@@ -1510,7 +1497,7 @@ export function startPulseAnimation(texture) {
 
   function animate(currentTime) {
     // Throttle animation on mobile for better performance
-    if (isMobile && currentTime - lastAnimFrame < MOBILE_FRAME_INTERVAL) {
+    if (isMobile() && currentTime - lastAnimFrame < MOBILE_FRAME_INTERVAL) {
       pulseAnimationId = requestAnimationFrame(animate);
       return;
     }

@@ -5,7 +5,7 @@ import { scene, camera } from "./scene.js";
 import { getMaterial, safeTraverse, pruneObjectChildren } from "./utils.js";
 import * as settings from "../core/settings.js";
 import { euler, setModelLoaded } from "./camera.js";
-import { setScreenObject, loadDefaultScreenTexture, setupDragAndDrop } from "./texture.js";
+import { setScreenObject, loadDefaultScreenTexture, setupDragAndDrop, getScreenObject } from "./texture.js";
 import { verifyNavmeshAtStartPosition, initNavmesh, getNavMeshQuery } from "./navmesh.js";
 import { initScreenLighting } from "./screen-lighting.js";
 
@@ -228,11 +228,14 @@ export function loadModel() {
       const camRot = settings.startCameraRotation || defaultCamRot;
 
       camera.position.set(camPos.x, camPos.y, camPos.z);
+
+      // Set camera rotation directly (don't use lookAt as it normalizes euler angles)
       camera.rotation.set(camRot.x, camRot.y, camRot.z);
+
       // Ensure quaternion is updated from rotation
       camera.updateMatrixWorld();
-      // Sync euler with camera quaternion to ensure consistency
-      euler.setFromQuaternion(camera.quaternion);
+      // Sync euler directly from rotation values (not from quaternion, which normalizes)
+      euler.set(camRot.x, camRot.y, camRot.z, "YXZ");
 
       setModelLoaded(true);
 

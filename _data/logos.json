@@ -1,0 +1,39 @@
+{
+  "partners": [
+    {
+      "src": "assets/img/svg/tekniska-museet.svg",
+      "alt": "Tekniska museet",
+      "href": "https://www.tekniskamuseet.se/"
+    },
+    {
+      "src": "assets/img/svg/aavistus.svg",
+      "alt": "Aavistus Festival",
+      "href": "https://www.aavistusfestival.fi"
+    },
+    {
+      "src": "assets/img/svg/dome-dreaming.svg",
+      "alt": "Dome Dreaming",
+      "href": "https://www.domedreaming.com"
+    },
+    {
+      "src": "assets/img/svg/kokong.svg",
+      "alt": "Kokong Festival",
+      "href": "https://www.kokong.ax"
+    },
+    {
+      "src": "assets/img/svg/baltic-analog-lab.svg",
+      "alt": "Baltic Analog Lab",
+      "href": "https://www.balticanaloglab.lv/"
+    },
+    {
+      "src": "assets/img/svg/nava.svg",
+      "alt": "Nordic Audiovisual Artists",
+      "href": "https://www.nava.community"
+    },
+    {
+      "src": "assets/img/svg/kkh.svg",
+      "alt": "Kungliga Konsthögskolan",
+      "href": "https://kkh.se/"
+    }
+  ]
+}

@@ -115,6 +115,17 @@ export function colorToHex(color) {
     .padStart(2, "0")}`;
 }
 
+/**
+ * Convert RGB object (0-1 range) to hex string
+ * Alias for colorToHex for convenience
+ */
+export function rgbToHex(color) {
+  const r = Math.round(color.r * 255).toString(16).padStart(2, '0');
+  const g = Math.round(color.g * 255).toString(16).padStart(2, '0');
+  const b = Math.round(color.b * 255).toString(16).padStart(2, '0');
+  return `#${r}${g}${b}`;
+}
+
 export function pruneObjectChildren(obj) {
   if (!obj || !obj.children) return;
   obj.children = obj.children.filter(Boolean);

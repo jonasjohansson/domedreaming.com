@@ -33,7 +33,6 @@ export function setupCameraControls() {
     isDragging = true;
     lastMouseX = event.clientX;
     lastMouseY = event.clientY;
-    euler.setFromQuaternion(camera.quaternion);
     canvas.style.cursor = "grabbing";
   });
 
@@ -45,7 +44,6 @@ export function setupCameraControls() {
 
     euler.y -= deltaX * cameraSettings.sensitivity;
     euler.x -= deltaY * cameraSettings.sensitivity;
-    euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
     camera.quaternion.setFromEuler(euler);
 
     lastMouseX = event.clientX;
@@ -78,7 +76,6 @@ export function setupCameraControls() {
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
         isTouching = true;
-        euler.setFromQuaternion(camera.quaternion);
       }
     },
     { passive: false }
@@ -99,7 +96,6 @@ export function setupCameraControls() {
 
           euler.y -= deltaX * cameraSettings.sensitivity;
           euler.x -= deltaY * cameraSettings.sensitivity;
-          euler.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, euler.x));
           camera.quaternion.setFromEuler(euler);
 
           touchStartX = touch.clientX;

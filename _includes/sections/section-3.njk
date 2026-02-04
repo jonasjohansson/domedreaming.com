@@ -1,24 +1,7 @@
+{% from "macros/blocks.njk" import imageBlock %}
 <section class="page-section grid bg-2">
   <div class="page-content">
-    <div class="block x-2 w-13 h-13 y-2">
-      <img
-        src="assets/img/jpg/wisdome-stockholm-exterior.jpg"
-        alt="Wisdome Stockholm exterior view"
-        loading="lazy"
-        decoding="async"
-        width="1200"
-        height="1200" />
-      <figcaption class="image-caption">Wisdome Stockholm</figcaption>
-    </div>
-    <div class="block x-3 w-13 h-13 y-3">
-      <img
-        src="assets/img/jpeg/wisdome-malmo-exterior.jpeg"
-        alt="Wisdome Malmö exterior view"
-        loading="lazy"
-        decoding="async"
-        width="1200"
-        height="1200" />
-      <figcaption class="image-caption">Wisdome Malmö</figcaption>
-    </div>
+    {{ imageBlock("assets/img/jpg/wisdome-stockholm-exterior.jpg", "Wisdome Stockholm exterior view", 2, 13, 13, 2, "Wisdome Stockholm") }}
+    {{ imageBlock("assets/img/jpeg/wisdome-malmo-exterior.jpeg", "Wisdome Malmö exterior view", 3, 13, 13, 3, "Wisdome Malmö") }}
   </div>
 </section>

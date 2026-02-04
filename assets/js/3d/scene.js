@@ -85,9 +85,9 @@ export function resetCamera(position, rotation, euler) {
     camera.rotation.set(rotation.x, rotation.y, rotation.z);
     // Ensure quaternion is updated from rotation
     camera.updateMatrixWorld();
-    // Sync euler if provided
+    // Sync euler directly from rotation values (not from quaternion, which normalizes)
     if (euler) {
-      euler.setFromQuaternion(camera.quaternion);
+      euler.set(rotation.x, rotation.y, rotation.z, "YXZ");
     }
   }
 }

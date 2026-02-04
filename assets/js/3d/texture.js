@@ -1,7 +1,8 @@
 import * as THREE from "three";
-import { configureTexture, applyTextureToScreen, getMaterial } from "./utils.js";
+import { configureTexture, applyTextureToScreen, getMaterial, rgbToHex } from "./utils.js";
 import { SCREEN_MATERIAL_SETTINGS } from "./config.js";
 import { screenSettings, textureRotationSettings, randomizeColors, dofSettings } from "../core/settings.js";
+import { isMobile } from "../core/utils.js";
 import { getBokehPass } from "./postprocessing.js";
 import { camera } from "./scene.js";
 import { generatePolarGridTexture, polarGridSettings, startPulseAnimation, stopPulseAnimation, reinitializePulses, preloadCellImages, triggerScrambleBurst } from "./polar-grid-texture.js";
@@ -60,12 +61,8 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     const chairsColor = colors.Chairs || { r: 0.55, g: 0.32, b: 0.38 };
     const floorColor = colors.Floor || { r: 0.65, g: 0.52, b: 0.25 };
 
-    // Detect mobile for performance optimization
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ||
-      ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-
     // Lower resolution on mobile for better performance (2048 vs 4096)
-    const textureSize = isMobile ? 2048 : 4096;
+    const textureSize = isMobile() ? 2048 : 4096;
 
     const texture = generatePolarGridTexture(textureSize, {
       backgroundColor: "#000000",
@@ -171,16 +168,6 @@ function hexToRgb(hex) {
     g: parseInt(result[2], 16) / 255,
     b: parseInt(result[3], 16) / 255
   } : null;
-}
-
-/**
- * Helper to convert RGB object (0-1 range) to hex
- */
-function rgbToHex(color) {
-  const r = Math.round(color.r * 255).toString(16).padStart(2, '0');
-  const g = Math.round(color.g * 255).toString(16).padStart(2, '0');
-  const b = Math.round(color.b * 255).toString(16).padStart(2, '0');
-  return `#${r}${g}${b}`;
 }
 
 /**
