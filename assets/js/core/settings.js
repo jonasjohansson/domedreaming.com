@@ -30,7 +30,7 @@ export let bloomSettings = {
   threshold: 0.85,
 };
 export let dofSettings = {
-  enabled: false,
+  enabled: true,
   focus: 12,       // Focus distance - objects at this distance are sharp
   aperture: 0.0014, // Aperture size - higher = more blur
   maxblur: 0.05,   // Maximum blur amount
