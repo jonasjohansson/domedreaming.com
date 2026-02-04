@@ -72,7 +72,7 @@ export const polarGridSettings = {
   textStepRotation: true, // Step by one cell width in sync with BPM
   textRotationBPM: 30, // BPM for step rotation
   // Text scramble effect
-  textScrambleEnabled: true,
+  textScrambleEnabled: false,
   textScrambleChance: 0.08, // Higher chance per frame for more random scrambling
   textScrambleDuration: 200, // Shorter duration for snappier effect
   // Text styling for contrast
@@ -84,7 +84,7 @@ export const polarGridSettings = {
   textShadowColor: "#000000",
   textVerticalOffset: 0.6, // 0 = inner edge, 0.5 = center, 1 = outer edge
   // Cell pattern animation settings
-  cellAnimationEnabled: true,
+  cellAnimationEnabled: false,
   cellAnimationSpeed: 0.5,
   cellPatternDensity: 0.25, // percentage of cells with patterns
   // Image cells settings
