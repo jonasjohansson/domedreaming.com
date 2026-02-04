@@ -33,8 +33,16 @@
 .block:has(img):not(:has(.image-caption)) img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
   cursor: default;
+}
+
+/* Non-SVG images use cover, SVG images use contain */
+.block:has(img):not(:has(.image-caption)) img:not([src$=".svg"]) {
+  object-fit: cover;
+}
+
+.block:has(img):not(:has(.image-caption)) img[src$=".svg"] {
+  object-fit: contain;
 }
 
 /* Non-SVG images get hard-light blend mode */
