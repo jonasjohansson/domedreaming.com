@@ -127,7 +127,10 @@
 </script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
 
-<!-- Preload bundled app (includes Three.js) -->
+<!-- Preload bundled JS (vendor first for parallel loading) -->
+<link
+  rel="modulepreload"
+  href="assets/js/vendor.bundle.js" />
 <link
   rel="modulepreload"
   href="assets/js/app.bundle.js" />

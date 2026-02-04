@@ -13,10 +13,17 @@ const RUNTIME_CACHE = `domedreaming-runtime-v${CACHE_VERSION}`;
 const PRECACHE_ASSETS = [
   "/",
   "/assets/css/main.css",
-  "/assets/js/main.js",
+  "/assets/js/vendor.bundle.js",
+  "/assets/js/app.bundle.js",
   "/assets/fonts/OffBit-Regular.woff2",
-  "/assets/img/jpg/wisdome-stockholm-visuals.jpg",
   "/assets/favicon/favicon-96x96.png",
+];
+
+// Bundled assets use cache-first (versioned by SW cache version)
+const CACHE_FIRST_ASSETS = [
+  "/assets/js/vendor.bundle.js",
+  "/assets/js/app.bundle.js",
+  "/assets/fonts/OffBit-Regular.woff2",
 ];
 
 // Install event - cache static assets
@@ -82,9 +89,14 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Strategy: Network First for CSS, JS, and HTML (to see updates immediately), Cache First for other static assets
-  if (request.url.endsWith(".css") || request.url.endsWith(".js")) {
-    // CSS and JS: Network First to ensure fresh code and styles
+  // Strategy: Cache First for bundled assets (versioned by SW), Network First for others
+  const isCacheFirstAsset = CACHE_FIRST_ASSETS.some((asset) => url.pathname === asset);
+
+  if (isCacheFirstAsset) {
+    // Bundled assets: Cache First (they're versioned by SW cache version)
+    event.respondWith(cacheFirst(request));
+  } else if (request.url.endsWith(".css") || request.url.endsWith(".js")) {
+    // Other CSS and JS: Network First to ensure fresh code and styles
     event.respondWith(networkFirst(request));
   } else if (request.headers.get("accept")?.includes("text/html")) {
     // HTML: Network First with cache fallback
