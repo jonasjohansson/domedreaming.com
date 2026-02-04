@@ -42,8 +42,9 @@ async function bundle() {
       export { LineSegments2 } from "three/addons/lines/LineSegments2.js";
       export { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
 
-      // Re-export lil-gui
+      // Re-export lil-gui (as both default and named for compatibility)
       export { GUI } from "lil-gui";
+      export { GUI as default } from "lil-gui";
     `;
 
     const vendorResult = await esbuild.build({
