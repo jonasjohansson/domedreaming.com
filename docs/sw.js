@@ -89,13 +89,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Strategy: Cache First for bundled assets (versioned by SW), Network First for others
-  const isCacheFirstAsset = CACHE_FIRST_ASSETS.some((asset) => url.pathname === asset);
-
-  if (isCacheFirstAsset) {
-    // Bundled assets: Cache First (they're versioned by SW cache version)
-    event.respondWith(cacheFirst(request));
-  } else if (request.url.endsWith(".css") || request.url.endsWith(".js")) {
+  // TESTING MODE: Always use Network First to get latest version
+  // TODO: Revert to cache-first for production
+  if (request.url.endsWith(".css") || request.url.endsWith(".js")) {
     // Other CSS and JS: Network First to ensure fresh code and styles
     event.respondWith(networkFirst(request));
   } else if (request.headers.get("accept")?.includes("text/html")) {
