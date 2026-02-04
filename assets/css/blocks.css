@@ -167,6 +167,10 @@ main > section.page-section:first-of-type .page-content p {
   margin-bottom: calc(var(--font-size-base) * var(--line-height-tight));
 }
 
+main > section.page-section:first-of-type .page-content p:last-child {
+  margin-bottom: 0;
+}
+
 /* Grid overlay blocks */
 
 .grid-overlay .block {
