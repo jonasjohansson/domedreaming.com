@@ -535,51 +535,10 @@ function applyBackgroundColors() {
     import("../3d/scene.js").then((sceneModule) => {
       sceneModule.setSceneBackground(bgPrimaryColor);
     });
-
-    // Cycle link colors through primary, secondary, tertiary
-    cycleLinkColors([bgPrimaryColor, bgSecondaryColor, bgTertiaryColor]);
   });
 }
 
-/**
- * Assign colors from the palette to each link in sequence
- * Can accept RGB objects or use CSS variables as default
- */
-function cycleLinkColors(colors = null) {
-  const rgbToCSS = (color) => {
-    const r = Math.round(color.r * 255);
-    const g = Math.round(color.g * 255);
-    const b = Math.round(color.b * 255);
-    return `rgb(${r}, ${g}, ${b})`;
-  };
-
-  // If no colors provided, read from CSS variables (already set in base.css)
-  let colorStrings;
-  if (colors) {
-    colorStrings = colors.map(c => rgbToCSS(c));
-  } else {
-    // Use CSS variables directly - they have defaults in base.css
-    const style = getComputedStyle(document.documentElement);
-    colorStrings = [
-      style.getPropertyValue('--bg-main-color').trim() || 'rgb(97, 107, 122)',
-      style.getPropertyValue('--bg-chairs-color').trim() || 'rgb(140, 82, 97)',
-      style.getPropertyValue('--bg-floor-color').trim() || 'rgb(166, 133, 64)',
-    ];
-  }
-
-  // Find all text links (not image links)
-  const links = document.querySelectorAll('a:not(:has(img))');
-  links.forEach((link, index) => {
-    link.style.backgroundColor = colorStrings[index % colorStrings.length];
-  });
-}
-
-// Apply link colors immediately on DOM ready (don't wait for Three.js)
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => cycleLinkColors());
-} else {
-  cycleLinkColors();
-}
+// Link colors are now handled purely by CSS (nth-of-type selectors in layout.css)
 
 export async function applySettingsToScene() {
   // Ensure savedColorSettings exists

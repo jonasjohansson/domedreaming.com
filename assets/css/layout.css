@@ -136,13 +136,25 @@ body.dome-mode .page-section:has(#canvas-container) a {
 
 a:link:not(:has(img)),
 a:visited:not(:has(img)) {
-  background-color: var(--bg-floor-color, #a68540);
   padding: 0.1em 0.3em;
   border-radius: 0.2em;
 }
 
+/* Cycle link colors: 1st, 4th, 7th... = primary; 2nd, 5th, 8th... = secondary; 3rd, 6th, 9th... = tertiary */
+a:not(:has(img)):nth-of-type(3n+1) {
+  background-color: var(--bg-main-color, #667380);
+}
+
+a:not(:has(img)):nth-of-type(3n+2) {
+  background-color: var(--bg-chairs-color, #54313a);
+}
+
+a:not(:has(img)):nth-of-type(3n+3) {
+  background-color: var(--bg-floor-color, #645026);
+}
+
 a:hover:not(:has(img)) {
-  background-color: var(--bg-chairs-color, #8c5261);
+  filter: brightness(1.2);
 }
 
 /* Links with images */
