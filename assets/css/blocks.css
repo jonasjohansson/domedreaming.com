@@ -260,6 +260,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   width: auto;
   height: 2rem;
   filter: none;
+  border-radius: 0;
 }
 
 @media (max-width: 768px) {
@@ -286,6 +287,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   height: 2rem;
   width: auto;
   object-fit: contain;
+  border-radius: 0;
 }
 
 @media (max-width: 768px) {

@@ -48,11 +48,11 @@ async function purgeCSS() {
     return;
   }
   
-  // Find all CSS files (except main.css which uses @import)
+  // Find all CSS files (except main.css which uses @import, and base.css which has @font-face)
   const cssFiles = [];
   const entries = fs.readdirSync(docsCssPath, { withFileTypes: true });
   for (const entry of entries) {
-    if (entry.isFile() && entry.name.endsWith('.css') && entry.name !== 'main.css') {
+    if (entry.isFile() && entry.name.endsWith('.css') && entry.name !== 'main.css' && entry.name !== 'base.css') {
       cssFiles.push(path.join(docsCssPath, entry.name));
     }
   }
@@ -67,9 +67,19 @@ async function purgeCSS() {
   const purgeCSSResult = await purgeCSS.purge({
     content: htmlFiles,
     css: cssFiles,
-    // Safelist for dynamic classes
+    // Safelist for dynamic classes and essential selectors
     safelist: {
       standard: [
+        // Essential element selectors
+        'html',
+        'body',
+        ':root',
+        '*',
+        'img',
+        'a',
+        'p',
+        'br',
+        // Dynamic classes
         /^dot$/,
         /^block$/,
         /^page-section$/,
@@ -93,9 +103,11 @@ async function purgeCSS() {
         /^small$/,
         /^dashboard-/,
         /^image-caption$/,
-        /^key-underline$/
+        /^key-underline$/,
+        /^half$/,
+        /^center$/
       ],
-      deep: [/three/, /THREE/, /canvas/, /webgl/],
+      deep: [/three/, /THREE/, /canvas/, /webgl/, /OffBit/, /font-face/],
       greedy: [/^\./, /^#/]
     },
     // Keep font-face and keyframes
