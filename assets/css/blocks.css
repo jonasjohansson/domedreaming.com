@@ -164,7 +164,7 @@ main > section.page-section:first-of-type .page-content {
 
 main > section.page-section:first-of-type .page-content p {
   line-height: var(--line-height-tight);
-  margin-bottom: calc(var(--font-size-base) * var(--line-height-tight));
+  margin-bottom: calc(var(--font-size-base) * var(--line-height-tight) / 2);
 }
 
 main > section.page-section:first-of-type .page-content p:last-child {
