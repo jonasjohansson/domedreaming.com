@@ -20,7 +20,7 @@ export let cameraSettings = {
   rotationSpeed: 120,
 };
 export let startCameraPosition = { x: 0, y: 5.4, z: -4.3 };
-export let startCameraRotation = { x: -3.01, y: 0, z: 3.121154018741333 };
+export let startCameraRotation = { x: -3.0, y: 0, z: 3.121154018741333 };
 export let currentCameraPosition = { x: 0, y: 0, z: 0 };
 export let currentCameraRotation = { x: 0, y: 0, z: 0 };
 export let bloomSettings = {
