@@ -18,10 +18,6 @@ const hsl = { h: 0, s: 0, l: 0 }; // Reusable HSL object for color manipulation
 export function initScreenLighting(screenObj) {
   screenObject = screenObj;
 
-  // DISABLED FOR PERFORMANCE TESTING
-  // TODO: Re-enable for production
-  return { screenLight: null, hemisphereLight: null, secondaryLight: null };
-
   // Create a point light positioned near the screen with higher intensity
   // Position will be set based on screen object position
   screenLight = new THREE.PointLight(0xffffff, 2.0, 30); // Increased intensity and range
