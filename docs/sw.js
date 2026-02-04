@@ -5,7 +5,7 @@
 
 // Cache version - automatically updated on each build
 // This ensures cache clears on every new push
-const CACHE_VERSION = "1770235543822";
+const CACHE_VERSION = "1770238090003";
 const CACHE_NAME = `domedreaming-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `domedreaming-runtime-v${CACHE_VERSION}`;
 
