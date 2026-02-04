@@ -6,6 +6,7 @@ import { isMobile } from "../core/utils.js";
 import { getBokehPass } from "./postprocessing.js";
 import { camera } from "./scene.js";
 import { generatePolarGridTexture, polarGridSettings, startPulseAnimation, stopPulseAnimation, reinitializePulses, preloadCellImages, triggerScrambleBurst } from "./polar-grid-texture.js";
+import { createPulseShaderMaterial, startPulseShaderAnimation, stopPulseShaderAnimation, updateBaseTexture } from "./pulse-shader.js";
 import { audioSettings, startAudio, stopAudio, setMasterVolume, setReverbWet, setSpatialSpread, initAudio, setScrambleTrigger } from "./pulse-audio.js";
 import { lightingSettings, setAmbientIntensity, setAmbientColor, setFogEnabled, setFogColor, setFogNear, setFogFar, setToneMapping, setExposure, setDirectLightEnabled, setDirectIntensity, setDirectColor, getToneMappingOptions, setGradientStart, setGradientEnd, setSection1FadeStart, setSection2FadeEnd } from "./lighting.js";
 
@@ -129,16 +130,28 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
 
     configureTexture(texture);
     texture.rotation = 0;
-    applyTextureToScreen(texture, screenObject);
+
+    // Use WebGL shader for pulse animation (much better performance)
+    if (polarGridSettings.pulsesEnabled) {
+      // Create shader material with pulses rendered on GPU
+      const shaderMaterial = createPulseShaderMaterial(texture);
+      screenObject.material = shaderMaterial;
+
+      // Start shader-based pulse animation
+      startPulseShaderAnimation({
+        pulseCount: polarGridSettings.pulseCount,
+        numCircles: 8,
+        pulseSpeed: polarGridSettings.pulseSpeed,
+        pulseIntensity: 1.0
+      });
+    } else {
+      applyTextureToScreen(texture, screenObject);
+    }
+
     currentImageTexture = texture;
 
     // Setup GUI on first load
     setupPolarGridGUI();
-
-    // Start pulse animation if enabled
-    if (polarGridSettings.pulsesEnabled) {
-      startPulseAnimation(texture);
-    }
 
     resolve(texture);
   });
@@ -150,8 +163,9 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
  */
 export function regeneratePolarGridTexture() {
   if (!screenObject) return;
-  // Stop current animation before regenerating
+  // Stop current animations before regenerating
   stopPulseAnimation();
+  stopPulseShaderAnimation();
   loadDefaultScreenTexture();
 }
 
