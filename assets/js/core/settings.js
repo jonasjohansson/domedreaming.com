@@ -535,6 +535,28 @@ function applyBackgroundColors() {
     import("../3d/scene.js").then((sceneModule) => {
       sceneModule.setSceneBackground(bgPrimaryColor);
     });
+
+    // Randomize link colors
+    randomizeLinkColors([bgSecondaryColor, bgTertiaryColor, bgPrimaryColor]);
+  });
+}
+
+/**
+ * Assign random colors from the palette to each link
+ */
+function randomizeLinkColors(colors) {
+  const rgbToCSS = (color) => {
+    const r = Math.round(color.r * 255);
+    const g = Math.round(color.g * 255);
+    const b = Math.round(color.b * 255);
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
+  // Find all text links (not image links)
+  const links = document.querySelectorAll('a:not(:has(img))');
+  links.forEach((link) => {
+    const randomColor = colors[Math.floor(Math.random() * colors.length)];
+    link.style.backgroundColor = rgbToCSS(randomColor);
   });
 }
 
