@@ -220,7 +220,7 @@ export function loadModel() {
       // Reset camera position and rotation to ensure consistency
       // Use default values - ignore potentially corrupted saved settings
       const defaultCamPos = { x: 0, y: 5.4, z: -4.3 };
-      const defaultCamRot = { x: -3, y: 0, z: 3.121154018741333 };
+      const defaultCamRot = { x: -2.9, y: 0, z: 3.121154018741333 };
 
       // Only use saved position if it looks valid (y should be between 1 and 10)
       const savedPos = settings.startCameraPosition;

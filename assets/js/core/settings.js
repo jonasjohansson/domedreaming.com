@@ -536,15 +536,15 @@ function applyBackgroundColors() {
       sceneModule.setSceneBackground(bgPrimaryColor);
     });
 
-    // Randomize link colors
-    randomizeLinkColors([bgSecondaryColor, bgTertiaryColor, bgPrimaryColor]);
+    // Cycle link colors through primary, secondary, tertiary
+    cycleLinkColors([bgPrimaryColor, bgSecondaryColor, bgTertiaryColor]);
   });
 }
 
 /**
- * Assign random colors from the palette to each link
+ * Assign colors from the palette to each link in sequence
  */
-function randomizeLinkColors(colors) {
+function cycleLinkColors(colors) {
   const rgbToCSS = (color) => {
     const r = Math.round(color.r * 255);
     const g = Math.round(color.g * 255);
@@ -554,9 +554,9 @@ function randomizeLinkColors(colors) {
 
   // Find all text links (not image links)
   const links = document.querySelectorAll('a:not(:has(img))');
-  links.forEach((link) => {
-    const randomColor = colors[Math.floor(Math.random() * colors.length)];
-    link.style.backgroundColor = rgbToCSS(randomColor);
+  links.forEach((link, index) => {
+    const color = colors[index % colors.length];
+    link.style.backgroundColor = rgbToCSS(color);
   });
 }
 
