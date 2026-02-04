@@ -18,7 +18,7 @@ export function setSceneBackground(color) {
 export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
 // Initialize with default position (will be reset when model loads)
 camera.position.set(0, 5.4, -4.3);
-camera.rotation.set(-2.95, 0, 3.121154018741333);
+camera.rotation.set(-2.9, 0, 3.121154018741333);
 
 export const renderer = new THREE.WebGLRenderer({
   antialias: false, // Disable antialiasing for better performance
