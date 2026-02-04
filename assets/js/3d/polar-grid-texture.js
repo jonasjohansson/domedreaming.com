@@ -88,7 +88,7 @@ export const polarGridSettings = {
   cellAnimationSpeed: 0.5,
   cellPatternDensity: 0.25, // percentage of cells with patterns
   // Image cells settings
-  imageCellsEnabled: true,
+  imageCellsEnabled: false,
   imageCellCount: 12,
   imageThreshold: true,
   imageThresholdLevel: 0.5,
