@@ -18,8 +18,8 @@ export const polarGridSettings = {
   text2FlipX: true,
   text2FlipY: true,
   text2FontSize: 100,
-  text2StartSector: 23,
-  text2Content: "MALMÖ 12 MAY",
+  text2StartSector: 24,
+  text2Content: "MALMÖ  12 MAY",
   text2CellMode: true,
   // Text 3 settings
   text3Row: 5,
