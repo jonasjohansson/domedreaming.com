@@ -7,7 +7,9 @@ const path = require("path");
 const fs = require("fs");
 
 const ROOT_DIR = path.join(__dirname, "..");
-const OUTPUT_DIR = path.join(ROOT_DIR, "docs", "assets", "js");
+// Use same output directory as eleventy (default to _site for dev, docs for build)
+const outputBase = process.env.ELEVENTY_OUTPUT_DIR || "_site";
+const OUTPUT_DIR = path.join(ROOT_DIR, outputBase, "assets", "js");
 
 async function bundle() {
   try {

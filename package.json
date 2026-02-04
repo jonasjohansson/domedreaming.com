@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Dome Dreaming fulldome film festival website",
   "scripts": {
-    "dev": "eleventy --serve --watch",
+    "dev": "node scripts/bundle-app.js && eleventy --serve --watch",
     "build": "npm run build:update-sw && npm run build:eleventy && npm run build:bundle && npm run build:optimize && npm run build:update-sw",
     "build:bundle": "node scripts/bundle-app.js",
     "build:update-sw": "node scripts/update-sw-version.js",
