@@ -37,6 +37,11 @@ async function bundle() {
       export { OutputPass } from "three/addons/postprocessing/OutputPass.js";
       export { FXAAPass } from "three/addons/postprocessing/FXAAPass.js";
 
+      // Re-export addons used by @recast-navigation/three
+      export { LineMaterial } from "three/addons/lines/LineMaterial.js";
+      export { LineSegments2 } from "three/addons/lines/LineSegments2.js";
+      export { LineSegmentsGeometry } from "three/addons/lines/LineSegmentsGeometry.js";
+
       // Re-export lil-gui
       export { GUI } from "lil-gui";
     `;
