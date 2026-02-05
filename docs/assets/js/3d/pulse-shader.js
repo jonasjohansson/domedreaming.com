@@ -47,8 +47,8 @@ void main() {
     vec2 pulsePos = uPulsePositions[i].xy;
     float pulseSize = uPulsePositions[i].z;
 
-    // Distance from pulse center
-    float dist = distance(vUv, pulsePos);
+    // Distance from pulse center (use flipped UV to match texture)
+    float dist = distance(flippedUv, pulsePos);
 
     // Soft glow falloff
     float glow = smoothstep(pulseSize * 2.0, 0.0, dist);
