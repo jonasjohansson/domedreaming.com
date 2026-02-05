@@ -5,7 +5,7 @@
 
 // Cache version - automatically updated on each build
 // This ensures cache clears on every new push
-const CACHE_VERSION = "1770290928490";
+const CACHE_VERSION = "1770304929014";
 const CACHE_NAME = `domedreaming-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `domedreaming-runtime-v${CACHE_VERSION}`;
 
@@ -78,6 +78,11 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // Skip caching entirely on localhost for development
+  if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+    return;
+  }
 
   // Skip cross-origin requests
   if (url.origin !== location.origin) {

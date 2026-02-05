@@ -62,7 +62,7 @@ export const polarGridSettings = {
   dotSize: 4,
   // Pulse animation settings
   pulsesEnabled: true,
-  pulseCount: 4,
+  pulseCount: 8,
   pulseSpeed: 0.5,
   pulseSize: 12,
   pulseGlow: false,
@@ -72,7 +72,7 @@ export const polarGridSettings = {
   textStepRotation: true, // Step by one cell width in sync with BPM
   textRotationBPM: 30, // BPM for step rotation
   // Text scramble effect
-  textScrambleEnabled: false,
+  textScrambleEnabled: true,
   textScrambleChance: 0.08, // Higher chance per frame for more random scrambling
   textScrambleDuration: 200, // Shorter duration for snappier effect
   // Text styling for contrast

@@ -1,1 +1,93 @@
-import*as THREE from"three";export const scene=new THREE.Scene;scene.background=new THREE.Color(14211288);export function setSceneBackground(e){e&&"object"==typeof e?scene.background=new THREE.Color(e.r,e.g,e.b):"string"==typeof e&&(scene.background=new THREE.Color(e))}export const camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,.1,1e3);camera.position.set(0,5.4,-4.3),camera.rotation.set(-2.8,0,3.121154018741333);export const renderer=new THREE.WebGLRenderer({antialias:!1,powerPreference:"high-performance",stencil:!1,depth:!0});export const canvasContainer=document.getElementById("canvas-container");function getContainerSize(){const e=canvasContainer.getBoundingClientRect();return{width:e.width,height:e.height}}const containerSize=getContainerSize();renderer.setSize(containerSize.width,containerSize.height),renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5)),camera.aspect=containerSize.width/containerSize.height,camera.updateProjectionMatrix(),setTimeout(()=>{window.dispatchEvent(new Event("resize"))},100),renderer.shadowMap.enabled=!1,renderer.toneMapping=THREE.NoToneMapping,renderer.outputColorSpace=THREE.SRGBColorSpace,canvasContainer.appendChild(renderer.domElement);export const canvas=renderer.domElement;let resizeHandler=()=>{const e=getContainerSize();camera.aspect=e.width/e.height,camera.updateProjectionMatrix(),renderer.setSize(e.width,e.height),renderer.setPixelRatio(Math.min(window.devicePixelRatio,1.5))};window.addEventListener("resize",resizeHandler);export function setResizeHandler(e){window.removeEventListener("resize",resizeHandler),resizeHandler=e,window.addEventListener("resize",resizeHandler)}export function resetCamera(e,n,t){e&&camera.position.set(e.x,e.y,e.z),n&&(camera.rotation.set(n.x,n.y,n.z),camera.updateMatrixWorld(),t&&t.set(n.x,n.y,n.z,"YXZ"))}
+import * as THREE from "three";
+
+export const scene = new THREE.Scene();
+scene.background = new THREE.Color(0xd8d8d8); // Light gray default, will be updated to match Main color
+
+/**
+ * Set the scene background color to match the Main_Structure color
+ * This ensures the 3D canvas blends seamlessly with the page sections
+ */
+export function setSceneBackground(color) {
+  if (color && typeof color === 'object') {
+    scene.background = new THREE.Color(color.r, color.g, color.b);
+  } else if (typeof color === 'string') {
+    scene.background = new THREE.Color(color);
+  }
+}
+
+export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+// Initialize with default position (will be reset when model loads)
+camera.position.set(0, 5.4, -4.3);
+camera.rotation.set(-2.8, 0, 3.121154018741333);
+
+export const renderer = new THREE.WebGLRenderer({
+  antialias: false, // Disable antialiasing for better performance
+  powerPreference: "high-performance",
+  stencil: false,
+  depth: true,
+});
+
+export const canvasContainer = document.getElementById("canvas-container");
+
+// Function to get container dimensions
+function getContainerSize() {
+  const rect = canvasContainer.getBoundingClientRect();
+  return {
+    width: rect.width,
+    height: rect.height,
+  };
+}
+
+// Set initial size based on container
+const containerSize = getContainerSize();
+renderer.setSize(containerSize.width, containerSize.height);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Further limit pixel ratio for performance
+camera.aspect = containerSize.width / containerSize.height;
+camera.updateProjectionMatrix();
+
+// Trigger initial resize after a short delay to ensure container is fully rendered
+setTimeout(() => {
+  window.dispatchEvent(new Event("resize"));
+}, 100);
+renderer.shadowMap.enabled = false; // Disable shadows for better performance
+renderer.toneMapping = THREE.NoToneMapping; // Disable tone mapping for better performance
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+canvasContainer.appendChild(renderer.domElement);
+export const canvas = renderer.domElement;
+
+// Window resize handler - will be updated after post-processing is initialized
+let resizeHandler = () => {
+  const size = getContainerSize();
+  camera.aspect = size.width / size.height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(size.width, size.height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+};
+
+window.addEventListener("resize", resizeHandler);
+
+export function setResizeHandler(handler) {
+  window.removeEventListener("resize", resizeHandler);
+  resizeHandler = handler;
+  window.addEventListener("resize", resizeHandler);
+}
+
+/**
+ * Reset camera to a specific position and rotation
+ * Ensures quaternion and euler are properly synchronized
+ */
+export function resetCamera(position, rotation, euler) {
+  if (position) {
+    camera.position.set(position.x, position.y, position.z);
+  }
+  if (rotation) {
+    camera.rotation.set(rotation.x, rotation.y, rotation.z);
+    // Ensure quaternion is updated from rotation
+    camera.updateMatrixWorld();
+    // Sync euler directly from rotation values (not from quaternion, which normalizes)
+    if (euler) {
+      euler.set(rotation.x, rotation.y, rotation.z, "YXZ");
+    }
+  }
+}

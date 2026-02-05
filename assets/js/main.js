@@ -9,6 +9,7 @@ let loadImage, loadVideo, disconnectWebcam, loadDefaultScreenTexture;
 let updateScreenLighting, touchMovement;
 let updateListenerPosition;
 let startAudio, stopAudio;
+let updateShaderRotation;
 let threeJsLoaded = false;
 
 import {
@@ -158,6 +159,7 @@ async function load3DModules() {
     loadVideo = textureModule.loadVideo;
     disconnectWebcam = textureModule.disconnectWebcam;
     loadDefaultScreenTexture = textureModule.loadDefaultScreenTexture;
+    updateShaderRotation = textureModule.updateShaderRotation;
     updateScreenLighting = screenLightingModule.updateScreenLighting;
     touchMovement = movementModule.touchMovement;
     updateListenerPosition = pulseAudioModule.updateListenerPosition;
@@ -440,6 +442,11 @@ function updateTextureRotation(deltaTime) {
 
     while (texture.rotation < 0) {
       texture.rotation += Math.PI * 2;
+    }
+
+    // Also update shader rotation for pulse shader material
+    if (updateShaderRotation) {
+      updateShaderRotation(texture.rotation);
     }
   }
 }

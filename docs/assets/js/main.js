@@ -1,1 +1,467 @@
-let THREE,scene,camera,renderer,canvas,resetCamera,setupLighting,initPostProcessing,updatePostProcessing,setupCameraControls,euler,loadModel,updateMovement,updateRotation,fbxMeshes,glbLights,getCurrentImageTexture,getCurrentVideoTexture,connectWebcam,loadImage,loadVideo,disconnectWebcam,loadDefaultScreenTexture,updateScreenLighting,touchMovement,updateListenerPosition,startAudio,stopAudio,threeJsLoaded=!1;import{loadSettings,currentCameraPosition,currentCameraRotation,startCameraPosition,startCameraRotation,saveSettings,textureRotationSettings}from"./core/settings.js";import{initScrollIncrement}from"./layout/scroll-increment.js";import{initGridDotsSystem}from"./layout/grid-dots.js";import{initDashboard}from"./ui/dashboard.js";import{initResponsiveHeights}from"./layout/responsive-height.js";import{updateViewportHeightCSS}from"./core/utils.js";import{initDomeMode,setCanvas,setAudioFunctions}from"./ui/dome-mode.js";import{initTouchControls,setTouchMovementRef}from"./ui/touch-controls.js";let animationFrameId=null,lastTime=0,lastCameraSaveTime=0;const CAMERA_SAVE_INTERVAL=2e3;async function init(){await new Promise(e=>{"scheduler"in window&&"postTask"in window.scheduler?window.scheduler.postTask(()=>e(),{priority:"user-blocking"}):"requestIdleCallback"in window?requestIdleCallback(()=>e(),{timeout:0}):setTimeout(()=>e(),0)}),await loadSettings(),await new Promise(e=>setTimeout(e,0)),updateViewportHeightCSS(),"requestIdleCallback"in window?requestIdleCallback(()=>{initScrollIncrement(),initResponsiveHeights(),initDashboard()},{timeout:100}):setTimeout(()=>{initScrollIncrement(),initResponsiveHeights(),initDashboard()},0),"requestIdleCallback"in window?requestIdleCallback(()=>{initGridDotsSystem()},{timeout:500}):setTimeout(()=>{initGridDotsSystem()},50),"requestIdleCallback"in window?requestIdleCallback(()=>{setupEventListeners()},{timeout:100}):setTimeout(()=>{setupEventListeners()},0)}async function loadThreeJS(){if(!threeJsLoaded)try{THREE=await import("three");const e=await import("./3d/scene.js"),t=await import("./3d/camera.js"),o=await import("./3d/lighting.js"),a=await import("./3d/postprocessing.js");scene=e.scene,camera=e.camera,renderer=e.renderer,canvas=e.canvas,resetCamera=e.resetCamera,setupLighting=o.setupLighting,initPostProcessing=a.initPostProcessing,updatePostProcessing=a.updatePostProcessing,setupCameraControls=t.setupCameraControls,euler=t.euler,setCanvas(canvas),threeJsLoaded=!0}catch(e){}}async function load3DModules(){if(await loadThreeJS(),!loadModel||!connectWebcam)try{const e=await import("./3d/model.js"),t=await import("./3d/movement.js"),o=await import("./3d/texture.js"),a=await import("./3d/screen-lighting.js"),n=await import("./3d/pulse-audio.js");loadModel=e.loadModel,updateMovement=t.updateMovement,updateRotation=t.updateRotation,fbxMeshes=e.fbxMeshes,glbLights=e.glbLights,getCurrentImageTexture=o.getCurrentImageTexture,getCurrentVideoTexture=o.getCurrentVideoTexture,connectWebcam=o.connectWebcam,loadImage=o.loadImage,loadVideo=o.loadVideo,disconnectWebcam=o.disconnectWebcam,loadDefaultScreenTexture=o.loadDefaultScreenTexture,updateScreenLighting=a.updateScreenLighting,touchMovement=t.touchMovement,updateListenerPosition=n.updateListenerPosition,startAudio=n.startAudio,stopAudio=n.stopAudio,setTouchMovementRef(touchMovement),setAudioFunctions(startAudio,stopAudio),window.loadModel=loadModel,window.connectWebcam=connectWebcam,window.loadImage=loadImage,window.loadVideo=loadVideo,window.disconnectWebcam=disconnectWebcam,window.loadDefaultScreenTexture=loadDefaultScreenTexture}catch(e){}}function setupEventListeners(){let e=null;function t(){return e||(e=document.createElement("input"),e.type="file",e.accept="image/*,video/*",e.style.display="none",document.body.appendChild(e),e.addEventListener("change",async t=>{const o=t.target.files?.[0];o&&(loadImage&&loadVideo||await load3DModules(),o.type.startsWith("image/")?loadImage(o):o.type.startsWith("video/")&&loadVideo(o)),e.value=""})),e}const o=document.getElementById("connect-webcam-link");o&&o.addEventListener("click",async e=>{e.preventDefault(),connectWebcam||await load3DModules(),connectWebcam()});const a=document.getElementById("upload-file-link");a&&a.addEventListener("click",e=>{e.preventDefault(),t().click()});const n=document.getElementById("keyboard-upload-btn");n&&n.addEventListener("click",e=>{e.preventDefault(),e.stopPropagation(),t().click()}),window.resetToDefaults=async function(){try{disconnectWebcam&&loadDefaultScreenTexture||await load3DModules(),disconnectWebcam(),loadDefaultScreenTexture(),resetCamera(startCameraPosition,startCameraRotation,euler),Object.assign(currentCameraPosition,startCameraPosition),Object.assign(currentCameraRotation,startCameraRotation)}catch(e){}};let i=!1;function r(){const e=document.getElementById("keyboard-reset-btn");if(e&&!i){const t=function(e){return e.preventDefault(),e.stopPropagation(),e.stopImmediatePropagation(),window.resetToDefaults&&window.resetToDefaults(),!1},o=e.cloneNode(!0);return e.parentNode.replaceChild(o,e),o.onclick=t,o.addEventListener("click",t,{capture:!0,passive:!1}),o.addEventListener("touchend",t,{capture:!0,passive:!1}),i=!0,!0}return!1}const s=async function(e){return e.preventDefault(),e.stopPropagation(),e.stopImmediatePropagation(),connectWebcam||await load3DModules(),confirm("Do you want to connect your webcam to the screen?")&&connectWebcam(),!1};window.setupCameraButton=function(){const e=document.getElementById("keyboard-camera-btn");if(e){const t=e.cloneNode(!0);return e.parentNode.replaceChild(t,e),t.onclick=s,t.addEventListener("click",s,{capture:!0,passive:!1}),t.addEventListener("touchend",s,{capture:!0,passive:!1}),!0}return!1},r(),setupCameraButton(),setTimeout(()=>{document.getElementById("keyboard-reset-btn")||r(),document.getElementById("keyboard-camera-btn")||setupCameraButton()},500);const d=()=>{updateViewportHeightCSS()};window.addEventListener("resize",d),window.visualViewport&&window.visualViewport.addEventListener("resize",d),window.addEventListener("orientationchange",()=>{setTimeout(d,100)}),initTouchControls();const c=document.getElementById("enter-dome-link");c&&c.addEventListener("click",async e=>{e.preventDefault(),startAudio||await load3DModules(),window.enterDomeModeWithAudio&&window.enterDomeModeWithAudio()});const u=async()=>{await loadThreeJS(),setupLighting&&setupLighting(),initPostProcessing&&initPostProcessing(),setupCameraControls&&setupCameraControls(),await load3DModules(),loadModel&&(loadModel(),startRenderLoop())};"requestIdleCallback"in window?requestIdleCallback(()=>u(),{timeout:2e3}):setTimeout(u,500)}function animate(e){if(animationFrameId=requestAnimationFrame(animate),!threeJsLoaded||!camera)return;const t=(e-lastTime)/1e3;if(lastTime=e,updateMovement&&updateRotation&&(updateMovement(),updateRotation(t)),currentCameraPosition.x=camera.position.x,currentCameraPosition.y=camera.position.y,currentCameraPosition.z=camera.position.z,currentCameraRotation.x=camera.rotation.x,currentCameraRotation.y=camera.rotation.y,currentCameraRotation.z=camera.rotation.z,e-lastCameraSaveTime>=2e3&&(Object.assign(startCameraPosition,currentCameraPosition),Object.assign(startCameraRotation,currentCameraRotation),saveSettings(fbxMeshes,glbLights),lastCameraSaveTime=e),getCurrentImageTexture&&updateTextureRotation(t),updateScreenLighting&&updateScreenLighting(e),updateListenerPosition&&THREE&&camera){const e=new THREE.Vector3(0,0,-1);e.applyQuaternion(camera.quaternion),updateListenerPosition({x:camera.position.x,y:camera.position.y,z:camera.position.z},{x:e.x,y:e.y,z:e.z})}updatePostProcessing()}function updateTextureRotation(e){if(!textureRotationSettings.enabled||!THREE||!getCurrentImageTexture)return;const t=getCurrentImageTexture(),o=getCurrentVideoTexture?getCurrentVideoTexture():null,a=t||o;if(a)for(a.center&&.5===a.center.x&&.5===a.center.y||(a.center?a.center.set(.5,.5):a.center=new THREE.Vector2(.5,.5)),a.rotation-=textureRotationSettings.speed*e;a.rotation<0;)a.rotation+=2*Math.PI}function startRenderLoop(){lastTime=performance.now(),animate(lastTime)}"loading"===document.readyState?document.addEventListener("DOMContentLoaded",()=>{init(),initDomeMode()}):(init(),initDomeMode());
+// All Three.js and 3D modules are now lazy-loaded for better performance
+// These are assigned when modules load dynamically
+let THREE;
+let scene, camera, renderer, canvas, resetCamera, setupLighting;
+let initPostProcessing, updatePostProcessing, setupCameraControls, euler;
+let loadModel, updateMovement, updateRotation, fbxMeshes, glbLights;
+let getCurrentImageTexture, getCurrentVideoTexture, connectWebcam;
+let loadImage, loadVideo, disconnectWebcam, loadDefaultScreenTexture;
+let updateScreenLighting, touchMovement;
+let updateListenerPosition;
+let startAudio, stopAudio;
+let updateShaderRotation;
+let threeJsLoaded = false;
+
+import {
+  loadSettings,
+  currentCameraPosition,
+  currentCameraRotation,
+  startCameraPosition,
+  startCameraRotation,
+  saveSettings,
+  textureRotationSettings,
+} from "./core/settings.js";
+import { initScrollIncrement } from "./layout/scroll-increment.js";
+import { initGridDotsSystem } from "./layout/grid-dots.js";
+import { initDashboard } from "./ui/dashboard.js";
+import { initResponsiveHeights } from "./layout/responsive-height.js";
+import { updateViewportHeightCSS } from "./core/utils.js";
+import { initDomeMode, setCanvas, setAudioFunctions } from "./ui/dome-mode.js";
+import { initTouchControls, setTouchMovementRef } from "./ui/touch-controls.js";
+
+let animationFrameId = null;
+let lastTime = 0;
+let lastCameraSaveTime = 0;
+const CAMERA_SAVE_INTERVAL = 2000;
+
+async function init() {
+  // Yield to browser immediately to allow FCP
+  await new Promise((resolve) => {
+    if ("scheduler" in window && "postTask" in window.scheduler) {
+      window.scheduler.postTask(() => resolve(), { priority: "user-blocking" });
+    } else if ("requestIdleCallback" in window) {
+      requestIdleCallback(() => resolve(), { timeout: 0 });
+    } else {
+      setTimeout(() => resolve(), 0);
+    }
+  });
+
+  // Load settings (async, but yield after)
+  await loadSettings();
+
+  // Yield again after settings load
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  updateViewportHeightCSS();
+
+  // Defer all non-critical initialization to avoid blocking TBT
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        initScrollIncrement();
+        initResponsiveHeights();
+        initDashboard();
+      },
+      { timeout: 100 }
+    );
+  } else {
+    setTimeout(() => {
+      initScrollIncrement();
+      initResponsiveHeights();
+      initDashboard();
+    }, 0);
+  }
+
+  // Defer non-critical visual elements
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        initGridDotsSystem();
+      },
+      { timeout: 500 }
+    );
+  } else {
+    setTimeout(() => {
+      initGridDotsSystem();
+    }, 50);
+  }
+
+  // Defer event listener setup to avoid blocking TBT
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(
+      () => {
+        setupEventListeners();
+      },
+      { timeout: 100 }
+    );
+  } else {
+    setTimeout(() => {
+      setupEventListeners();
+    }, 0);
+  }
+}
+
+// Function to load Three.js and core 3D scene (deferred for performance)
+async function loadThreeJS() {
+  if (threeJsLoaded) return;
+
+  try {
+    THREE = await import("three");
+    const sceneModule = await import("./3d/scene.js");
+    const cameraModule = await import("./3d/camera.js");
+    const lightingModule = await import("./3d/lighting.js");
+    const postModule = await import("./3d/postprocessing.js");
+
+    scene = sceneModule.scene;
+    camera = sceneModule.camera;
+    renderer = sceneModule.renderer;
+    canvas = sceneModule.canvas;
+    resetCamera = sceneModule.resetCamera;
+    setupLighting = lightingModule.setupLighting;
+    initPostProcessing = postModule.initPostProcessing;
+    updatePostProcessing = postModule.updatePostProcessing;
+    setupCameraControls = cameraModule.setupCameraControls;
+    euler = cameraModule.euler;
+
+    // Set canvas reference for dome mode
+    setCanvas(canvas);
+
+    threeJsLoaded = true;
+  } catch (error) {
+    console.error("Error loading Three.js:", error);
+  }
+}
+
+// Function to dynamically load 3D modules (code splitting)
+async function load3DModules() {
+  await loadThreeJS();
+
+  if (loadModel && connectWebcam) {
+    return; // Already loaded
+  }
+
+  try {
+    const modelModule = await import("./3d/model.js");
+    const movementModule = await import("./3d/movement.js");
+    const textureModule = await import("./3d/texture.js");
+    const screenLightingModule = await import("./3d/screen-lighting.js");
+    const pulseAudioModule = await import("./3d/pulse-audio.js");
+
+    loadModel = modelModule.loadModel;
+    updateMovement = movementModule.updateMovement;
+    updateRotation = movementModule.updateRotation;
+    fbxMeshes = modelModule.fbxMeshes;
+    glbLights = modelModule.glbLights;
+    getCurrentImageTexture = textureModule.getCurrentImageTexture;
+    getCurrentVideoTexture = textureModule.getCurrentVideoTexture;
+    connectWebcam = textureModule.connectWebcam;
+    loadImage = textureModule.loadImage;
+    loadVideo = textureModule.loadVideo;
+    disconnectWebcam = textureModule.disconnectWebcam;
+    loadDefaultScreenTexture = textureModule.loadDefaultScreenTexture;
+    updateShaderRotation = textureModule.updateShaderRotation;
+    updateScreenLighting = screenLightingModule.updateScreenLighting;
+    touchMovement = movementModule.touchMovement;
+    updateListenerPosition = pulseAudioModule.updateListenerPosition;
+    startAudio = pulseAudioModule.startAudio;
+    stopAudio = pulseAudioModule.stopAudio;
+
+    // Set references for extracted modules
+    setTouchMovementRef(touchMovement);
+    setAudioFunctions(startAudio, stopAudio);
+
+    // Make available globally for other modules
+    window.loadModel = loadModel;
+    window.connectWebcam = connectWebcam;
+    window.loadImage = loadImage;
+    window.loadVideo = loadVideo;
+    window.disconnectWebcam = disconnectWebcam;
+    window.loadDefaultScreenTexture = loadDefaultScreenTexture;
+  } catch (error) {
+    console.error("Error loading 3D modules:", error);
+  }
+}
+
+// Setup event listeners (deferred from init to reduce TBT)
+function setupEventListeners() {
+  // Create file input for uploads (reusable)
+  let fileInput = null;
+  function getFileInput() {
+    if (!fileInput) {
+      fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = "image/*,video/*";
+      fileInput.style.display = "none";
+      document.body.appendChild(fileInput);
+
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+          if (!loadImage || !loadVideo) {
+            await load3DModules();
+          }
+          if (file.type.startsWith("image/")) {
+            loadImage(file);
+          } else if (file.type.startsWith("video/")) {
+            loadVideo(file);
+          }
+        }
+        fileInput.value = "";
+      });
+    }
+    return fileInput;
+  }
+
+  // Handle links outside dome mode
+  const webcamLink = document.getElementById("connect-webcam-link");
+  if (webcamLink) {
+    webcamLink.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!connectWebcam) {
+        await load3DModules();
+      }
+      connectWebcam();
+    });
+  }
+
+  const uploadFileLink = document.getElementById("upload-file-link");
+  if (uploadFileLink) {
+    uploadFileLink.addEventListener("click", (e) => {
+      e.preventDefault();
+      getFileInput().click();
+    });
+  }
+
+  // Handle keyboard layout buttons
+  const keyboardUploadBtn = document.getElementById("keyboard-upload-btn");
+  if (keyboardUploadBtn) {
+    keyboardUploadBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      getFileInput().click();
+    });
+  }
+
+  // Reset function: reset camera, clear textures, stop webcam
+  window.resetToDefaults = async function () {
+    try {
+      if (!disconnectWebcam || !loadDefaultScreenTexture) {
+        await load3DModules();
+      }
+      disconnectWebcam();
+      loadDefaultScreenTexture();
+      resetCamera(startCameraPosition, startCameraRotation, euler);
+      Object.assign(currentCameraPosition, startCameraPosition);
+      Object.assign(currentCameraRotation, startCameraRotation);
+    } catch (error) {
+      console.error("Error during reset:", error);
+    }
+  };
+
+  // Set up reset button handler
+  let resetButtonSetup = false;
+  function setupResetButton() {
+    const resetBtn = document.getElementById("keyboard-reset-btn");
+    if (resetBtn && !resetButtonSetup) {
+      const handleReset = function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        if (window.resetToDefaults) {
+          window.resetToDefaults();
+        }
+        return false;
+      };
+
+      const newBtn = resetBtn.cloneNode(true);
+      resetBtn.parentNode.replaceChild(newBtn, resetBtn);
+      newBtn.onclick = handleReset;
+      newBtn.addEventListener("click", handleReset, { capture: true, passive: false });
+      newBtn.addEventListener("touchend", handleReset, { capture: true, passive: false });
+
+      resetButtonSetup = true;
+      return true;
+    }
+    return false;
+  }
+
+  // Set up camera button handler
+  const handleCamera = async function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+
+    if (!connectWebcam) {
+      await load3DModules();
+    }
+
+    if (confirm("Do you want to connect your webcam to the screen?")) {
+      connectWebcam();
+    }
+    return false;
+  };
+
+  window.setupCameraButton = function () {
+    const cameraBtn = document.getElementById("keyboard-camera-btn");
+    if (cameraBtn) {
+      const newBtn = cameraBtn.cloneNode(true);
+      cameraBtn.parentNode.replaceChild(newBtn, cameraBtn);
+      newBtn.onclick = handleCamera;
+      newBtn.addEventListener("click", handleCamera, { capture: true, passive: false });
+      newBtn.addEventListener("touchend", handleCamera, { capture: true, passive: false });
+      return true;
+    }
+    return false;
+  };
+
+  // Set up both buttons
+  setupResetButton();
+  setupCameraButton();
+
+  // Retry if not found
+  setTimeout(() => {
+    if (!document.getElementById("keyboard-reset-btn")) {
+      setupResetButton();
+    }
+    if (!document.getElementById("keyboard-camera-btn")) {
+      setupCameraButton();
+    }
+  }, 500);
+
+  const handleResize = () => {
+    updateViewportHeightCSS();
+  };
+  window.addEventListener("resize", handleResize);
+
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", handleResize);
+  }
+
+  window.addEventListener("orientationchange", () => {
+    setTimeout(handleResize, 100);
+  });
+
+  // Initialize touch controls (extracted module)
+  initTouchControls();
+
+  // "Enter the dome" link handler
+  const enterDomeLink = document.getElementById("enter-dome-link");
+  if (enterDomeLink) {
+    enterDomeLink.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (!startAudio) {
+        await load3DModules();
+      }
+      if (window.enterDomeModeWithAudio) {
+        window.enterDomeModeWithAudio();
+      }
+    });
+  }
+
+  // Load 3D scene after idle time (defer for better FCP/LCP)
+  const load3DScene = async () => {
+    await loadThreeJS();
+    if (setupLighting) setupLighting();
+    if (initPostProcessing) initPostProcessing();
+    if (setupCameraControls) setupCameraControls();
+    await load3DModules();
+    if (loadModel) {
+      loadModel();
+      startRenderLoop();
+    }
+  };
+
+  if ("requestIdleCallback" in window) {
+    requestIdleCallback(() => load3DScene(), { timeout: 2000 });
+  } else {
+    setTimeout(load3DScene, 500);
+  }
+}
+
+function animate(currentTime) {
+  animationFrameId = requestAnimationFrame(animate);
+
+  if (!threeJsLoaded || !camera) return;
+
+  const deltaTime = (currentTime - lastTime) / 1000;
+  lastTime = currentTime;
+
+  if (updateMovement && updateRotation) {
+    updateMovement();
+    updateRotation(deltaTime);
+  }
+
+  currentCameraPosition.x = camera.position.x;
+  currentCameraPosition.y = camera.position.y;
+  currentCameraPosition.z = camera.position.z;
+  currentCameraRotation.x = camera.rotation.x;
+  currentCameraRotation.y = camera.rotation.y;
+  currentCameraRotation.z = camera.rotation.z;
+
+  const timeSinceLastSave = currentTime - lastCameraSaveTime;
+  if (timeSinceLastSave >= CAMERA_SAVE_INTERVAL) {
+    Object.assign(startCameraPosition, currentCameraPosition);
+    Object.assign(startCameraRotation, currentCameraRotation);
+    saveSettings(fbxMeshes, glbLights);
+    lastCameraSaveTime = currentTime;
+  }
+
+  if (getCurrentImageTexture) updateTextureRotation(deltaTime);
+  if (updateScreenLighting) updateScreenLighting(currentTime);
+
+  if (updateListenerPosition && THREE && camera) {
+    const forward = new THREE.Vector3(0, 0, -1);
+    forward.applyQuaternion(camera.quaternion);
+
+    updateListenerPosition(
+      { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+      { x: forward.x, y: forward.y, z: forward.z }
+    );
+  }
+
+  updatePostProcessing();
+}
+
+function updateTextureRotation(deltaTime) {
+  if (!textureRotationSettings.enabled || !THREE || !getCurrentImageTexture) return;
+
+  const imageTexture = getCurrentImageTexture();
+  const videoTexture = getCurrentVideoTexture ? getCurrentVideoTexture() : null;
+  const texture = imageTexture || videoTexture;
+
+  if (texture) {
+    if (!texture.center || texture.center.x !== 0.5 || texture.center.y !== 0.5) {
+      if (!texture.center) {
+        texture.center = new THREE.Vector2(0.5, 0.5);
+      } else {
+        texture.center.set(0.5, 0.5);
+      }
+    }
+
+    texture.rotation -= textureRotationSettings.speed * deltaTime;
+
+    while (texture.rotation < 0) {
+      texture.rotation += Math.PI * 2;
+    }
+
+    // Also update shader rotation for pulse shader material
+    if (updateShaderRotation) {
+      updateShaderRotation(texture.rotation);
+    }
+  }
+}
+
+function startRenderLoop() {
+  lastTime = performance.now();
+  animate(lastTime);
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", () => {
+    init();
+    initDomeMode();
+  });
+} else {
+  init();
+  initDomeMode();
+}

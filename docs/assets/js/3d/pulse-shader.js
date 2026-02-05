@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { updatePulseAudio, updateTickIntensity, getTickIntensity, getActivePulseIndex } from "./pulse-audio.js";
 
 /**
  * WebGL Shader-based pulse animation
@@ -28,15 +29,31 @@ uniform vec3 uPulsePositions[${MAX_PULSES}];  // xy = position (0-1 UV), z = siz
 uniform float uTime;
 uniform int uPulseCount;
 uniform float uPulseIntensity;
+uniform float uRotation;  // Texture rotation in radians
+uniform float uTickIntensity;  // 0-1, for pulse pulsation on ticks
+uniform int uActivePulse;  // Which pulse reacts to tick (-1 = none)
 
 varying vec2 vUv;
+
+// Rotate UV around center (0.5, 0.5)
+vec2 rotateUV(vec2 uv, float angle) {
+  vec2 center = vec2(0.5, 0.5);
+  vec2 centered = uv - center;
+  float s = sin(angle);
+  float c = cos(angle);
+  vec2 rotated = vec2(centered.x * c - centered.y * s, centered.x * s + centered.y * c);
+  return rotated + center;
+}
 
 void main() {
   // Flip UV to match texture configuration (flipY and repeat.y = -1)
   vec2 flippedUv = vec2(vUv.x, 1.0 - vUv.y);
 
-  // Sample base texture
-  vec4 baseColor = texture2D(uBaseTexture, flippedUv);
+  // Apply rotation
+  vec2 rotatedUv = rotateUV(flippedUv, uRotation);
+
+  // Sample base texture with rotated UVs
+  vec4 baseColor = texture2D(uBaseTexture, rotatedUv);
 
   // Add pulse glow
   float pulseGlow = 0.0;
@@ -47,16 +64,25 @@ void main() {
     vec2 pulsePos = uPulsePositions[i].xy;
     float pulseSize = uPulsePositions[i].z;
 
+    // Apply pulsation to active pulse on ticks
+    float pulsation = 1.0;
+    if (i == uActivePulse) {
+      pulsation = 1.0 + uTickIntensity * 2.0;  // Up to 3x size on tick
+    }
+    float adjustedSize = pulseSize * pulsation;
+
     // Distance from pulse center (use flipped UV to match texture)
     float dist = distance(flippedUv, pulsePos);
 
-    // Soft glow falloff
-    float glow = smoothstep(pulseSize * 2.0, 0.0, dist);
+    // Soft glow falloff - larger on tick
+    float glow = smoothstep(adjustedSize * 2.0, 0.0, dist);
 
     // Core intensity
-    float core = smoothstep(pulseSize * 0.5, 0.0, dist);
+    float core = smoothstep(adjustedSize * 0.5, 0.0, dist);
 
-    pulseGlow += glow * 0.5 + core * 0.8;
+    // Boost intensity for active pulse
+    float intensityBoost = (i == uActivePulse) ? (1.0 + uTickIntensity * 0.5) : 1.0;
+    pulseGlow += (glow * 0.5 + core * 0.8) * intensityBoost;
   }
 
   // Blend pulse glow with base
@@ -81,10 +107,22 @@ export function createPulseUniforms(baseTexture) {
     uPulsePositions: { value: positions },
     uTime: { value: 0 },
     uPulseCount: { value: 0 },
-    uPulseIntensity: { value: 1.0 }
+    uPulseIntensity: { value: 1.0 },
+    uRotation: { value: 0 },  // Texture rotation in radians
+    uTickIntensity: { value: 0 },  // Tick pulsation intensity
+    uActivePulse: { value: -1 }  // Which pulse is pulsating
   };
 
   return pulseUniforms;
+}
+
+/**
+ * Update texture rotation for shader
+ */
+export function updateShaderRotation(rotation) {
+  if (pulseUniforms && pulseUniforms.uRotation) {
+    pulseUniforms.uRotation.value = rotation;
+  }
 }
 
 /**
@@ -194,7 +232,14 @@ export function startPulseShaderAnimation(settings = {}) {
     // Update time uniform
     if (pulseUniforms) {
       pulseUniforms.uTime.value = currentTime * 0.001;
+      // Update tick pulsation uniforms
+      pulseUniforms.uTickIntensity.value = getTickIntensity();
+      pulseUniforms.uActivePulse.value = getActivePulseIndex();
     }
+
+    // Update audio (ticks and spatial positioning)
+    updatePulseAudio(pulses, { circleStep: 1 / numCircles });
+    updateTickIntensity();
 
     animationId = requestAnimationFrame(animate);
   }

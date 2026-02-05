@@ -69,17 +69,19 @@ const DRONE_FREQUENCIES = [
   82.41, // E2
 ];
 
-// Tick frequencies - higher pitched for rhythmic elements
+// Tick frequencies - pentatonic scale for melodic feel
 const TICK_FREQUENCIES = [
-  440,   // A4
-  523.25,// C5
-  659.25,// E5
-  783.99,// G5
+  392.00, // G4
+  440.00, // A4
+  493.88, // B4
+  587.33, // D5
+  659.25, // E5
+  783.99, // G5
 ];
 
 // Audio settings (exported for GUI control)
 export const audioSettings = {
-  enabled: false,
+  enabled: true,
   masterVolume: 0.5,
   reverbWet: 0.5,
   spatialSpread: 15, // How spread out the sounds are in 3D space
@@ -170,18 +172,18 @@ export function createPulseSynths(count) {
     let synth;
 
     if (isTick) {
-      // Tick synth - short percussive sounds
+      // Tick synth - melodic bell-like tones
       synth = new Tone.Synth({
         oscillator: {
-          type: "triangle",
+          type: "sine",
         },
         envelope: {
-          attack: 0.001,
-          decay: 0.15,
-          sustain: 0,
-          release: 0.1,
+          attack: 0.01,
+          decay: 0.4,
+          sustain: 0.1,
+          release: 0.8,
         },
-        volume: -6, // Louder
+        volume: -6, // Gentle melodic ticks
       }).connect(panner);
     } else {
       // Drone synth - bass atmospheric sounds
@@ -195,7 +197,7 @@ export function createPulseSynths(count) {
           sustain: 0.7,
           release: 2,
         },
-        volume: 0, // Louder for bass presence
+        volume: -24, // Very subtle background drone
       }).connect(panner);
     }
 
@@ -326,7 +328,8 @@ export function updatePulseAudio(pulses, params) {
       if (currentTime - s.lastTickTime >= tickInterval) {
         // Trigger a high-pitched tick
         try {
-          s.synth.triggerAttackRelease(s.frequency, "64n");
+          s.synth.triggerAttackRelease(s.frequency, "8n");
+          console.log(`Tick ${i} at ${s.frequency}Hz`);
           // Trigger scramble effect in sync with every tick
           if (triggerScrambleBurst) {
             triggerScrambleBurst();

@@ -1,1 +1,190 @@
-import*as THREE from"three";import{canvas,camera}from"./scene.js";import{cameraSettings}from"../core/settings.js";import{touchMovement}from"./movement.js";export let isPointerLocked=!1;export let isTouching=!1;export let euler=new THREE.Euler(-2.85,0,3.121154018741333,"YXZ");export let modelLoaded=!1;export let touchStartX=0;export let touchStartY=0;export let keys={};export let qeRotationSpeed=0;export function setModelLoaded(e){modelLoaded=e}export function setQeRotationSpeed(e){qeRotationSpeed=e}export function setupCameraControls(){let e=!1,t=0,n=0;canvas.addEventListener("mousedown",o=>{modelLoaded&&(e=!0,t=o.clientX,n=o.clientY,canvas.style.cursor="grabbing")}),canvas.addEventListener("mousemove",o=>{if(!e||!modelLoaded)return;const a=o.clientX-t,s=o.clientY-n;euler.y-=a*cameraSettings.sensitivity,euler.x-=s*cameraSettings.sensitivity,camera.quaternion.setFromEuler(euler),t=o.clientX,n=o.clientY}),canvas.addEventListener("mouseup",()=>{e=!1,canvas.style.cursor="default"}),canvas.addEventListener("mouseleave",()=>{e=!1,canvas.style.cursor="default"});let o=null;function a(e,t){const n=e.toLowerCase();["q","w","a","s","d","e"].includes(n)&&document.querySelectorAll(`[data-key="${n}"]`).forEach(e=>{t?e.classList.add("active"):e.classList.remove("active")})}canvas.addEventListener("touchstart",e=>{if(modelLoaded&&(e.preventDefault(),1===e.touches.length&&null===o)){const t=e.touches[0];o=t.identifier,touchStartX=t.clientX,touchStartY=t.clientY,isTouching=!0}},{passive:!1}),canvas.addEventListener("touchmove",e=>{if(modelLoaded&&(e.preventDefault(),null!==o&&1===e.touches.length)){const t=Array.from(e.touches).find(e=>e.identifier===o);if(t){const e=t.clientX-touchStartX,n=t.clientY-touchStartY;euler.y-=e*cameraSettings.sensitivity,euler.x-=n*cameraSettings.sensitivity,camera.quaternion.setFromEuler(euler),touchStartX=t.clientX,touchStartY=t.clientY}}},{passive:!1}),canvas.addEventListener("touchend",e=>{e.preventDefault();for(let t=0;t<e.changedTouches.length;t++)e.changedTouches[t].identifier===o&&(o=null,isTouching=!1)},{passive:!1}),canvas.addEventListener("touchcancel",e=>{e.preventDefault();for(let t=0;t<e.changedTouches.length;t++)e.changedTouches[t].identifier===o&&(o=null,isTouching=!1)},{passive:!1}),window.addEventListener("keydown",e=>{const t=e.key.toLowerCase();keys[t]=!0,a(e.key,!0),"c"===e.key||e.key,"q"!==e.key&&"Q"!==e.key||setQeRotationSpeed(1.5),"e"!==e.key&&"E"!==e.key||setQeRotationSpeed(-1.5)}),window.addEventListener("keyup",e=>{const t=e.key.toLowerCase();keys[t]=!1,a(e.key,!1),"q"!==e.key&&"Q"!==e.key&&"e"!==e.key&&"E"!==e.key||(qeRotationSpeed=0)})}
+import * as THREE from "three";
+import { canvas, camera } from "./scene.js";
+import { cameraSettings } from "../core/settings.js";
+import { touchMovement } from "./movement.js";
+
+// State variables
+export let isPointerLocked = false;
+export let isTouching = false;
+// Initialize euler with default rotation to match camera initialization
+export let euler = new THREE.Euler(-2.85, 0, 3.121154018741333, "YXZ");
+export let modelLoaded = false;
+export let touchStartX = 0;
+export let touchStartY = 0;
+export let keys = {};
+export let qeRotationSpeed = 0;
+
+export function setModelLoaded(value) {
+  modelLoaded = value;
+}
+
+export function setQeRotationSpeed(value) {
+  qeRotationSpeed = value;
+}
+
+export function setupCameraControls() {
+  // Click and drag camera rotation
+  let isDragging = false;
+  let lastMouseX = 0;
+  let lastMouseY = 0;
+
+  canvas.addEventListener("mousedown", (event) => {
+    if (!modelLoaded) return;
+    isDragging = true;
+    lastMouseX = event.clientX;
+    lastMouseY = event.clientY;
+    canvas.style.cursor = "grabbing";
+  });
+
+  canvas.addEventListener("mousemove", (event) => {
+    if (!isDragging || !modelLoaded) return;
+    
+    const deltaX = event.clientX - lastMouseX;
+    const deltaY = event.clientY - lastMouseY;
+
+    euler.y -= deltaX * cameraSettings.sensitivity;
+    euler.x -= deltaY * cameraSettings.sensitivity;
+    camera.quaternion.setFromEuler(euler);
+
+    lastMouseX = event.clientX;
+    lastMouseY = event.clientY;
+  });
+
+  canvas.addEventListener("mouseup", () => {
+    isDragging = false;
+    canvas.style.cursor = "default";
+  });
+
+  canvas.addEventListener("mouseleave", () => {
+    isDragging = false;
+    canvas.style.cursor = "default";
+  });
+
+  // Touch controls for mobile - drag to rotate camera
+  let cameraTouchId = null;
+
+  canvas.addEventListener(
+    "touchstart",
+    (event) => {
+      if (!modelLoaded) return;
+      event.preventDefault();
+      
+      // Single touch = camera rotation
+      if (event.touches.length === 1 && cameraTouchId === null) {
+        const touch = event.touches[0];
+        cameraTouchId = touch.identifier;
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        isTouching = true;
+      }
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    "touchmove",
+    (event) => {
+      if (!modelLoaded) return;
+      event.preventDefault();
+      
+      // Camera rotation with single touch drag
+      if (cameraTouchId !== null && event.touches.length === 1) {
+        const touch = Array.from(event.touches).find(t => t.identifier === cameraTouchId);
+        if (touch) {
+          const deltaX = touch.clientX - touchStartX;
+          const deltaY = touch.clientY - touchStartY;
+
+          euler.y -= deltaX * cameraSettings.sensitivity;
+          euler.x -= deltaY * cameraSettings.sensitivity;
+          camera.quaternion.setFromEuler(euler);
+
+          touchStartX = touch.clientX;
+          touchStartY = touch.clientY;
+        }
+      }
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    "touchend",
+    (event) => {
+      event.preventDefault();
+      
+      // Check which touch ended
+      for (let i = 0; i < event.changedTouches.length; i++) {
+        const touch = event.changedTouches[i];
+        if (touch.identifier === cameraTouchId) {
+          cameraTouchId = null;
+          isTouching = false;
+        }
+      }
+    },
+    { passive: false }
+  );
+
+  canvas.addEventListener(
+    "touchcancel",
+    (event) => {
+      event.preventDefault();
+      
+      // Reset all touches
+      for (let i = 0; i < event.changedTouches.length; i++) {
+        const touch = event.changedTouches[i];
+        if (touch.identifier === cameraTouchId) {
+          cameraTouchId = null;
+          isTouching = false;
+        }
+      }
+    },
+    { passive: false }
+  );
+
+  // Helper function to update button visual state
+  function updateButtonState(key, isActive) {
+    const keyLower = key.toLowerCase();
+    if (["q", "w", "a", "s", "d", "e"].includes(keyLower)) {
+      const buttons = document.querySelectorAll(`[data-key="${keyLower}"]`);
+      buttons.forEach((btn) => {
+        if (isActive) {
+          btn.classList.add("active");
+        } else {
+          btn.classList.remove("active");
+        }
+      });
+    }
+  }
+
+  // Keyboard controls
+  window.addEventListener("keydown", (e) => {
+    const key = e.key.toLowerCase();
+    keys[key] = true;
+    
+    // Update button visual state
+    updateButtonState(e.key, true);
+    
+    if (e.key === "c" || e.key === "C") {
+      console.log("Camera Position:", camera.position);
+      console.log("Camera Rotation:", camera.rotation);
+    }
+    // Q and E for camera rotation
+    if (e.key === "q" || e.key === "Q") {
+      setQeRotationSpeed(1.5); // Rotate right
+    }
+    if (e.key === "e" || e.key === "E") {
+      setQeRotationSpeed(-1.5); // Rotate left
+    }
+  });
+
+  window.addEventListener("keyup", (e) => {
+    const key = e.key.toLowerCase();
+    keys[key] = false;
+    
+    // Update button visual state
+    updateButtonState(e.key, false);
+    
+    if (e.key === "q" || e.key === "Q" || e.key === "e" || e.key === "E") {
+      qeRotationSpeed = 0;
+    }
+  });
+}

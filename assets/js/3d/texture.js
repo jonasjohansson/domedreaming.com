@@ -6,7 +6,8 @@ import { isMobile } from "../core/utils.js";
 import { getBokehPass } from "./postprocessing.js";
 import { camera } from "./scene.js";
 import { generatePolarGridTexture, polarGridSettings, startPulseAnimation, stopPulseAnimation, reinitializePulses, preloadCellImages, triggerScrambleBurst } from "./polar-grid-texture.js";
-import { createPulseShaderMaterial, startPulseShaderAnimation, stopPulseShaderAnimation, updateBaseTexture } from "./pulse-shader.js";
+import { createPulseShaderMaterial, startPulseShaderAnimation, stopPulseShaderAnimation, updateBaseTexture, updateShaderRotation } from "./pulse-shader.js";
+export { updateShaderRotation };
 import { audioSettings, startAudio, stopAudio, setMasterVolume, setReverbWet, setSpatialSpread, initAudio, setScrambleTrigger } from "./pulse-audio.js";
 import { lightingSettings, setAmbientIntensity, setAmbientColor, setFogEnabled, setFogColor, setFogNear, setFogFar, setToneMapping, setExposure, setDirectLightEnabled, setDirectIntensity, setDirectColor, getToneMappingOptions, setGradientStart, setGradientEnd, setSection1FadeStart, setSection2FadeEnd } from "./lighting.js";
 
@@ -144,8 +145,17 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
         pulseSpeed: polarGridSettings.pulseSpeed,
         pulseIntensity: 1.0
       });
+
+      // Also start canvas animation for text effects (shader only handles pulse glow)
+      if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled) {
+        startPulseAnimation(texture);
+      }
     } else {
       applyTextureToScreen(texture, screenObject);
+      // Start canvas animation for text effects even without pulses
+      if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled) {
+        startPulseAnimation(texture);
+      }
     }
 
     currentImageTexture = texture;
@@ -478,6 +488,18 @@ export function setupPolarGridGUI() {
     .name("3D Spread")
     .onChange((v) => setSpatialSpread(v));
   audioFolder.close();
+
+  // Auto-start audio if enabled by default (will work after user interaction)
+  if (audioSettings.enabled) {
+    // Delay slightly to ensure page has had user interaction
+    setTimeout(async () => {
+      try {
+        await startAudio();
+      } catch (e) {
+        console.log("Audio auto-start requires user interaction");
+      }
+    }, 100);
+  }
 
   // Colors folder - editable colors that update 3D scene and texture
   const colorsFolder = polarGridGUI.addFolder("Colors");
