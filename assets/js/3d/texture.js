@@ -233,6 +233,26 @@ export function setupPolarGridGUI() {
     }
   });
 
+  // ============ HELP & CREDITS ============
+  const guiActions = {
+    help: () => {
+      alert("Dome Dreaming GUI Controls\n\n" +
+        "Toggle GUI: Cmd/Ctrl + G\n" +
+        "Navigate: Click and drag to look around\n" +
+        "Move: Arrow keys or WASD\n\n" +
+        "Adjust settings in the folders below.");
+    },
+    credits: () => {
+      alert("Dome Dreaming\n\n" +
+        "Created by Jonas Johansson\n" +
+        "Built with Three.js\n" +
+        "AI assistance by Claude (Anthropic)\n\n" +
+        "domedreaming.com");
+    }
+  };
+  polarGridGUI.add(guiActions, "help").name("📖 HELP");
+  polarGridGUI.add(guiActions, "credits").name("✨ CREDITS");
+
   // ============ TYPOGRAPHY GROUP ============
   const typographyFolder = polarGridGUI.addFolder("Typography");
 
