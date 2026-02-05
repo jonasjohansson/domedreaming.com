@@ -15,8 +15,11 @@ uniform float uPulseIntensity;
 varying vec2 vUv;
 
 void main() {
+  // Flip UV to match texture configuration (flipY and repeat.y = -1)
+  vec2 flippedUv = vec2(vUv.x, 1.0 - vUv.y);
+
   // Sample base texture
-  vec4 baseColor = texture2D(uBaseTexture, vUv);
+  vec4 baseColor = texture2D(uBaseTexture, flippedUv);
 
   // Add pulse glow
   float pulseGlow = 0.0;
