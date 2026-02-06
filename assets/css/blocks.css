@@ -375,13 +375,6 @@ p.small,
   .block.center {
     gap: var(--spacing-md);
   }
-
-  .page-content p.small,
-  p.small,
-  .small {
-    font-size: calc(var(--font-size-base) * 0.6) !important;
-    line-height: var(--line-height-tight);
-  }
 }
 
 /* ==========================================================================
