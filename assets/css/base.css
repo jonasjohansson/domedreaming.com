@@ -66,8 +66,8 @@
   --dot-size: 1px;
 }
 
-/* Mobile devices */
-@media (max-width: 768px), (max-width: 1024px) and (max-height: 768px) {
+/* Small height (600px and below) - smallest fonts */
+@media (max-height: 600px) {
   :root {
     --font-size-base: 14px;
     --font-size-small: 12px;
@@ -75,8 +75,10 @@
   }
 }
 
-/* Large screens */
-@media (min-width: 1200px) {
+/* Medium height (601px - 999px) uses default fonts (20px set in :root) */
+
+/* Large height (1000px and above) - largest fonts */
+@media (min-height: 1000px) {
   :root {
     --font-size-base: 22px;
     --font-size-small: 20px;
