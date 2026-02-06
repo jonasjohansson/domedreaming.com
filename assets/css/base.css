@@ -91,8 +91,19 @@
 
 /* Medium height (601px - 999px) uses default fonts (20px set in :root) */
 
-/* Narrow width (less than 800px) - use smaller fonts */
-@media (max-width: 799px) {
+/* Very narrow width (less than 700px) - smallest fonts */
+@media (max-width: 699px) {
+  :root {
+    --font-size-base: 14px;
+    --font-size-small: 12px;
+    --font-size-xs: 10px;
+    --font-size-lg: 18px;
+    --font-size-xl: 22px;
+  }
+}
+
+/* Narrow width (700px - 799px) - use smaller fonts */
+@media (min-width: 700px) and (max-width: 799px) {
   :root {
     --font-size-base: 16px;
     --font-size-small: 14px;
