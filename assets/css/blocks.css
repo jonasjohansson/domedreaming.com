@@ -97,7 +97,7 @@
 
 /* Style alt text when images fail to load */
 img {
-  font-size: calc(var(--font-size-base) * 0.5);
+  font-size: calc(var(--font-size-base) * 0.4);
   color: var(--color-text);
 }
 
@@ -344,7 +344,7 @@ p.large,
 .page-content p.small,
 p.small,
 .small {
-  font-size: calc(var(--font-size-base) * 0.5) !important;
+  font-size: calc(var(--font-size-base) * 0.4) !important;
   line-height: var(--line-height-normal);
   letter-spacing: 1px;
 }
