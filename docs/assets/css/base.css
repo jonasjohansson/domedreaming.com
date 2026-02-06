@@ -67,7 +67,12 @@
   --dot-size: 1px;
 }
 
-/* Extra small height (500px and below) - smallest fonts */
+/* ==========================================================================
+   RESPONSIVE FONT SIZING
+   Height is primary constraint (prevents overlap), width scales up when allowed
+   ========================================================================== */
+
+/* --- VERY SHORT HEIGHT (≤500px) - smallest fonts regardless of width --- */
 @media (max-height: 500px) {
   :root {
     --font-size-base: 12px;
@@ -78,7 +83,7 @@
   }
 }
 
-/* Small height (501px - 600px) - small fonts */
+/* --- SHORT HEIGHT (501-600px) - small fonts regardless of width --- */
 @media (min-height: 501px) and (max-height: 600px) {
   :root {
     --font-size-base: 14px;
@@ -89,21 +94,34 @@
   }
 }
 
-/* Medium height (601px - 999px) uses default fonts (20px set in :root) */
+/* --- MEDIUM HEIGHT (601-699px) - default 20px, reduced for very narrow --- */
 
-/* Very narrow width (less than 700px) - smallest fonts */
-@media (max-width: 699px) {
+/* Very narrow (<500px) with medium height - slightly reduce */
+@media (max-width: 499px) and (min-height: 601px) and (max-height: 699px) {
   :root {
-    --font-size-base: 14px;
-    --font-size-small: 12px;
+    --font-size-base: 16px;
+    --font-size-small: 14px;
     --font-size-xs: 10px;
-    --font-size-lg: 18px;
-    --font-size-xl: 22px;
+    --font-size-lg: 20px;
+    --font-size-xl: 24px;
   }
 }
 
-/* Narrow but tall (mobile portrait like iPhone) - slightly larger fonts */
-@media (max-width: 500px) and (min-height: 800px) {
+/* --- TALL HEIGHT (700px+) - can use larger fonts based on width --- */
+
+/* Narrow (<500px) + tall (700-799px) */
+@media (max-width: 499px) and (min-height: 700px) and (max-height: 799px) {
+  :root {
+    --font-size-base: 16px;
+    --font-size-small: 14px;
+    --font-size-xs: 10px;
+    --font-size-lg: 20px;
+    --font-size-xl: 24px;
+  }
+}
+
+/* Narrow (<500px) + very tall (800px+) - iPhone portrait */
+@media (max-width: 499px) and (min-height: 800px) {
   :root {
     --font-size-base: 18px;
     --font-size-small: 16px;
@@ -113,8 +131,19 @@
   }
 }
 
-/* Narrow width (700px - 799px) - use smaller fonts */
-@media (min-width: 700px) and (max-width: 799px) {
+/* Medium-narrow (500-699px) + tall (700px+) - default fonts */
+@media (min-width: 500px) and (max-width: 699px) and (min-height: 700px) {
+  :root {
+    --font-size-base: 20px;
+    --font-size-small: 18px;
+    --font-size-xs: 14px;
+    --font-size-lg: 24px;
+    --font-size-xl: 30px;
+  }
+}
+
+/* Medium width (700-799px) + short-medium height (<700px) - slightly reduce */
+@media (min-width: 700px) and (max-width: 799px) and (max-height: 699px) {
   :root {
     --font-size-base: 16px;
     --font-size-small: 14px;
@@ -124,7 +153,7 @@
   }
 }
 
-/* Medium height + medium width - slightly larger fonts */
+/* Medium width (600px+) + tall (700px+) */
 @media (min-height: 700px) and (min-width: 600px) {
   :root {
     --font-size-base: 22px;
@@ -135,7 +164,7 @@
   }
 }
 
-/* Medium height + wide width - larger fonts */
+/* Wide (1200px+) + tall (700px+) */
 @media (min-height: 700px) and (min-width: 1200px) {
   :root {
     --font-size-base: 24px;
@@ -146,7 +175,7 @@
   }
 }
 
-/* Large height (1000px and above) - larger fonts */
+/* --- VERY TALL HEIGHT (1000px+) - largest fonts --- */
 @media (min-height: 1000px) {
   :root {
     --font-size-base: 28px;
@@ -157,7 +186,7 @@
   }
 }
 
-/* Large height + wide width - largest fonts */
+/* Very tall (1000px+) + wide (1400px+) - largest */
 @media (min-height: 1000px) and (min-width: 1400px) {
   :root {
     --font-size-base: 32px;
