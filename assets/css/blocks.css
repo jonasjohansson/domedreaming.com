@@ -290,7 +290,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
 
 .block.logos img,
 .logos img {
-  height: 2rem;
+  height: calc(var(--font-size-base) * 1.2);
   width: auto;
   object-fit: contain;
   border-radius: 0;
@@ -371,10 +371,6 @@ p.small,
     gap: 0.5rem;
   }
 
-  .block.logos img,
-  .logos img {
-    height: 1.5rem;
-  }
 
   .block.center {
     gap: var(--spacing-md);
