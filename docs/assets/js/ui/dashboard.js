@@ -1,1 +1,49 @@
-function handleImageClick(e){document.querySelectorAll(".dashboard-block.active, .page-content .block.active").forEach(e=>{e.classList.remove("active")}),e.classList.add("active")}export function initDashboard(){"requestIdleCallback"in window?requestIdleCallback(()=>{document.querySelectorAll(".dashboard-block").forEach(e=>{e.addEventListener("click",()=>{handleImageClick(e)})}),document.querySelectorAll(".page-content .block img").forEach(e=>{const c=e.closest(".block");c&&c.addEventListener("click",()=>{handleImageClick(c)})})},{timeout:200}):setTimeout(()=>{document.querySelectorAll(".dashboard-block").forEach(e=>{e.addEventListener("click",()=>{handleImageClick(e)})}),document.querySelectorAll(".page-content .block img").forEach(e=>{const c=e.closest(".block");c&&c.addEventListener("click",()=>{handleImageClick(c)})})},50)}
+function handleImageClick(block) {
+  document.querySelectorAll(".dashboard-block.active, .page-content .block.active").forEach((el) => {
+    el.classList.remove("active");
+  });
+  block.classList.add("active");
+}
+
+export function initDashboard() {
+  // Defer dashboard initialization to avoid blocking TBT
+  if ('requestIdleCallback' in window) {
+    requestIdleCallback(() => {
+      const blocks = document.querySelectorAll(".dashboard-block");
+      blocks.forEach((block) => {
+        block.addEventListener("click", () => {
+          handleImageClick(block);
+        });
+      });
+
+      const pageContentImages = document.querySelectorAll(".page-content .block img");
+      pageContentImages.forEach((img) => {
+        const block = img.closest(".block");
+        if (block) {
+          block.addEventListener("click", () => {
+            handleImageClick(block);
+          });
+        }
+      });
+    }, { timeout: 200 });
+  } else {
+    setTimeout(() => {
+      const blocks = document.querySelectorAll(".dashboard-block");
+      blocks.forEach((block) => {
+        block.addEventListener("click", () => {
+          handleImageClick(block);
+        });
+      });
+
+      const pageContentImages = document.querySelectorAll(".page-content .block img");
+      pageContentImages.forEach((img) => {
+        const block = img.closest(".block");
+        if (block) {
+          block.addEventListener("click", () => {
+            handleImageClick(block);
+          });
+        }
+      });
+    }, 50);
+  }
+}

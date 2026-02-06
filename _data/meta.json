@@ -1,12 +1,12 @@
 {
-  "title": "Dome Dreaming",
-  "description": "Dome Dreaming is an interdisciplinary festival divided between Stockholm and Malmö, featuring fulldome visuals and ambisonic sound, showcasing narrative films, live performances, and interactive installations.",
+  "title": "Dome Dreaming Fulldome Film Festival",
+  "description": "Fulldome film festival in Stockholm and Malmö featuring immersive visuals, ambisonic sound, narrative films, and live performances.",
   "url": "https://domedreaming.com/",
   "og": {
     "type": "website",
     "url": "https://domedreaming.com/",
-    "title": "Dome Dreaming",
-    "description": "Dome Dreaming is an interdisciplinary festival divided between Stockholm and Malmö, featuring fulldome visuals and ambisonic sound, showcasing narrative films, live performances, and interactive installations.",
+    "title": "Dome Dreaming Fulldome Film Festival",
+    "description": "Fulldome film festival in Stockholm and Malmö featuring immersive visuals, ambisonic sound, narrative films, and live performances.",
     "image": "https://domedreaming.com/assets/img/jpg/background.jpg?v=2",
     "imageWidth": "1200",
     "imageHeight": "630",
@@ -15,10 +15,9 @@
   },
   "twitter": {
     "card": "summary_large_image",
-    "title": "Dome Dreaming",
-    "description": "Dome Dreaming is an interdisciplinary festival divided between Stockholm and Malmö, featuring fulldome visuals and ambisonic sound, showcasing narrative films, live performances, and interactive installations.",
+    "title": "Dome Dreaming Fulldome Film Festival",
+    "description": "Fulldome film festival in Stockholm and Malmö featuring immersive visuals, ambisonic sound, narrative films, and live performances.",
     "image": "https://domedreaming.com/assets/img/jpg/background.jpg?v=2"
   },
   "themeColor": "#463434"
 }
-

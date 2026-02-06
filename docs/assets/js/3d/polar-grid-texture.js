@@ -62,7 +62,7 @@ export const polarGridSettings = {
   dotSize: 4,
   // Pulse animation settings
   pulsesEnabled: true,
-  pulseCount: 8,
+  pulseCount: 6,
   pulseSpeed: 0.5,
   pulseSize: 12,
   pulseGlow: false,

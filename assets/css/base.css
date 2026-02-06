@@ -4,7 +4,7 @@
   --grid-rows: 16;
   --grid-gap: 0;
   --col-width: calc(100vw / var(--grid-columns));
-  --actual-vh: 100vh;
+  --actual-vh: 100dvh; /* Dynamic viewport height - excludes iOS address bar */
   --row-height: calc(var(--actual-vh) / var(--grid-rows));
   --quarter-row-height: calc(var(--row-height) / 4);
 

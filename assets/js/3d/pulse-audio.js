@@ -61,20 +61,18 @@ let synths = [];
 let masterGain = null;
 let reverb = null;
 
-// Drone frequencies - audible bass for ambient drones
+// Drone frequencies - mid-range for laptop speaker compatibility
 const DRONE_FREQUENCIES = [
-  55,    // A1
-  65.41, // C2
-  73.42, // D2
-  82.41, // E2
+  220,   // A3
+  261.63,// C4
+  293.66,// D4
+  329.63,// E4
 ];
 
-// Tick frequencies - pentatonic scale for melodic feel
+// Tick frequencies - higher pitched for rhythmic elements
 const TICK_FREQUENCIES = [
-  392.00, // G4
-  440.00, // A4
-  493.88, // B4
-  587.33, // D5
+  440,    // A4
+  523.25, // C5
   659.25, // E5
   783.99, // G5
 ];
@@ -172,33 +170,43 @@ export function createPulseSynths(count) {
     let synth;
 
     if (isTick) {
-      // Tick synth - melodic bell-like tones
+      // Tick synth - short percussive sounds
       synth = new Tone.Synth({
         oscillator: {
           type: "sine",
         },
         envelope: {
-          attack: 0.01,
-          decay: 0.4,
-          sustain: 0.1,
-          release: 0.8,
+          attack: 0.005,
+          decay: 0.2,
+          sustain: 0,
+          release: 0.1,
         },
-        volume: -6, // Gentle melodic ticks
+        volume: 0,
       }).connect(panner);
     } else {
-      // Drone synth - bass atmospheric sounds
+      // Drone synth - soft evolving pads, laptop-speaker friendly
+      // LFO for slow volume swells
+      const tremolo = new Tone.Tremolo({
+        frequency: 0.08 + (i * 0.02), // Very slow tremolo, different per drone
+        depth: 0.4,
+        spread: 0,
+      }).connect(panner).start();
+
       synth = new Tone.Synth({
         oscillator: {
-          type: "triangle", // Triangle has bass with some harmonics for audibility
+          type: "sine", // Clean sine for laptop speakers
         },
         envelope: {
-          attack: 2,
-          decay: 0.5,
-          sustain: 0.7,
-          release: 2,
+          attack: 4,
+          decay: 2,
+          sustain: 0.5,
+          release: 4,
         },
-        volume: -24, // Very subtle background drone
-      }).connect(panner);
+        volume: -24,
+      }).connect(tremolo);
+
+      // Store for cleanup
+      synth._tremolo = tremolo;
     }
 
     synths.push({

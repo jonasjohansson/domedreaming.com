@@ -28,12 +28,11 @@ export function getActualViewportHeight() {
 /**
  * Update the CSS custom property for actual viewport height
  * This should be called on resize and orientation change
- * Note: --actual-vh is now set via CSS (100vh default), not inline styles
+ * Fixes iOS Safari address bar issue where 100vh includes hidden space
  */
 export function updateViewportHeightCSS() {
-  // --actual-vh is now set via CSS, not inline styles
-  // const actualHeight = getActualViewportHeight();
-  // document.documentElement.style.setProperty("--actual-vh", `${actualHeight}px`);
+  const actualHeight = getActualViewportHeight();
+  document.documentElement.style.setProperty("--actual-vh", `${actualHeight}px`);
 }
 
 /**
