@@ -3,7 +3,7 @@ import { scene, renderer } from "./scene.js";
 
 // Lighting settings - exported for GUI control
 export const lightingSettings = {
-  ambientIntensity: 0.5,
+  ambientIntensity: 1.0,
   ambientColor: "#ffffff",
   fogEnabled: false,
   fogColor: "#1a1a1a",
@@ -11,10 +11,10 @@ export const lightingSettings = {
   fogFar: 60,
   // Renderer/exposure settings
   toneMapping: "Linear",
-  exposure: 1.0,
+  exposure: 1.5,
   // Direct light settings
   directLightEnabled: true,
-  directIntensity: 1.0,
+  directIntensity: 1.5,
   directColor: "#ffffff",
   // Section gradient settings
   gradientStart: 20,
