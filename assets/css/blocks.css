@@ -290,7 +290,7 @@ main > section.page-section:first-of-type .grid-overlay .block p {
 
 .block.logos img,
 .logos img {
-  height: calc(var(--font-size-base) * 1.2);
+  height: 2rem;
   width: auto;
   object-fit: contain;
   border-radius: 0;
