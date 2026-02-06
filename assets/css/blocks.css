@@ -291,8 +291,8 @@ main > section.page-section:first-of-type .grid-overlay .block p {
 
 .block.logos img,
 .logos img {
-  max-height: 2rem;
-  max-width: 5rem;
+  max-height: var(--row-height);
+  max-width: calc(var(--row-height) * 2.5);
   width: auto;
   height: auto;
   object-fit: contain;
