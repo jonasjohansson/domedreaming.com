@@ -98,7 +98,7 @@ async function loadTone() {
 
   return new Promise((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = "https://cdn.jsdelivr.net/npm/tone@14.7.77/build/Tone.js";
+    script.src = "assets/js/libs/Tone.js";
     script.onload = () => {
       Tone = window.Tone;
       console.log("Tone.js loaded for spatial audio");
