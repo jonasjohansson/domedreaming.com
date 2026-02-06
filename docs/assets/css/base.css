@@ -102,6 +102,17 @@
   }
 }
 
+/* Narrow but tall (mobile portrait like iPhone) - slightly larger fonts */
+@media (max-width: 500px) and (min-height: 800px) {
+  :root {
+    --font-size-base: 18px;
+    --font-size-small: 16px;
+    --font-size-xs: 12px;
+    --font-size-lg: 22px;
+    --font-size-xl: 28px;
+  }
+}
+
 /* Narrow width (700px - 799px) - use smaller fonts */
 @media (min-width: 700px) and (max-width: 799px) {
   :root {
