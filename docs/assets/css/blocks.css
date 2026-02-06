@@ -271,8 +271,9 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   border-radius: 0;
 }
 
-/* Logos container block */
-.block.logos {
+/* Logos container */
+.block.logos,
+.logos {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -280,13 +281,15 @@ main > section.page-section:first-of-type .grid-overlay .block p {
   gap: 1rem;
 }
 
-.block.logos a {
+.block.logos a,
+.logos a {
   display: flex;
   align-items: center;
   cursor: pointer;
 }
 
-.block.logos img {
+.block.logos img,
+.logos img {
   height: 2rem;
   width: auto;
   object-fit: contain;
