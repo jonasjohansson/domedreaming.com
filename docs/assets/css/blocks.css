@@ -136,11 +136,13 @@ body.dome-mode .page-section:has(#canvas-container) {
 body.dome-mode .page-section:has(#canvas-container) .page-content {
   opacity: 0;
   pointer-events: none;
+  transition: opacity 2s ease-in-out;
 }
 
 body.dome-mode .page-section:has(#canvas-container) .block {
   opacity: 0;
   pointer-events: none;
+  transition: opacity 2s ease-in-out;
 }
 
 body.dome-mode .page-section:has(#canvas-container) .block.keep-visible {
@@ -154,6 +156,7 @@ body:not(.dome-mode) .page-section:has(#canvas-container) .block {
   pointer-events: auto;
   position: relative;
   z-index: 10;
+  transition: opacity 2s ease-in-out;
 }
 
 /* Page sections */

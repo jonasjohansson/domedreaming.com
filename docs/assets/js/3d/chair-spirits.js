@@ -15,6 +15,7 @@ import {
   setDirectIntensity,
 } from "./lighting.js";
 import { glbLights, fbxMeshes, chairMarkerPositions, spawnPointLeft, spawnPointRight, modelReady } from "./model.js";
+import { renderer } from "./scene.js";
 import { getNavMeshQuery } from "./navmesh.js";
 import { getMaterial } from "./utils.js";
 import { initAudio } from "./pulse-audio.js";
@@ -50,6 +51,7 @@ let savedAmbient = null;
 let savedDirect = null;
 let savedGlbIntensities = [];
 let savedScreenEmissive = null;
+let savedExposure = null;
 /** Whether lights are currently dimmed / restoring */
 let dimming = false;
 let restoring = false;
@@ -634,6 +636,7 @@ function saveCurrentLightValues() {
   savedAmbient = lightingSettings.ambientIntensity;
   savedDirect = lightingSettings.directIntensity;
   savedGlbIntensities = glbLights.map((l) => l.intensity);
+  savedExposure = renderer.toneMappingExposure;
 
   const screenMat = getScreenMaterial();
   if (screenMat) {
@@ -642,11 +645,12 @@ function saveCurrentLightValues() {
 }
 
 function applyDimLevel(t) {
-  // Staggered: direct → ambient → GLB → screen
-  const directT = Math.min(t / 0.5, 1);
-  const ambientT = Math.min(Math.max((t - 0.15) / 0.5, 0), 1);
-  const glbT = Math.min(Math.max((t - 0.3) / 0.5, 0), 1);
-  const screenT = Math.min(Math.max((t - 0.4) / 0.6, 0), 1);
+  // Staggered: direct → ambient → GLB → screen → exposure
+  const directT = Math.min(t / 0.4, 1);
+  const ambientT = Math.min(Math.max((t - 0.1) / 0.4, 0), 1);
+  const glbT = Math.min(Math.max((t - 0.2) / 0.4, 0), 1);
+  const screenT = Math.min(Math.max((t - 0.3) / 0.5, 0), 1);
+  const exposureT = Math.min(Math.max((t - 0.5) / 0.5, 0), 1);
 
   setDirectIntensity(savedDirect * (1 - directT));
   setAmbientIntensity(savedAmbient * (1 - ambientT));
@@ -657,7 +661,22 @@ function applyDimLevel(t) {
     }
   });
 
-  // Dim the dome screen to black
+  // Dim spirit lights in sync with GLB lights
+  for (const spirit of spirits) {
+    if (spirit.removed || spirit.fadingOut) continue;
+    const dimmedOpacity = 0.85 * (1 - glbT * 0.7);
+    spirit.material.opacity = dimmedOpacity;
+    if (spirit.light) {
+      spirit.light.intensity = 0.6 * (1 - glbT * 0.7);
+    }
+  }
+
+  // Dim renderer exposure for deeper overall darkness
+  if (savedExposure !== null) {
+    renderer.toneMappingExposure = savedExposure * (1 - exposureT * 0.8);
+  }
+
+  // Gradually dim the dome screen generative visuals (lines, text, patterns)
   const screenMat = getScreenMaterial();
   if (screenMat && savedScreenEmissive !== null) {
     screenMat.emissiveIntensity = savedScreenEmissive * (1 - screenT);
@@ -665,14 +684,19 @@ function applyDimLevel(t) {
       const c = 1 - screenT;
       screenMat.color.setRGB(c, c, c);
     }
+    // Also dim shader uniforms (pulse brightness) for generative content
+    if (screenMat.uniforms && screenMat.uniforms.uPulseIntensity) {
+      screenMat.uniforms.uPulseIntensity.value = 1.0 * (1 - screenT);
+    }
     screenMat.needsUpdate = true;
   }
 }
 
 function applyRestoreLevel(t) {
-  // Reverse order: screen → GLB → ambient → direct
-  const screenT = Math.min(t / 0.5, 1);
-  const glbT = Math.min(Math.max((t - 0.15) / 0.5, 0), 1);
+  // Reverse order: exposure → screen → GLB → ambient → direct
+  const exposureT = Math.min(t / 0.3, 1);
+  const screenT = Math.min(Math.max((t - 0.1) / 0.5, 0), 1);
+  const glbT = Math.min(Math.max((t - 0.2) / 0.5, 0), 1);
   const ambientT = Math.min(Math.max((t - 0.3) / 0.5, 0), 1);
   const directT = Math.min(Math.max((t - 0.4) / 0.6, 0), 1);
 
@@ -685,12 +709,20 @@ function applyRestoreLevel(t) {
     }
   });
 
-  // Restore the dome screen
+  // Restore exposure
+  if (savedExposure !== null) {
+    renderer.toneMappingExposure = savedExposure * (0.2 + exposureT * 0.8);
+  }
+
+  // Restore the dome screen and generative visuals
   const screenMat = getScreenMaterial();
   if (screenMat && savedScreenEmissive !== null) {
     screenMat.emissiveIntensity = savedScreenEmissive * screenT;
     if (screenMat.color) {
       screenMat.color.setRGB(screenT, screenT, screenT);
+    }
+    if (screenMat.uniforms && screenMat.uniforms.uPulseIntensity) {
+      screenMat.uniforms.uPulseIntensity.value = screenT;
     }
     screenMat.needsUpdate = true;
   }
@@ -845,7 +877,61 @@ function playVideoOnDome(url) {
   });
 }
 
-function stopTrailerVideo() {
+/**
+ * Crossfade from video material back to the original dome shader material.
+ * Fades the video material opacity down while restoring the shader material.
+ */
+async function crossfadeVideoToDome(duration = 3) {
+  const screen = getScreen();
+  if (!screen || !savedScreenMaterial) {
+    stopTrailerVideoImmediate();
+    return;
+  }
+
+  const videoMat = screen.material;
+  if (!videoMat || videoMat === savedScreenMaterial) {
+    stopTrailerVideoImmediate();
+    return;
+  }
+
+  // Make video material transparent for crossfade
+  videoMat.transparent = true;
+  videoMat.opacity = 1;
+
+  // Restore the shader material underneath by putting it in an overlay group
+  // Actually, Three.js single-material mesh — we'll animate opacity of the video mat
+  // and swap at the end
+  const startTime = performance.now();
+  const durationMs = duration * 1000;
+
+  return new Promise((resolve) => {
+    function fadeStep() {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(elapsed / durationMs, 1);
+      videoMat.opacity = 1 - t;
+
+      if (t < 1) {
+        requestAnimationFrame(fadeStep);
+      } else {
+        // Swap back to original material
+        if (screen.material.map) screen.material.map.dispose();
+        screen.material.dispose();
+        screen.material = savedScreenMaterial;
+        savedScreenMaterial = null;
+        if (trailerVideo) {
+          trailerVideo.pause();
+          trailerVideo.src = "";
+          trailerVideo = null;
+        }
+        reactiveLightsActive = false;
+        resolve();
+      }
+    }
+    fadeStep();
+  });
+}
+
+function stopTrailerVideoImmediate() {
   reactiveLightsActive = false;
   if (trailerVideo) {
     trailerVideo.pause();
@@ -959,7 +1045,8 @@ export async function dimAndPlayFilm(videoUrl) {
 
 export async function stopFilm(duration = 3) {
   console.log("Chair spirits: stopping film");
-  stopTrailerVideo();
+  // Crossfade video out and dome graphics back in
+  await crossfadeVideoToDome(duration);
 
   // Fade screen content back in
   startScreenFadeIn(duration);
@@ -1043,7 +1130,8 @@ export async function runTrailerSequence(videoUrl) {
 
 export async function reverseTrailer(duration = 3) {
   console.log("Chair spirits: reversing trailer");
-  stopTrailerVideo();
+  // Crossfade video out and dome graphics back in
+  await crossfadeVideoToDome(duration);
   startScreenFadeIn(duration);
   restoreRoomLights(duration);
   reverseSpiritsSequence();

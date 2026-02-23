@@ -43,7 +43,7 @@ export function setupCameraControls() {
     const deltaY = event.clientY - lastMouseY;
 
     euler.y -= deltaX * cameraSettings.sensitivity;
-    euler.x -= deltaY * cameraSettings.sensitivity;
+    euler.x += deltaY * cameraSettings.sensitivity;
     camera.quaternion.setFromEuler(euler);
 
     lastMouseX = event.clientX;
@@ -95,7 +95,7 @@ export function setupCameraControls() {
           const deltaY = touch.clientY - touchStartY;
 
           euler.y -= deltaX * cameraSettings.sensitivity;
-          euler.x -= deltaY * cameraSettings.sensitivity;
+          euler.x += deltaY * cameraSettings.sensitivity;
           camera.quaternion.setFromEuler(euler);
 
           touchStartX = touch.clientX;
@@ -173,6 +173,13 @@ export function setupCameraControls() {
     }
     if (e.key === "e" || e.key === "E") {
       setQeRotationSpeed(-1.5); // Rotate left
+    }
+    // T triggers trailer sequence
+    if (e.key === "t" || e.key === "T") {
+      if (window.runTrailerSequence && !window._trailerRunning) {
+        window._trailerRunning = true;
+        window.runTrailerSequence().finally(() => { window._trailerRunning = false; });
+      }
     }
   });
 
