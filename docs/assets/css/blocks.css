@@ -362,6 +362,15 @@ p.small,
   letter-spacing: 1px;
 }
 
+.page-content p.xsmall,
+p.xsmall,
+.xsmall {
+  font-size: calc(var(--font-size-base) * 0.5) !important;
+  line-height: var(--line-height-normal);
+  letter-spacing: 1px;
+  text-align: center;
+}
+
 /* ==========================================================================
    Mobile styles (max-width: 768px)
    ========================================================================== */
