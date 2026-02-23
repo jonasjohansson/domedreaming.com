@@ -79,7 +79,7 @@ const TICK_FREQUENCIES = [
 
 // Audio settings (exported for GUI control)
 export const audioSettings = {
-  enabled: true,
+  enabled: false,
   masterVolume: 0.5,
   reverbWet: 0.5,
   spatialSpread: 15, // How spread out the sounds are in 3D space

@@ -489,18 +489,6 @@ export function setupPolarGridGUI() {
     .onChange((v) => setSpatialSpread(v));
   audioFolder.close();
 
-  // Auto-start audio if enabled by default (will work after user interaction)
-  if (audioSettings.enabled) {
-    // Delay slightly to ensure page has had user interaction
-    setTimeout(async () => {
-      try {
-        await startAudio();
-      } catch (e) {
-        console.log("Audio auto-start requires user interaction");
-      }
-    }, 100);
-  }
-
   // Colors folder - editable colors that update 3D scene and texture
   const colorsFolder = polarGridGUI.addFolder("Colors");
 
