@@ -14,7 +14,7 @@ import {
   setAmbientIntensity,
   setDirectIntensity,
 } from "./lighting.js";
-import { glbLights, fbxMeshes, chairMarkerPositions, spawnPointLeft, spawnPointRight } from "./model.js";
+import { glbLights, fbxMeshes, chairMarkerPositions, spawnPointLeft, spawnPointRight, modelReady } from "./model.js";
 import { getNavMeshQuery } from "./navmesh.js";
 import { getMaterial } from "./utils.js";
 import { initAudio } from "./pulse-audio.js";
@@ -233,14 +233,11 @@ async function playCinematicFanfare(duration) {
 // Positions are extracted by model.js during load — no separate GLB needed
 // ---------------------------------------------------------------------------
 
-export function loadChairMarkers() {
-  // Use positions already extracted by model.js from wisdome002.glb
-  const positions = [...chairMarkerPositions];
+export async function loadChairMarkers() {
+  // Wait for model.js to finish loading wisdome002.glb
+  await modelReady;
 
-  if (positions.length === 0) {
-    console.warn("Chair spirits: no chair markers found in model — call after model loads");
-    return Promise.resolve(0);
-  }
+  const positions = [...chairMarkerPositions];
 
   // Shuffle for visual variety
   for (let i = positions.length - 1; i > 0; i--) {
@@ -992,11 +989,22 @@ export async function runTrailerSequence(videoUrl) {
     try { await window.startAudio(); } catch (e) { /* needs gesture */ }
   }
 
-  // 2. Start dimming immediately — long slow dim across the whole sequence
-  dimRoomLights(20);
-
-  // 3. Spirits float in
+  // 2. Spirits float in
   startSpiritsSequence();
+
+  // 3. Wait for half the spirits to spawn, then start dimming
+  const halfCount = Math.floor(chairPositions.length / 2);
+  await new Promise((resolve) => {
+    const check = setInterval(() => {
+      if (spirits.length >= halfCount) {
+        clearInterval(check);
+        resolve();
+      }
+    }, 200);
+  });
+
+  // Start dimming once half have spawned
+  dimRoomLights(15);
 
   // 4. Wait for all spirits to settle
   await new Promise((resolve) => {

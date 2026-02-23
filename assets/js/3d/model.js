@@ -19,6 +19,9 @@ export let chairMarkerPositions = [];
 /** Spawn entry points for spirits */
 export let spawnPointLeft = null;
 export let spawnPointRight = null;
+/** Promise that resolves when the model is fully loaded */
+let _modelLoadedResolve;
+export const modelReady = new Promise((resolve) => { _modelLoadedResolve = resolve; });
 
 export function loadModel() {
   const loader = new GLTFLoader();
@@ -274,6 +277,7 @@ export function loadModel() {
       euler.set(camRot.x, camRot.y, camRot.z, "YXZ");
 
       setModelLoaded(true);
+      _modelLoadedResolve();
 
 
 
