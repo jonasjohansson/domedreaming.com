@@ -145,7 +145,7 @@ async function playCinematicFanfare(duration) {
   try {
     disposeFanfare();
 
-    const audio = new Audio("assets/audio/fanfare.mp3");
+    const audio = new Audio("assets/audio/fanfare_002.mp3");
     audio.crossOrigin = "anonymous";
     // Slight pitch shift — 2 semitones down for a deeper, more cinematic feel
     audio.playbackRate = Math.pow(2, -2 / 12); // ~0.891
@@ -1398,15 +1398,15 @@ async function playFanfareWithWords() {
   // The original fanfare is ~21s; at 0.891x it's ~23.5s.
   // Each entry specifies which text line (1-5) the word appears on.
   const wordSequence = [
-    { time: 3000,  word: "DOME",      line: 3, flash: 1000 },
-    { time: 5500,  word: "DREAMING",  line: 4, flash: 1000 },
-    { time: 8500,  word: "OPEN",      line: 2, flash: 900  },
-    { time: 10500, word: "CALL",      line: 5, flash: 900  },
-    { time: 13000, word: "LIVE",      line: 3, flash: 1000 },
-    { time: 15500, word: "NOW",       line: 2, flash: 1000 },
-    { time: 17500, word: "APPLY",     line: 4, flash: 1000 },
-    { time: 19500, word: "LATEST",    line: 3, flash: 900  },
-    { time: 21500, word: "1 MARCH",   line: 5, flash: 1400 },
+    { time: 1500,  word: "DOME",      line: 3, flash: 1000 },
+    { time: 4000,  word: "DREAMING",  line: 4, flash: 1000 },
+    { time: 7000,  word: "OPEN",      line: 2, flash: 900  },
+    { time: 9000,  word: "CALL",      line: 5, flash: 900  },
+    { time: 11500, word: "LIVE",      line: 3, flash: 1000 },
+    { time: 14000, word: "NOW",       line: 2, flash: 1000 },
+    { time: 16000, word: "APPLY",     line: 4, flash: 1000 },
+    { time: 18000, word: "LATEST",    line: 3, flash: 900  },
+    { time: 20000, word: "1 MARCH",   line: 5, flash: 1400 },
   ];
 
   const startTime = performance.now();
