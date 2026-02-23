@@ -64,7 +64,7 @@ let restoreDuration = 3;
 /** Height spirits float above the navmesh ground */
 const SPIRIT_FLOAT_HEIGHT = 0.8;
 /** Speed spirits travel along the path (units/sec) */
-const SPIRIT_SPEED = 0.6;
+const SPIRIT_SPEED = 0.75;
 /** Speed variance so they don't all move in lockstep */
 const SPIRIT_SPEED_JITTER = 0.2;
 /** Time (seconds) for spirit light to ramp from zero to full intensity */
@@ -78,7 +78,8 @@ const DEFAULT_TRAILER_VIDEO = "assets/video/ParallelPromoLQ.mp4";
 // Built entirely with Tone.js: sub-bass, brass chords, timpani, crescendo
 // ---------------------------------------------------------------------------
 
-let fanfareNodes = []; // all Tone nodes to dispose
+let fanfareAudio = null; // HTMLAudioElement for fanfare
+let fanfareNodes = []; // Tone nodes for any effects
 
 async function ensureTone() {
   let T = window.Tone;
@@ -92,6 +93,11 @@ async function ensureTone() {
 }
 
 function disposeFanfare() {
+  if (fanfareAudio) {
+    fanfareAudio.pause();
+    fanfareAudio.src = "";
+    fanfareAudio = null;
+  }
   fanfareNodes.forEach((n) => {
     try { n.dispose(); } catch (_) {}
   });
@@ -99,203 +105,81 @@ function disposeFanfare() {
 }
 
 /**
- * Play a bombastic cinematic fanfare over `duration` seconds.
- * Layers: sub-bass rumble, brass-like synth chords, timpani hits, cymbal swell.
+ * Play the 20th Century Fox fanfare MP3, routed through Tone.js
+ * for reverb and volume control so it blends with the scene.
  */
 async function playCinematicFanfare(duration) {
   try {
-    const T = await ensureTone();
-    if (!T) return;
     disposeFanfare();
 
-    const d = duration; // shorthand
-    const ms = d * 1000;
+    const audio = new Audio("assets/audio/fanfare.mp3");
+    audio.crossOrigin = "anonymous";
+    audio.volume = 1.0;
+    fanfareAudio = audio;
 
-    // Master bus: hall reverb → destination
-    const reverb = new T.Reverb({ decay: 5, wet: 0.35 });
-    await reverb.generate();
-    reverb.toDestination();
-    fanfareNodes.push(reverb);
+    // Try routing through Tone.js for reverb
+    const T = await ensureTone();
+    if (T) {
+      const mediaSource = T.context.createMediaElementSource(audio);
+      const reverb = new T.Reverb({ decay: 3, wet: 0.2 });
+      await reverb.generate();
+      reverb.toDestination();
+      fanfareNodes.push(reverb);
 
-    const masterGain = new T.Gain(0).connect(reverb);
-    fanfareNodes.push(masterGain);
+      // Sub-bass layer to add weight to the MP3
+      const subFilter = new T.Filter({ frequency: 100, type: "lowpass", rolloff: -24 }).connect(reverb);
+      fanfareNodes.push(subFilter);
+      const sub = new T.Synth({
+        oscillator: { type: "sine" },
+        envelope: { attack: 2, decay: 1, sustain: 0.6, release: 3 },
+        volume: -16,
+      }).connect(subFilter);
+      fanfareNodes.push(sub);
 
-    // Volume envelope: build → peak → sustain → fade
-    masterGain.gain.rampTo(0.6, d * 0.15);   // snare roll builds
-    setTimeout(() => masterGain.gain.rampTo(1.0, d * 0.15), d * 200); // brass enters
-    setTimeout(() => masterGain.gain.rampTo(0, d * 0.2), d * 800);    // fade out
+      mediaSource.connect(reverb.input);
 
-    // ── 1. Snare drum roll (builds tension before brass) ────────────
-    const snareFilter = new T.Filter({ frequency: 3000, type: "highpass" }).connect(masterGain);
-    fanfareNodes.push(snareFilter);
-    const snareGain = new T.Gain(0.08).connect(snareFilter);
-    fanfareNodes.push(snareGain);
-    snareGain.gain.rampTo(0.25, d * 0.3); // crescendo roll
-    setTimeout(() => snareGain.gain.rampTo(0, 0.3), d * 350); // cut at brass entry
+      // Add sub-bass rumble that starts with the fanfare
+      audio.addEventListener("playing", () => {
+        try { sub.triggerAttack("Bb0"); } catch (_) {}
+      }, { once: true });
 
-    const snare = new T.Noise("white").connect(snareGain);
-    fanfareNodes.push(snare);
-    snare.start();
-
-    // Snare hits for roll feel (rapid fire, accelerating)
-    const snareHit = new T.NoiseSynth({
-      noise: { type: "white" },
-      envelope: { attack: 0.001, decay: 0.08, sustain: 0 },
-      volume: -12,
-    }).connect(snareFilter);
-    fanfareNodes.push(snareHit);
-
-    // Accelerating roll: hits get faster approaching the brass entry
-    for (let i = 0; i < 16; i++) {
-      const frac = (i / 16) * 0.3; // spread over first 30%
-      setTimeout(() => {
-        try { snareHit.triggerAttackRelease("16n"); } catch (_) {}
-      }, frac * ms);
+      // Release sub when fanfare ends
+      audio.addEventListener("ended", () => {
+        try { sub.triggerRelease(); } catch (_) {}
+        setTimeout(() => disposeFanfare(), 3000);
+      }, { once: true });
+    } else {
+      // Fallback: just play the audio directly
+      audio.addEventListener("ended", () => {
+        setTimeout(() => disposeFanfare(), 1000);
+      }, { once: true });
     }
 
-    // ── 2. Sub-bass pedal tone ──────────────────────────────────────
-    const subFilter = new T.Filter({ frequency: 80, type: "lowpass", rolloff: -24 }).connect(masterGain);
-    fanfareNodes.push(subFilter);
-    const sub = new T.Synth({
-      oscillator: { type: "sawtooth" },
-      envelope: { attack: d * 0.2, decay: 1, sustain: 0.8, release: d * 0.25 },
-      volume: -8,
-    }).connect(subFilter);
-    fanfareNodes.push(sub);
-
+    // Fade out the fanfare towards the end of the dim duration
+    // so it doesn't cut abruptly
+    const fadeOutStart = Math.max(0, (duration - 3)) * 1000;
     setTimeout(() => {
-      sub.triggerAttack("Bb0");
-      subFilter.frequency.rampTo(200, d * 0.5);
-    }, d * 200);
+      if (fanfareAudio) {
+        // Smooth volume fade over 3 seconds
+        const fadeSteps = 30;
+        const fadeStepTime = 3000 / fadeSteps;
+        let fadeStep = 0;
+        const fadeInterval = setInterval(() => {
+          fadeStep++;
+          if (fanfareAudio) {
+            fanfareAudio.volume = Math.max(0, 1 - fadeStep / fadeSteps);
+          }
+          if (fadeStep >= fadeSteps) {
+            clearInterval(fadeInterval);
+          }
+        }, fadeStepTime);
+      }
+    }, fadeOutStart);
 
-    // ── 3. Brass fanfare — ascending melody (20th Century Fox style) ─
-    //    Signature: Bb major, ascending stepwise then leap to high Bb
-    const brassFilter = new T.Filter({ frequency: 500, type: "lowpass", rolloff: -12 }).connect(masterGain);
-    fanfareNodes.push(brassFilter);
-    brassFilter.frequency.rampTo(5000, d * 0.4); // filter opens dramatically
-
-    const brass = new T.PolySynth(T.Synth, {
-      oscillator: { type: "sawtooth" },
-      envelope: { attack: 0.08, decay: 0.3, sustain: 0.85, release: d * 0.2 },
-      volume: -14,
-    }).connect(brassFilter);
-    fanfareNodes.push(brass);
-
-    // Ascending melody: Bb3 → C4 → D4 → F4 → Bb4 (leap!) → hold
-    const melody = [
-      { notes: ["Bb3", "F3"], time: 0.30, dur: 0.08 },
-      { notes: ["C4", "F3"], time: 0.35, dur: 0.06 },
-      { notes: ["D4", "Bb3"], time: 0.40, dur: 0.06 },
-      { notes: ["F4", "Bb3", "D4"], time: 0.45, dur: 0.08 },
-      // THE BIG LEAP — climax note
-      { notes: ["Bb4", "F4", "D4", "Bb3"], time: 0.52, dur: 0.30 },
-    ];
-    melody.forEach(({ notes, time, dur }) => {
-      setTimeout(() => {
-        try { brass.triggerAttackRelease(notes, dur * d); } catch (_) {}
-      }, time * ms);
-    });
-
-    // Sustained triumphant chord at peak (Bb major spread voicing)
-    setTimeout(() => {
-      try {
-        brass.triggerAttack(["Bb2", "F3", "Bb3", "D4", "F4", "Bb4", "D5"]);
-      } catch (_) {}
-    }, d * 550);
-
-    // ── 4. French horns (warm countermelody) ────────────────────────
-    const hornFilter = new T.Filter({ frequency: 800, type: "lowpass", rolloff: -12 }).connect(masterGain);
-    fanfareNodes.push(hornFilter);
-    hornFilter.frequency.rampTo(3000, d * 0.5);
-
-    const horn = new T.PolySynth(T.Synth, {
-      oscillator: { type: "triangle" },
-      envelope: { attack: 0.15, decay: 0.5, sustain: 0.75, release: d * 0.25 },
-      volume: -16,
-    }).connect(hornFilter);
-    fanfareNodes.push(horn);
-
-    // Horns enter with sustained power chords
-    setTimeout(() => {
-      try { horn.triggerAttack(["Bb2", "F3", "Bb3"]); } catch (_) {}
-    }, d * 300);
-    // Resolve at climax
-    setTimeout(() => {
-      try {
-        horn.releaseAll();
-        horn.triggerAttack(["Bb2", "D3", "F3", "Bb3", "D4"]);
-      } catch (_) {}
-    }, d * 520);
-
-    // ── 5. Timpani — big dramatic hits ──────────────────────────────
-    const timpani = new T.MembraneSynth({
-      pitchDecay: 0.05,
-      octaves: 8,
-      envelope: { attack: 0.005, decay: 2.5, sustain: 0, release: 2 },
-      volume: -4,
-    }).connect(masterGain);
-    fanfareNodes.push(timpani);
-
-    // Hits synced to melody rhythm, big crash at climax
-    const timps = [
-      [0.30, "Bb1"], [0.40, "F1"], [0.45, "Bb1"],
-      [0.52, "Bb1"], [0.55, "F1"], // climax double hit
-      [0.65, "Bb1"], [0.78, "Bb1"],
-    ];
-    timps.forEach(([frac, note]) => {
-      setTimeout(() => {
-        try { timpani.triggerAttackRelease(note, "2n"); } catch (_) {}
-      }, frac * ms);
-    });
-
-    // ── 6. Cymbal swell → crash at climax ───────────────────────────
-    const cymbalFilter = new T.Filter({ frequency: 600, type: "bandpass", Q: 0.3 }).connect(masterGain);
-    fanfareNodes.push(cymbalFilter);
-    cymbalFilter.frequency.rampTo(12000, d * 0.5);
-
-    const cymbalGain = new T.Gain(0).connect(cymbalFilter);
-    fanfareNodes.push(cymbalGain);
-    // Swell building to crash
-    setTimeout(() => cymbalGain.gain.rampTo(0.15, d * 0.2), d * 300);
-    // CRASH at climax peak
-    setTimeout(() => {
-      cymbalGain.gain.rampTo(0.35, 0.05);
-      setTimeout(() => cymbalGain.gain.rampTo(0.08, d * 0.3), 100);
-    }, d * 520);
-    setTimeout(() => cymbalGain.gain.rampTo(0, d * 0.15), d * 750);
-
-    const cymbal = new T.Noise("white").connect(cymbalGain);
-    fanfareNodes.push(cymbal);
-    setTimeout(() => cymbal.start(), d * 250);
-
-    // ── 7. String section (shimmering sustain at climax) ────────────
-    const strings = new T.PolySynth(T.Synth, {
-      oscillator: { type: "sine" },
-      envelope: { attack: d * 0.15, decay: 0.5, sustain: 0.8, release: d * 0.25 },
-      volume: -20,
-    }).connect(masterGain);
-    fanfareNodes.push(strings);
-
-    setTimeout(() => {
-      try { strings.triggerAttack(["Bb4", "D5", "F5", "Bb5"]); } catch (_) {}
-    }, d * 500);
-
-    // ── Release and cleanup ─────────────────────────────────────────
-    setTimeout(() => {
-      try {
-        sub.triggerRelease();
-        brass.releaseAll();
-        horn.releaseAll();
-        strings.releaseAll();
-        snare.stop();
-        cymbal.stop();
-      } catch (_) {}
-    }, d * 850);
-
-    setTimeout(() => disposeFanfare(), (d + 3) * 1000);
-    console.log(`Chair spirits: cinematic fanfare (${d}s) — 20th Century Fox style`);
+    await audio.play();
+    console.log("Chair spirits: playing fanfare MP3");
   } catch (e) {
-    console.warn("Chair spirits: fanfare sound skipped", e);
+    console.warn("Chair spirits: fanfare playback failed", e);
   }
 }
 
