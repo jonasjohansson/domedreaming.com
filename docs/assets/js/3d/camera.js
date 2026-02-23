@@ -7,7 +7,7 @@ import { touchMovement } from "./movement.js";
 export let isPointerLocked = false;
 export let isTouching = false;
 // Initialize euler with default rotation to match camera initialization
-export let euler = new THREE.Euler(-2.7, 0, 3.121154018741333, "YXZ");
+export let euler = new THREE.Euler(-2.65, 0, 3.121154018741333, "YXZ");
 export let modelLoaded = false;
 export let touchStartX = 0;
 export let touchStartY = 0;
@@ -43,7 +43,7 @@ export function setupCameraControls() {
     const deltaY = event.clientY - lastMouseY;
 
     euler.y -= deltaX * cameraSettings.sensitivity;
-    euler.x -= deltaY * cameraSettings.sensitivity;
+    euler.x += deltaY * cameraSettings.sensitivity;
     camera.quaternion.setFromEuler(euler);
 
     lastMouseX = event.clientX;
@@ -95,7 +95,7 @@ export function setupCameraControls() {
           const deltaY = touch.clientY - touchStartY;
 
           euler.y -= deltaX * cameraSettings.sensitivity;
-          euler.x -= deltaY * cameraSettings.sensitivity;
+          euler.x += deltaY * cameraSettings.sensitivity;
           camera.quaternion.setFromEuler(euler);
 
           touchStartX = touch.clientX;
