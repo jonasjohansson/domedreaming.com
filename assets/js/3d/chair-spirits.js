@@ -2253,6 +2253,9 @@ export async function runTrailerSequence() {
   });
 
   // 9. THEN fade screen/grid out over 2s (sequenced after lights)
+  // Fire late guest as the screen starts fading — rushes in during the darkening
+  spawnLateGuest();
+
   const screenMat = getScreenMaterial();
   await new Promise((resolve) => {
     const fadeStart = performance.now();
@@ -2275,9 +2278,6 @@ export async function runTrailerSequence() {
 
   // Screen is now fully dark — safe to regenerate texture without images
   setImageCellsEnabled(false);
-
-  // Fire late guest in background (arrives during the fanfare — doesn't block)
-  setTimeout(() => spawnLateGuest(), 2000);
 
   // 9. Start fanfare IMMEDIATELY — room is dark, music begins
   console.log("Chair spirits: starting fanfare word sequence");
