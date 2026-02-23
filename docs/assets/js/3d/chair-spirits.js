@@ -1457,27 +1457,25 @@ export async function runTrailerSequence() {
   // 3. Spirits float in
   startSpiritsSequence();
 
-  // 4. Wait for ~50% spirits seated, then start dimming + rotation easing early
-  const halfCount = Math.floor(chairPositions.length * 0.5);
+  // 4. Wait for ~40% spirits seated — then begin the cinematic buildup
+  const earlyCount = Math.floor(chairPositions.length * 0.4);
   await new Promise((resolve) => {
     const check = setInterval(() => {
       const settledCount = spirits.filter((s) => s.settled).length;
-      if (settledCount >= halfCount) {
+      if (settledCount >= earlyCount) {
         clearInterval(check);
         resolve();
       }
     }, 200);
   });
 
-  // 5. Fade out images from the grid so typography is clearer
-  setImageCellsEnabled(false);
+  // === Everything below runs in parallel for a layered cinematic buildup ===
 
-  // 6. Fade out the ambient tick/drone sounds (buildup silence before fanfare)
+  // 5. Fade out pulse audio in background
   const pulseAudioFadeDuration = 5;
   const fadeSteps = 20;
   const stepTime = (pulseAudioFadeDuration * 1000) / fadeSteps;
   let step = 0;
-  // Don't await — let it fade in background while rotation eases
   const audioFadePromise = new Promise((resolve) => {
     const fadeInterval = setInterval(() => {
       step++;
@@ -1491,10 +1489,7 @@ export async function runTrailerSequence() {
     }, stepTime);
   });
 
-  // 7. Ease grid rotation to zero smoothly (ease-out quintic for very gradual stop)
-  //    We animate the speed directly — the main loop reads it each frame via
-  //    texture.rotation -= textureRotationSettings.speed * deltaTime
-  //    This does NOT cause skips because we only ever write smaller values.
+  // 6. Ease grid rotation to zero (ease-out quintic, very smooth long tail)
   const rotSlowDuration = 5000;
   const rotSlowStart = performance.now();
   const origSpeed = textureRotationSettings.speed;
@@ -1502,7 +1497,6 @@ export async function runTrailerSequence() {
     function slowDown() {
       const elapsed = performance.now() - rotSlowStart;
       const t = Math.min(elapsed / rotSlowDuration, 1);
-      // Ease-out quintic — very smooth, long tail
       const eased = 1 - Math.pow(1 - t, 5);
       textureRotationSettings.speed = origSpeed * (1 - eased);
       if (t < 1) {
@@ -1515,12 +1509,18 @@ export async function runTrailerSequence() {
     requestAnimationFrame(slowDown);
   });
 
-  // Stop text step rotation (this is the per-cell BPM stepping, separate from grid)
+  // Stop text step rotation (per-cell BPM stepping, separate from grid)
   setTextRotationEnabled(false);
 
-  // 8. Start dimming early (runs in parallel with rotation easing)
-  const dimDur = 10;
+  // 7. Start dimming lights (8s duration — faster than before)
+  const dimDur = 8;
   dimRoomLights(dimDur, { playFanfare: false });
+
+  // 8. Remove images from the grid AFTER 2.5s — by then uGridFade is low enough
+  //    (~0.5) that the texture swap is masked and won't cause a visible skip.
+  setTimeout(() => {
+    setImageCellsEnabled(false);
+  }, 2500);
 
   // Wait for rotation + audio fade to finish
   await Promise.all([rotSlowPromise, audioFadePromise]);
@@ -1539,6 +1539,11 @@ export async function runTrailerSequence() {
   await new Promise((r) => setTimeout(r, 4000));
   spawnLateGuest();
 
+  // 10. Start fanfare NOW (while late guest is still travelling and dim is finishing)
+  //     This gives the fanfare a head start so the music builds during the final moments
+  console.log("Chair spirits: starting fanfare word sequence");
+  const fanfarePromise = playFanfareWithWords();
+
   // Wait for the late guest to settle
   await new Promise((resolve) => {
     const check = setInterval(() => {
@@ -1550,15 +1555,13 @@ export async function runTrailerSequence() {
     }, 200);
   });
 
-  // 10. Wait for dim to finish (room is now fully dark)
+  // Wait for dim to finish (if it hasn't already)
   while (dimming) {
     await new Promise((r) => setTimeout(r, 200));
   }
 
-  // 11. Play fanfare with synced word flashes (no scramble — clean text + bloom pump)
-  console.log("Chair spirits: starting fanfare word sequence");
-
-  await playFanfareWithWords();
+  // Wait for the fanfare word sequence to complete
+  await fanfarePromise;
 
   console.log("Chair spirits: fanfare word sequence complete");
 
