@@ -1667,3 +1667,116 @@ export function reinitializePulses() {
     initializePulses(polarGridSettings.pulseCount, currentTexture._polarGridParams.numCircles);
   }
 }
+
+// ============ TEXT CONTROL API (for trailer sequence) ============
+
+/**
+ * Set text content for a specific line (1-5).
+ * The new content will appear on the next animation frame draw.
+ */
+export function setTextContent(lineIndex, newContent) {
+  const key = `text${lineIndex}Content`;
+  if (key in polarGridSettings) {
+    polarGridSettings[key] = newContent;
+    // Reset scramble state for this line so chars reinitialize
+    const stateKey = `text${lineIndex}`;
+    if (scrambleState[stateKey]) {
+      scrambleState[stateKey].chars = [];
+    }
+    // Also update curvedTexts in the texture params so drawRotatingText uses new content
+    if (currentTexture && currentTexture._polarGridParams && currentTexture._polarGridParams.curvedTexts) {
+      const ct = currentTexture._polarGridParams.curvedTexts[lineIndex - 1];
+      if (ct) ct.text = newContent;
+    }
+  }
+}
+
+/**
+ * Scramble all text lines to new content simultaneously.
+ * Each character scrambles through random chars before resolving to the new text.
+ * @param {Object} newTexts - e.g. { 1: "NEW TEXT", 3: "ANOTHER" } (line indices 1-5)
+ * @param {number} duration - Scramble duration in ms per character (staggered)
+ */
+export function scrambleToNewText(newTexts, duration = 400) {
+  const currentTime = performance.now();
+
+  for (const [lineIdx, newContent] of Object.entries(newTexts)) {
+    const idx = parseInt(lineIdx);
+    const key = `text${idx}Content`;
+    const stateKey = `text${idx}`;
+
+    if (!(key in polarGridSettings)) continue;
+
+    // Set the target content immediately — the scramble effect will
+    // cycle through random chars before revealing it
+    polarGridSettings[key] = newContent;
+
+    // Update curvedTexts param too
+    if (currentTexture && currentTexture._polarGridParams && currentTexture._polarGridParams.curvedTexts) {
+      const ct = currentTexture._polarGridParams.curvedTexts[idx - 1];
+      if (ct) ct.text = newContent;
+    }
+
+    // Set up per-character scramble with staggered start times
+    scrambleState[stateKey].chars = newContent.split('').map((char, i) => {
+      if (char === ' ') return { active: false, startTime: 0 };
+      return {
+        active: true,
+        startTime: currentTime + i * 30, // 30ms stagger per character
+      };
+    });
+  }
+
+  // Override the scramble duration for this batch
+  polarGridSettings.textScrambleDuration = duration;
+}
+
+/**
+ * Get the current text rotation offset (in sector units)
+ */
+export function getTextRotationOffset() {
+  return textRotationOffset;
+}
+
+/**
+ * Set the text rotation offset directly (in sector units)
+ */
+export function setTextRotationOffset(offset) {
+  textRotationOffset = offset;
+}
+
+/**
+ * Override the text rotation speed for the step mode BPM.
+ * Set to a very high value to effectively stop, or adjust for slowdown.
+ */
+export function setTextRotationBPM(bpm) {
+  polarGridSettings.textRotationBPM = bpm;
+}
+
+/**
+ * Enable or disable text rotation
+ */
+export function setTextRotationEnabled(enabled) {
+  polarGridSettings.textRotationEnabled = enabled;
+}
+
+/**
+ * Enable or disable text scramble
+ */
+export function setTextScrambleEnabled(enabled) {
+  polarGridSettings.textScrambleEnabled = enabled;
+}
+
+/**
+ * Enable or disable images in the polar grid and rebuild the base image.
+ * When disabled, the base image (grid lines, labels, ticks) is redrawn
+ * without images so text stands out more clearly.
+ * @param {boolean} enabled
+ */
+export function setImageCellsEnabled(enabled) {
+  polarGridSettings.imageCellsEnabled = enabled;
+  // Force a full texture regeneration so the base image updates
+  if (polarGridSettings.regenerate) {
+    polarGridSettings.regenerate();
+  }
+}

@@ -19,6 +19,15 @@ import { renderer } from "./scene.js";
 import { getNavMeshQuery } from "./navmesh.js";
 import { getMaterial } from "./utils.js";
 import { initAudio, setMasterVolume, stopAudio as stopPulseAudio } from "./pulse-audio.js";
+import { textureRotationSettings } from "../core/settings.js";
+import {
+  scrambleToNewText,
+  setTextRotationEnabled,
+  setTextRotationBPM,
+  setTextScrambleEnabled,
+  setImageCellsEnabled,
+  polarGridSettings,
+} from "./polar-grid-texture.js";
 
 // ---------------------------------------------------------------------------
 // State
@@ -64,14 +73,22 @@ let restoreDuration = 3;
 /** Height spirits float above the navmesh ground */
 const SPIRIT_FLOAT_HEIGHT = 0.8;
 /** Speed spirits travel along the path (units/sec) */
-const SPIRIT_SPEED = 0.75;
+const SPIRIT_SPEED = 0.99;
 /** Speed variance so they don't all move in lockstep */
 const SPIRIT_SPEED_JITTER = 0.2;
 /** Time (seconds) for spirit light to ramp from zero to full intensity */
 const RAMP_DURATION = 2.5;
 
-/** Default trailer video */
+/** Default trailer video (used by dimAndPlayFilm legacy path) */
 const DEFAULT_TRAILER_VIDEO = "assets/video/ParallelPromoLQ.mp4";
+
+/** Saved rotation / text state for restore after trailer */
+let savedGridRotationSpeed = null;
+let savedTextRotationEnabled = null;
+let savedTextRotationBPM = null;
+let savedTextScrambleEnabled = null;
+let savedTextContents = null;
+let savedImageCellsEnabled = null;
 
 // ---------------------------------------------------------------------------
 // Cinematic fanfare — bombastic intro sound (20th Century Fox style)
@@ -98,15 +115,21 @@ function disposeFanfare() {
     fanfareAudio.src = "";
     fanfareAudio = null;
   }
+  fanfareGain = null;
   fanfareNodes.forEach((n) => {
     try { n.dispose(); } catch (_) {}
   });
   fanfareNodes = [];
 }
 
+/** Raw Web Audio gain node for fanfare volume control */
+let fanfareGain = null;
+
 /**
- * Play the 20th Century Fox fanfare MP3, routed through Tone.js
- * for reverb and volume control so it blends with the scene.
+ * Play the 20th Century Fox fanfare MP3.
+ * Routes through raw Web Audio API for reverb + modulation (avoids Tone.js MediaElement issues).
+ * Adds a sub-bass synth layer via Tone.js for extra weight.
+ * Audio is modulated (slight pitch shift, EQ coloring) so it's not identical to the original.
  */
 async function playCinematicFanfare(duration) {
   try {
@@ -114,70 +137,93 @@ async function playCinematicFanfare(duration) {
 
     const audio = new Audio("assets/audio/fanfare.mp3");
     audio.crossOrigin = "anonymous";
-    audio.volume = 1.0;
+    // Slight pitch shift — 2 semitones down for a deeper, more cinematic feel
+    audio.playbackRate = Math.pow(2, -2 / 12); // ~0.891
     fanfareAudio = audio;
 
-    // Try routing through Tone.js for reverb
     const T = await ensureTone();
     if (T) {
-      const mediaSource = T.context.createMediaElementSource(audio);
-      const reverb = new T.Reverb({ decay: 3, wet: 0.2 });
-      await reverb.generate();
-      reverb.toDestination();
-      fanfareNodes.push(reverb);
+      const rawCtx = T.context.rawContext || T.context._context || T.context;
 
-      // Sub-bass layer to add weight to the MP3
-      const subFilter = new T.Filter({ frequency: 100, type: "lowpass", rolloff: -24 }).connect(reverb);
-      fanfareNodes.push(subFilter);
-      const sub = new T.Synth({
-        oscillator: { type: "sine" },
-        envelope: { attack: 2, decay: 1, sustain: 0.6, release: 3 },
-        volume: -16,
-      }).connect(subFilter);
-      fanfareNodes.push(sub);
+      const mediaSource = rawCtx.createMediaElementSource(audio);
 
-      mediaSource.connect(reverb.input);
+      // Gain node for volume control
+      const gain = rawCtx.createGain();
+      gain.gain.value = 1.0;
+      fanfareGain = gain;
 
-      // Add sub-bass rumble that starts with the fanfare
-      audio.addEventListener("playing", () => {
-        try { sub.triggerAttack("Bb0"); } catch (_) {}
-      }, { once: true });
+      // EQ coloring: boost low-mids, cut highs for a warmer, more "cinematic" tone
+      const lowBoost = rawCtx.createBiquadFilter();
+      lowBoost.type = "lowshelf";
+      lowBoost.frequency.value = 300;
+      lowBoost.gain.value = 4; // +4dB low boost
 
-      // Release sub when fanfare ends
-      audio.addEventListener("ended", () => {
-        try { sub.triggerRelease(); } catch (_) {}
-        setTimeout(() => disposeFanfare(), 3000);
-      }, { once: true });
+      const highCut = rawCtx.createBiquadFilter();
+      highCut.type = "highshelf";
+      highCut.frequency.value = 6000;
+      highCut.gain.value = -3; // -3dB high cut
+
+      // Simple convolver reverb via Web Audio
+      const convolver = rawCtx.createConvolver();
+      const irLength = rawCtx.sampleRate * 2.5;
+      const irBuffer = rawCtx.createBuffer(2, irLength, rawCtx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const data = irBuffer.getChannelData(ch);
+        for (let i = 0; i < irLength; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLength, 2.5);
+        }
+      }
+      convolver.buffer = irBuffer;
+
+      // Wet/dry mix: 70% dry, 30% reverb (more reverb for bigger hall feel)
+      const dryGain = rawCtx.createGain();
+      dryGain.gain.value = 0.7;
+      const wetGain = rawCtx.createGain();
+      wetGain.gain.value = 0.3;
+
+      // Chain: mediaSource → gain → EQ → dry/wet split → destination
+      mediaSource.connect(gain);
+      gain.connect(lowBoost);
+      lowBoost.connect(highCut);
+      highCut.connect(dryGain);
+      highCut.connect(convolver);
+      convolver.connect(wetGain);
+      dryGain.connect(rawCtx.destination);
+      wetGain.connect(rawCtx.destination);
+
+      // Sub-bass synth layer via Tone.js (separate chain, works fine)
+      try {
+        const subFilter = new T.Filter({ frequency: 100, type: "lowpass", rolloff: -24 }).toDestination();
+        fanfareNodes.push(subFilter);
+        const sub = new T.Synth({
+          oscillator: { type: "sine" },
+          envelope: { attack: 2, decay: 1, sustain: 0.6, release: 3 },
+          volume: -14,
+        }).connect(subFilter);
+        fanfareNodes.push(sub);
+
+        audio.addEventListener("playing", () => {
+          try { sub.triggerAttack("Ab0"); } catch (_) {} // Shifted down to match pitch
+        }, { once: true });
+
+        audio.addEventListener("ended", () => {
+          try { sub.triggerRelease(); } catch (_) {}
+          setTimeout(() => disposeFanfare(), 3000);
+        }, { once: true });
+      } catch (_) {
+        audio.addEventListener("ended", () => {
+          setTimeout(() => disposeFanfare(), 1000);
+        }, { once: true });
+      }
     } else {
-      // Fallback: just play the audio directly
+      audio.volume = 1.0;
       audio.addEventListener("ended", () => {
         setTimeout(() => disposeFanfare(), 1000);
       }, { once: true });
     }
 
-    // Fade out the fanfare towards the end of the dim duration
-    // so it doesn't cut abruptly
-    const fadeOutStart = Math.max(0, (duration - 3)) * 1000;
-    setTimeout(() => {
-      if (fanfareAudio) {
-        // Smooth volume fade over 3 seconds
-        const fadeSteps = 30;
-        const fadeStepTime = 3000 / fadeSteps;
-        let fadeStep = 0;
-        const fadeInterval = setInterval(() => {
-          fadeStep++;
-          if (fanfareAudio) {
-            fanfareAudio.volume = Math.max(0, 1 - fadeStep / fadeSteps);
-          }
-          if (fadeStep >= fadeSteps) {
-            clearInterval(fadeInterval);
-          }
-        }, fadeStepTime);
-      }
-    }, fadeOutStart);
-
     await audio.play();
-    console.log("Chair spirits: playing fanfare MP3");
+    console.log("Chair spirits: playing modulated fanfare MP3");
   } catch (e) {
     console.warn("Chair spirits: fanfare playback failed", e);
   }
@@ -487,6 +533,41 @@ export function remainingUnsettled() {
   return spirits.filter((s) => !s.settled && !s.removed).length;
 }
 
+/**
+ * Spawn a single "late guest" spirit that rushes to an empty seat.
+ * It picks a random unoccupied chair position and moves at 3x normal speed.
+ */
+function spawnLateGuest() {
+  if (!spiritsGroup || chairPositions.length === 0) return;
+
+  // Find a chair position not already taken by a spirit
+  const takenPositions = new Set(spirits.map((s) => `${s.targetPos.x.toFixed(2)},${s.targetPos.z.toFixed(2)}`));
+  const available = chairPositions.filter(
+    (p) => !takenPositions.has(`${p.x.toFixed(2)},${p.z.toFixed(2)}`)
+  );
+
+  // If all chairs are taken, pick a random one anyway (the late guest squeezes in)
+  const target = available.length > 0
+    ? available[Math.floor(Math.random() * available.length)]
+    : chairPositions[Math.floor(Math.random() * chairPositions.length)];
+
+  // Pick a random spawn side
+  const spawnPos = Math.random() > 0.5 ? spawnLeft : spawnRight;
+
+  const lateSpirit = createSpirit(target, spawnPos);
+  // Override speed to be 3x faster — in a hurry!
+  lateSpirit.speed = SPIRIT_SPEED * 3;
+  // Shine extra bright — this one stands out
+  lateSpirit.material.opacity = 1.0;
+  if (lateSpirit.light) {
+    lateSpirit.light.intensity = 1.6;
+    lateSpirit.light.distance = 12;
+  }
+
+  spirits.push(lateSpirit);
+  console.log("Chair spirits: late guest rushes in!");
+}
+
 export function updateSpirits(dt) {
   const clamped = Math.min(dt, 0.1);
 
@@ -649,11 +730,17 @@ function applyDimLevel(t) {
     renderer.toneMappingExposure = savedExposure * (1 - exposureT * 0.8);
   }
 
-  // Fade grid lines, images, and pulses while keeping typography visible
+  // Fade grid lines, images, and pulses — AND dim typography with them
   const screenMat = getScreenMaterial();
   if (screenMat && screenMat.uniforms) {
     if (screenMat.uniforms.uGridFade) {
       screenMat.uniforms.uGridFade.value = 1.0 - screenT;
+    }
+    // Dim overall brightness so typography fades out too
+    if (screenMat.uniforms.uBrightness) {
+      // Typography dims slightly later than grid (starts at t=0.4, full dark by t=1.0)
+      const brightnessT = Math.min(Math.max((t - 0.4) / 0.6, 0), 1);
+      screenMat.uniforms.uBrightness.value = 1.0 - brightnessT;
     }
   }
 
@@ -696,11 +783,16 @@ function applyRestoreLevel(t) {
     renderer.toneMappingExposure = savedExposure * (0.2 + exposureT * 0.8);
   }
 
-  // Restore grid lines and generative visuals
+  // Restore grid lines, generative visuals, and typography brightness
   const screenMat = getScreenMaterial();
   if (screenMat && screenMat.uniforms) {
     if (screenMat.uniforms.uGridFade) {
       screenMat.uniforms.uGridFade.value = screenT;
+    }
+    if (screenMat.uniforms.uBrightness) {
+      // Brightness restores early so text is readable quickly
+      const brightnessT = Math.min(t / 0.6, 1);
+      screenMat.uniforms.uBrightness.value = brightnessT;
     }
   }
 
@@ -720,16 +812,16 @@ function applyRestoreLevel(t) {
   }
 }
 
-export function dimRoomLights(duration = 3) {
+export function dimRoomLights(duration = 3, { playFanfare = true } = {}) {
   saveCurrentLightValues();
   dimDuration = duration;
   dimProgress = 0;
   dimming = true;
   restoring = false;
 
-  // Play cinematic fanfare (uses its own audio chain, unaffected by pulse audio)
-  // Pulse audio should already be faded out by the caller (runTrailerSequence)
-  playCinematicFanfare(duration);
+  if (playFanfare) {
+    playCinematicFanfare(duration);
+  }
   console.log(`Chair spirits: dimming lights over ${duration}s`);
 }
 
@@ -802,6 +894,207 @@ function applyScreenFade(t) {
       screenMat.uniforms.uBrightness.value = Math.min(1, level / 0.4);
     }
   }
+}
+
+// ---------------------------------------------------------------------------
+// Screen light burst — explosion of light particles from dome center
+// ---------------------------------------------------------------------------
+
+let burstParticles = [];
+let burstGroup = null;
+let burstAnimating = false;
+
+/**
+ * Create an explosion of light particles from the dome screen center.
+ * Particles radiate outward from the dome, creating a "drenched in light" effect,
+ * then fade out to reveal the text beneath.
+ * @param {number} count — number of particles
+ * @param {number} duration — total burst duration in seconds
+ * @returns {Promise} resolves when burst is finished
+ */
+function screenLightBurst(count = 200, duration = 4) {
+  const screen = getScreen();
+  if (!screen) return Promise.resolve();
+
+  // Get the screen center and measure its size for proper scaling
+  const screenCenter = new THREE.Vector3();
+  screen.getWorldPosition(screenCenter);
+
+  // Compute bounding sphere to know how big the dome screen is
+  if (!screen.geometry.boundingSphere) screen.geometry.computeBoundingSphere();
+  const screenRadius = screen.geometry.boundingSphere?.radius || 3;
+
+  // Get screen normal direction (local Z → world)
+  const screenNormal = new THREE.Vector3(0, 0, 1);
+  screen.localToWorld(screenNormal).sub(screenCenter).normalize();
+
+  // Create a group if needed
+  if (!burstGroup) {
+    burstGroup = new THREE.Group();
+    burstGroup.name = "LightBurst";
+    scene.add(burstGroup);
+  }
+
+  // Clean up any previous particles
+  while (burstGroup.children.length > 0) {
+    const child = burstGroup.children[0];
+    burstGroup.remove(child);
+    child.geometry?.dispose();
+    child.material?.dispose();
+  }
+  burstParticles = [];
+
+  // Build tangent frame for the screen surface
+  const up = new THREE.Vector3(0, 1, 0);
+  const tangentX = new THREE.Vector3().crossVectors(up, screenNormal).normalize();
+  const tangentY = new THREE.Vector3().crossVectors(screenNormal, tangentX).normalize();
+
+  // Scale particle size relative to the dome — much larger than before
+  const particleBaseSize = screenRadius * 0.015;
+  const geo = new THREE.SphereGeometry(particleBaseSize, 8, 6);
+
+  // Central bright flash light
+  const flashLight = new THREE.PointLight(0xfff5e0, 8, screenRadius * 4);
+  flashLight.position.copy(screenCenter).addScaledVector(screenNormal, 0.3);
+  burstGroup.add(flashLight);
+
+  for (let i = 0; i < count; i++) {
+    const hue = 0.08 + Math.random() * 0.1; // warm golden-white
+    const sat = 0.05 + Math.random() * 0.2;
+    const light = 0.9 + Math.random() * 0.1;
+    const color = new THREE.Color().setHSL(hue, sat, light);
+
+    const mat = new THREE.MeshBasicMaterial({
+      color,
+      transparent: true,
+      opacity: 1.0,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.copy(screenCenter);
+
+    // Push in front of the screen so particles are visible
+    mesh.position.addScaledVector(screenNormal, 0.15);
+
+    burstGroup.add(mesh);
+
+    // Radial direction on the dome surface — scaled to dome size
+    const angle = Math.random() * Math.PI * 2;
+    const speed = (0.5 + Math.random() * 1.5) * screenRadius;
+    const forwardPush = (0.2 + Math.random() * 0.6) * screenRadius * 0.3;
+
+    const dir = new THREE.Vector3()
+      .addScaledVector(tangentX, Math.cos(angle) * speed)
+      .addScaledVector(tangentY, Math.sin(angle) * speed)
+      .addScaledVector(screenNormal, forwardPush);
+
+    burstParticles.push({
+      mesh,
+      material: mat,
+      velocity: dir,
+      life: 0,
+      maxLife: 1.0 + Math.random() * 1.5, // 1–2.5s lifetime
+      delay: Math.random() * 0.5, // Staggered spawn
+      scale: 1.0 + Math.random() * 3.0, // much larger scale range
+    });
+  }
+
+  burstAnimating = true;
+
+  // Flash the screen brightness hard
+  const screenMat = getScreenMaterial();
+  if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+    screenMat.uniforms.uBrightness.value = 5.0; // Intense white flash
+  }
+
+  return new Promise((resolve) => {
+    const startTime = performance.now();
+    const durationMs = duration * 1000;
+
+    function animateBurst() {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(elapsed / durationMs, 1);
+
+      // Fade screen flash: 5.0 → 1.0 over 2.5s
+      if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+        const brightT = Math.min(elapsed / 2500, 1);
+        const eased = brightT * brightT; // ease-in for dramatic hold
+        screenMat.uniforms.uBrightness.value = 5.0 * (1 - eased) + 1.0 * eased;
+      }
+
+      // Bring uGridFade back up so text appears through the light
+      if (screenMat && screenMat.uniforms && screenMat.uniforms.uGridFade) {
+        const gridT = Math.min(Math.max((elapsed - 800) / 2500, 0), 1);
+        screenMat.uniforms.uGridFade.value = gridT;
+      }
+
+      // Fade the central flash light
+      const lightFade = Math.max(0, 1 - elapsed / 2000);
+      flashLight.intensity = 8 * lightFade;
+
+      let allDead = true;
+      const dt = 1 / 60; // approximate frame time
+
+      for (const p of burstParticles) {
+        if (elapsed < p.delay * 1000) {
+          p.mesh.visible = false;
+          allDead = false;
+          continue;
+        }
+
+        p.mesh.visible = true;
+        const particleElapsed = (elapsed - p.delay * 1000) / 1000;
+        p.life = particleElapsed;
+
+        if (p.life < p.maxLife) {
+          allDead = false;
+          const lifeT = p.life / p.maxLife;
+
+          // Move outward, decelerating
+          const moveSpeed = (1 - lifeT * 0.6) * dt;
+          p.mesh.position.addScaledVector(p.velocity, moveSpeed);
+
+          // Scale: rapid grow then slow shrink
+          const growPhase = Math.min(lifeT / 0.15, 1); // grow in first 15%
+          const shrinkPhase = lifeT > 0.15 ? (lifeT - 0.15) / 0.85 : 0;
+          const s = p.scale * growPhase * (1 - shrinkPhase * shrinkPhase);
+          p.mesh.scale.setScalar(Math.max(0.01, s));
+
+          // Fade out — hold bright for a while then rapid fade
+          const fadeStart = 0.4;
+          p.material.opacity = lifeT < fadeStart ? 1.0 : 1 - (lifeT - fadeStart) / (1 - fadeStart);
+        } else {
+          p.mesh.visible = false;
+        }
+      }
+
+      if (t < 1 && !allDead) {
+        requestAnimationFrame(animateBurst);
+      } else {
+        // Clean up
+        while (burstGroup.children.length > 0) {
+          const child = burstGroup.children[0];
+          burstGroup.remove(child);
+          child.material?.dispose();
+        }
+        burstParticles = [];
+        burstAnimating = false;
+        geo.dispose();
+
+        // Ensure screen is at normal brightness with text visible
+        if (screenMat && screenMat.uniforms) {
+          if (screenMat.uniforms.uBrightness) screenMat.uniforms.uBrightness.value = 1.0;
+          if (screenMat.uniforms.uGridFade) screenMat.uniforms.uGridFade.value = 1.0;
+        }
+
+        resolve();
+      }
+    }
+
+    requestAnimationFrame(animateBurst);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -1039,8 +1332,93 @@ function setTrailerMode(on) {
   document.body.classList.toggle("dome-mode", on);
 }
 
-export async function runTrailerSequence(videoUrl) {
-  const url = videoUrl || DEFAULT_TRAILER_VIDEO;
+/**
+ * Flash a word onto the dome by briefly pulsing uBrightness.
+ * Shows the word centered across all 5 text lines (clearing the others).
+ */
+function flashWordOnDome(word, flashDuration = 600) {
+  const screenMat = getScreenMaterial();
+
+  // Put the word on the middle line (3), clear others
+  scrambleToNewText({
+    1: "",
+    2: "",
+    3: word,
+    4: "",
+    5: "",
+  }, Math.floor(flashDuration * 0.6));
+
+  // Brightness pulse: 0 → 1 → 0 over flashDuration
+  if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+    const startTime = performance.now();
+    function pulse() {
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(elapsed / flashDuration, 1);
+      // Quick attack (20%), hold (40%), decay (40%)
+      let brightness;
+      if (t < 0.2) {
+        brightness = t / 0.2; // ramp up
+      } else if (t < 0.6) {
+        brightness = 1.0; // hold
+      } else {
+        brightness = 1.0 - (t - 0.6) / 0.4; // decay
+      }
+      screenMat.uniforms.uBrightness.value = brightness;
+      if (t < 1) requestAnimationFrame(pulse);
+    }
+    pulse();
+  }
+}
+
+/**
+ * Play the fanfare with words synced to its musical peaks.
+ * The 20th Century Fox fanfare (~21s at playbackRate 0.891) has recognizable peaks.
+ * We map approximate timestamps to word triggers.
+ * Returns a promise that resolves when the word sequence is complete.
+ */
+async function playFanfareWithWords() {
+  // Start the fanfare audio
+  await playCinematicFanfare();
+
+  // Word sequence with approximate timestamps (in ms) of fanfare peaks.
+  // The fanfare is pitched down 2 semitones (playbackRate ~0.891) so it's ~22s.
+  // These timings approximate the brass crescendo peaks.
+  const wordSequence = [
+    { time: 1500,  word: "DOME",     flash: 800 },
+    { time: 3500,  word: "DREAMING", flash: 800 },
+    { time: 6000,  word: "OPEN",     flash: 700 },
+    { time: 8000,  word: "CALL",     flash: 700 },
+    { time: 10500, word: "LIVE",     flash: 800 },
+    { time: 12500, word: "NOW",      flash: 800 },
+    { time: 15000, word: "APPLY",    flash: 900 },
+    { time: 17500, word: "LATEST",   flash: 700 },
+    { time: 19500, word: "1 MARCH",  flash: 1200 },
+  ];
+
+  const startTime = performance.now();
+
+  // Schedule each word flash
+  for (const entry of wordSequence) {
+    const now = performance.now();
+    const waitTime = entry.time - (now - startTime);
+    if (waitTime > 0) {
+      await new Promise((r) => setTimeout(r, waitTime));
+    }
+    console.log(`Chair spirits: "${entry.word}"`);
+    flashWordOnDome(entry.word, entry.flash);
+  }
+
+  // After last word, hold for a moment then fade to black
+  await new Promise((r) => setTimeout(r, 2000));
+
+  // Fade screen to black after the word sequence
+  const screenMat = getScreenMaterial();
+  if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+    screenMat.uniforms.uBrightness.value = 0;
+  }
+}
+
+export async function runTrailerSequence() {
   console.log("Chair spirits: trailer sequence started");
 
   // Fade out page text
@@ -1051,10 +1429,21 @@ export async function runTrailerSequence(videoUrl) {
     try { await window.startAudio(); } catch (e) { /* needs gesture */ }
   }
 
-  // 2. Spirits float in
+  // 2. Save current rotation, text, and image state for later restore
+  savedGridRotationSpeed = textureRotationSettings.speed;
+  savedTextRotationEnabled = polarGridSettings.textRotationEnabled;
+  savedTextRotationBPM = polarGridSettings.textRotationBPM;
+  savedTextScrambleEnabled = polarGridSettings.textScrambleEnabled;
+  savedImageCellsEnabled = polarGridSettings.imageCellsEnabled;
+  savedTextContents = {};
+  for (let i = 1; i <= 5; i++) {
+    savedTextContents[i] = polarGridSettings[`text${i}Content`];
+  }
+
+  // 3. Spirits float in
   startSpiritsSequence();
 
-  // 3. Wait for most spirits to be seated (~80%)
+  // 4. Wait for most spirits to be seated (~80%)
   const almostAllCount = Math.floor(chairPositions.length * 0.8);
   await new Promise((resolve) => {
     const check = setInterval(() => {
@@ -1066,17 +1455,20 @@ export async function runTrailerSequence(videoUrl) {
     }, 200);
   });
 
-  // 4. Fade out the ambient tick/drone sounds first (buildup silence before fanfare)
-  const pulseAudioFadeDuration = 5; // seconds of anticipation
-  const steps = 20;
-  const stepTime = (pulseAudioFadeDuration * 1000) / steps;
+  // 5. Fade out images from the grid so typography is clearer
+  setImageCellsEnabled(false);
+
+  // 6. Fade out the ambient tick/drone sounds (buildup silence before fanfare)
+  const pulseAudioFadeDuration = 5;
+  const fadeSteps = 20;
+  const stepTime = (pulseAudioFadeDuration * 1000) / fadeSteps;
   let step = 0;
   await new Promise((resolve) => {
     const fadeInterval = setInterval(() => {
       step++;
-      const level = 1 - step / steps;
+      const level = 1 - step / fadeSteps;
       setMasterVolume(Math.max(0, level * 0.5));
-      if (step >= steps) {
+      if (step >= fadeSteps) {
         clearInterval(fadeInterval);
         stopPulseAudio();
         resolve();
@@ -1084,12 +1476,35 @@ export async function runTrailerSequence(videoUrl) {
     }, stepTime);
   });
 
-  // 5. Now start the cinematic sequence: fanfare + lights dim + screen fades
-  //    All happen together so sound and visuals are in sync
-  const fanfareDuration = 12;
-  dimRoomLights(fanfareDuration);
+  // 7. Ease grid rotation to zero (ease-out cubic for smooth deceleration)
+  const rotSlowDuration = 4000;
+  const rotSlowStart = performance.now();
+  const origSpeed = textureRotationSettings.speed;
+  await new Promise((resolve) => {
+    function slowDown() {
+      const elapsed = performance.now() - rotSlowStart;
+      const t = Math.min(elapsed / rotSlowDuration, 1);
+      // Ease-out cubic: fast start, gentle stop — feels like natural deceleration
+      const eased = 1 - Math.pow(1 - t, 3);
+      textureRotationSettings.speed = origSpeed * (1 - eased);
+      if (t < 1) {
+        requestAnimationFrame(slowDown);
+      } else {
+        textureRotationSettings.speed = 0;
+        resolve();
+      }
+    }
+    slowDown();
+  });
 
-  // 5. Wait for all spirits to settle while dimming continues
+  // Stop text step rotation
+  setTextRotationEnabled(false);
+
+  // 8. Dim room lights (NO fanfare yet — fanfare plays after dim)
+  const dimDur = 10;
+  dimRoomLights(dimDur, { playFanfare: false });
+
+  // 9. Wait for all spirits to settle
   await new Promise((resolve) => {
     const check = setInterval(() => {
       if (isSequenceComplete()) {
@@ -1099,35 +1514,113 @@ export async function runTrailerSequence(videoUrl) {
     }, 200);
   });
 
-  // 6. Ensure dim finishes
+  // 9b. "Late guest" — one final spirit rushes in (shorter pause than before)
+  await new Promise((r) => setTimeout(r, 1000));
+  spawnLateGuest();
+
+  // Wait for the late guest to settle
+  await new Promise((resolve) => {
+    const check = setInterval(() => {
+      const unsettled = spirits.filter((s) => !s.settled && !s.removed).length;
+      if (unsettled === 0) {
+        clearInterval(check);
+        resolve();
+      }
+    }, 200);
+  });
+
+  // 10. Wait for dim to finish (room is now fully dark)
   while (dimming) {
     await new Promise((r) => setTimeout(r, 200));
   }
 
-  // 5. Play video on dome
-  console.log("Chair spirits: playing video on dome");
-  const video = await playVideoOnDome(url);
+  // 11. Enable scramble, then play fanfare with synced word flashes on dome
+  console.log("Chair spirits: starting fanfare word sequence");
+  setTextScrambleEnabled(true);
 
-  if (video) {
-    // Wait for video to end
+  await playFanfareWithWords();
+
+  console.log("Chair spirits: fanfare word sequence complete");
+
+  // 12. Brief hold on last word, then set up final announcement
+  scrambleToNewText({
+    1: "OPEN CALL",
+    2: "IS LIVE",
+    3: "DOME DREAMING",
+    4: "FULLDOME FILM FESTIVAL",
+    5: "DEADLINE 1ST OF MARCH",
+  }, 600);
+
+  // Bring brightness back up to show the final announcement
+  const screenMat = getScreenMaterial();
+  if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+    const rampStart = performance.now();
     await new Promise((resolve) => {
-      video.addEventListener("ended", resolve, { once: true });
+      function rampUp() {
+        const t = Math.min((performance.now() - rampStart) / 2000, 1);
+        screenMat.uniforms.uBrightness.value = t;
+        if (t < 1) requestAnimationFrame(rampUp);
+        else resolve();
+      }
+      rampUp();
     });
-    console.log("Chair spirits: video ended — reversing");
   }
 
-  // 5. Reverse everything
-  await reverseTrailer(3);
+  console.log("Chair spirits: open call announcement revealed");
+
+  // Hold the announcement
+  await new Promise((r) => setTimeout(r, 6000));
+
+  // 13. Reverse everything
+  await reverseTrailer(4);
 }
 
 export async function reverseTrailer(duration = 3) {
   console.log("Chair spirits: reversing trailer");
-  // Crossfade video out and dome graphics back in
-  await crossfadeVideoToDome(duration);
+
+  // Stop fanfare if still playing
+  disposeFanfare();
+
+  // Scramble text back to original content
+  if (savedTextContents) {
+    scrambleToNewText(savedTextContents, 400);
+  }
+
+  // Restore grid, screen, and lights (applyRestoreLevel now handles uBrightness too)
   startScreenFadeIn(duration);
   restoreRoomLights(duration);
   reverseSpiritsSequence();
   filmPlaying = false;
+
+  // Gradually restore grid rotation speed (ease-in for gentle start)
+  const restoreRotStart = performance.now();
+  const restoreRotDuration = duration * 1000;
+  const targetSpeed = savedGridRotationSpeed ?? 0.02;
+  function restoreRot() {
+    const elapsed = performance.now() - restoreRotStart;
+    const t = Math.min(elapsed / restoreRotDuration, 1);
+    const eased = t * t; // ease-in quadratic — gentle start
+    textureRotationSettings.speed = targetSpeed * eased;
+    if (t < 1) requestAnimationFrame(restoreRot);
+  }
+  restoreRot();
+
+  // Restore text rotation and scramble settings
+  if (savedTextRotationEnabled !== null) {
+    setTextRotationEnabled(savedTextRotationEnabled);
+  }
+  if (savedTextRotationBPM !== null) {
+    setTextRotationBPM(savedTextRotationBPM);
+  }
+  if (savedTextScrambleEnabled !== null) {
+    setTextScrambleEnabled(savedTextScrambleEnabled);
+  }
+
+  // Restore images in the grid texture
+  if (savedImageCellsEnabled !== null) {
+    setImageCellsEnabled(savedImageCellsEnabled);
+  }
+
   // Fade text back in
   setTrailerMode(false);
 }
