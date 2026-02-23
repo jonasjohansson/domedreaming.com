@@ -18,7 +18,7 @@ import { glbLights, fbxMeshes, chairMarkerPositions, spawnPointLeft, spawnPointR
 import { renderer } from "./scene.js";
 import { getNavMeshQuery } from "./navmesh.js";
 import { getMaterial } from "./utils.js";
-import { initAudio } from "./pulse-audio.js";
+import { initAudio, setMasterVolume, stopAudio as stopPulseAudio } from "./pulse-audio.js";
 
 // ---------------------------------------------------------------------------
 // State
@@ -830,24 +830,28 @@ export function dimRoomLights(duration = 3) {
   dimming = true;
   restoring = false;
 
-  // Fade audio out over the full dim duration (matches visual fade)
-  try {
-    const Tone = window.Tone;
-    if (Tone && Tone.Destination) {
-      Tone.Destination.volume.rampTo(-Infinity, duration);
-      setTimeout(() => {
-        if (window.stopAudio) window.stopAudio();
-        // Reset destination volume for later use
-        if (Tone.Destination) Tone.Destination.volume.value = 0;
-      }, (duration + 0.5) * 1000);
-    } else if (window.stopAudio) {
-      window.stopAudio();
-    }
-  } catch (e) {
-    if (window.stopAudio) window.stopAudio();
-  }
+  // Fade pulse audio (drones/ticks) in sync with screen graphics fading out.
+  // Screen graphics start fading at 30% of dim progress, so delay the audio fade.
+  // The fanfare has its own gain chain and is NOT affected by this.
+  const audioFadeDelay = duration * 0.3; // when screen graphics start dimming
+  const audioFadeDuration = duration * 0.5; // fade over the same window
+  setTimeout(() => {
+    // Gradually reduce pulse audio volume to zero
+    const steps = 20;
+    const stepTime = (audioFadeDuration * 1000) / steps;
+    let step = 0;
+    const fadeInterval = setInterval(() => {
+      step++;
+      const level = 1 - step / steps;
+      setMasterVolume(Math.max(0, level * 0.5)); // 0.5 is default master volume
+      if (step >= steps) {
+        clearInterval(fadeInterval);
+        stopPulseAudio();
+      }
+    }, stepTime);
+  }, audioFadeDelay * 1000);
 
-  // Play cinematic rumble
+  // Play cinematic fanfare (uses its own audio chain, unaffected by pulse fade)
   playCinematicFanfare(duration);
   console.log(`Chair spirits: dimming lights over ${duration}s`);
 }
