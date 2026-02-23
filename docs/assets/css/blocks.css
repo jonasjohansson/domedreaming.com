@@ -21,6 +21,10 @@
   text-align: center;
 }
 
+.content-header {
+  text-align: center;
+}
+
 .content-main,
 .content-credits {
   text-align: left;

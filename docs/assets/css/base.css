@@ -9,7 +9,7 @@
   --quarter-row-height: calc(var(--row-height) / 4);
 
   /* Colors - set dynamically via JavaScript */
-  --color-bg: #ffffff;
+  --color-bg: #000000;
   --color-text: #000000;
   --color-dot: #ffffff;
   --color-primary: #616b7a;
@@ -103,7 +103,7 @@ html::-webkit-scrollbar {
 }
 
 body {
-  position: relative;
+  position: fixed;
   font-family: var(--font-family);
   font-size: var(--font-size-base);
   line-height: var(--line-height-base);
