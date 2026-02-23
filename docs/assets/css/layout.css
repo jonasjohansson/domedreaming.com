@@ -227,13 +227,11 @@ main button .small {
 body.dome-mode .dashboard-overlay {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 2s ease-in-out;
 }
 
 body.dome-mode .grid-overlay {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 2s ease-in-out;
 }
 
 body.dome-mode #canvas-container {
