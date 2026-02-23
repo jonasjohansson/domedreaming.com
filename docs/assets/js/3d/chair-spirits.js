@@ -22,6 +22,7 @@ import { initAudio, setMasterVolume, stopAudio as stopPulseAudio } from "./pulse
 import { textureRotationSettings } from "../core/settings.js";
 import {
   scrambleToNewText,
+  setTextContent,
   setTextRotationEnabled,
   setTextRotationBPM,
   setTextScrambleEnabled,
@@ -109,6 +110,9 @@ async function ensureTone() {
   return T;
 }
 
+/** Raw Web Audio nodes for cleanup */
+let fanfareRawNodes = [];
+
 function disposeFanfare() {
   if (fanfareAudio) {
     fanfareAudio.pause();
@@ -116,6 +120,12 @@ function disposeFanfare() {
     fanfareAudio = null;
   }
   fanfareGain = null;
+  // Disconnect raw Web Audio nodes
+  fanfareRawNodes.forEach((n) => {
+    try { n.disconnect(); } catch (_) {}
+  });
+  fanfareRawNodes = [];
+  // Dispose Tone.js nodes
   fanfareNodes.forEach((n) => {
     try { n.dispose(); } catch (_) {}
   });
@@ -190,6 +200,9 @@ async function playCinematicFanfare(duration) {
       convolver.connect(wetGain);
       dryGain.connect(rawCtx.destination);
       wetGain.connect(rawCtx.destination);
+
+      // Track raw nodes for cleanup on replay
+      fanfareRawNodes = [mediaSource, gain, lowBoost, highCut, convolver, dryGain, wetGain];
 
       // Sub-bass synth layer via Tone.js (separate chain, works fine)
       try {
@@ -1333,37 +1346,36 @@ function setTrailerMode(on) {
 }
 
 /**
- * Flash a word onto the dome by briefly pulsing uBrightness.
- * Shows the word centered across all 5 text lines (clearing the others).
+ * Flash a word onto the dome with a brightness pump (no scramble).
+ * Places the word on a specific text line, clears the others.
+ * @param {string} word — the word to display
+ * @param {number} line — which text line (1-5) to place it on
+ * @param {number} flashDuration — total brightness pulse duration in ms
  */
-function flashWordOnDome(word, flashDuration = 600) {
+function flashWordOnDome(word, line = 3, flashDuration = 800) {
   const screenMat = getScreenMaterial();
 
-  // Put the word on the middle line (3), clear others
-  scrambleToNewText({
-    1: "",
-    2: "",
-    3: word,
-    4: "",
-    5: "",
-  }, Math.floor(flashDuration * 0.6));
+  // Place word directly (no scramble) on the specified line, clear others
+  for (let i = 1; i <= 5; i++) {
+    setTextContent(i, i === line ? word : "");
+  }
 
-  // Brightness pulse: 0 → 1 → 0 over flashDuration
+  // Brightness pump: 0 → peak → dim hold
   if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
     const startTime = performance.now();
     function pulse() {
       const elapsed = performance.now() - startTime;
       const t = Math.min(elapsed / flashDuration, 1);
-      // Quick attack (20%), hold (40%), decay (40%)
+      // Sharp attack (10%), bright hold (30%), slow decay to dim glow (60%)
       let brightness;
-      if (t < 0.2) {
-        brightness = t / 0.2; // ramp up
-      } else if (t < 0.6) {
-        brightness = 1.0; // hold
+      if (t < 0.1) {
+        brightness = (t / 0.1) * 1.5; // overshoot to 1.5 for bloom punch
+      } else if (t < 0.4) {
+        brightness = 1.5 - (t - 0.1) / 0.3 * 0.5; // settle from 1.5 to 1.0
       } else {
-        brightness = 1.0 - (t - 0.6) / 0.4; // decay
+        brightness = 1.0 - (t - 0.4) / 0.6 * 0.8; // decay to 0.2 dim glow
       }
-      screenMat.uniforms.uBrightness.value = brightness;
+      screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
       if (t < 1) requestAnimationFrame(pulse);
     }
     pulse();
@@ -1372,46 +1384,44 @@ function flashWordOnDome(word, flashDuration = 600) {
 
 /**
  * Play the fanfare with words synced to its musical peaks.
- * The 20th Century Fox fanfare (~21s at playbackRate 0.891) has recognizable peaks.
- * We map approximate timestamps to word triggers.
- * Returns a promise that resolves when the word sequence is complete.
+ * The fanfare is pitched down 2 semitones (playbackRate ~0.891) so it's ~24s.
+ * Words appear on different text lines for visual variety.
+ * No scramble effect — clean text with brightness pumps.
  */
 async function playFanfareWithWords() {
   // Start the fanfare audio
   await playCinematicFanfare();
 
-  // Word sequence with approximate timestamps (in ms) of fanfare peaks.
-  // The fanfare is pitched down 2 semitones (playbackRate ~0.891) so it's ~22s.
-  // These timings approximate the brass crescendo peaks.
+  // Word sequence with timestamps matched to the pitched-down fanfare peaks.
+  // The original fanfare is ~21s; at 0.891x it's ~23.5s.
+  // Each entry specifies which text line (1-5) the word appears on.
   const wordSequence = [
-    { time: 1500,  word: "DOME",     flash: 800 },
-    { time: 3500,  word: "DREAMING", flash: 800 },
-    { time: 6000,  word: "OPEN",     flash: 700 },
-    { time: 8000,  word: "CALL",     flash: 700 },
-    { time: 10500, word: "LIVE",     flash: 800 },
-    { time: 12500, word: "NOW",      flash: 800 },
-    { time: 15000, word: "APPLY",    flash: 900 },
-    { time: 17500, word: "LATEST",   flash: 700 },
-    { time: 19500, word: "1 MARCH",  flash: 1200 },
+    { time: 3000,  word: "DOME",      line: 3, flash: 1000 },
+    { time: 5500,  word: "DREAMING",  line: 4, flash: 1000 },
+    { time: 8500,  word: "OPEN",      line: 2, flash: 900  },
+    { time: 10500, word: "CALL",      line: 5, flash: 900  },
+    { time: 13000, word: "LIVE",      line: 3, flash: 1000 },
+    { time: 15500, word: "NOW",       line: 2, flash: 1000 },
+    { time: 17500, word: "APPLY",     line: 4, flash: 1000 },
+    { time: 19500, word: "LATEST",    line: 3, flash: 900  },
+    { time: 21500, word: "1 MARCH",   line: 5, flash: 1400 },
   ];
 
   const startTime = performance.now();
 
-  // Schedule each word flash
   for (const entry of wordSequence) {
     const now = performance.now();
     const waitTime = entry.time - (now - startTime);
     if (waitTime > 0) {
       await new Promise((r) => setTimeout(r, waitTime));
     }
-    console.log(`Chair spirits: "${entry.word}"`);
-    flashWordOnDome(entry.word, entry.flash);
+    console.log(`Chair spirits: "${entry.word}" (line ${entry.line})`);
+    flashWordOnDome(entry.word, entry.line, entry.flash);
   }
 
-  // After last word, hold for a moment then fade to black
-  await new Promise((r) => setTimeout(r, 2000));
+  // Hold last word briefly, then dim to black
+  await new Promise((r) => setTimeout(r, 2500));
 
-  // Fade screen to black after the word sequence
   const screenMat = getScreenMaterial();
   if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
     screenMat.uniforms.uBrightness.value = 0;
@@ -1425,6 +1435,7 @@ export async function runTrailerSequence() {
   setTrailerMode(true);
 
   // 1. Start audio if available (ambient soundscape while spirits find seats)
+  //    Re-enable audio system in case it was stopped by a previous run
   if (window.startAudio) {
     try { await window.startAudio(); } catch (e) { /* needs gesture */ }
   }
@@ -1440,15 +1451,18 @@ export async function runTrailerSequence() {
     savedTextContents[i] = polarGridSettings[`text${i}Content`];
   }
 
+  // Make sure any previous fanfare is cleaned up
+  disposeFanfare();
+
   // 3. Spirits float in
   startSpiritsSequence();
 
-  // 4. Wait for most spirits to be seated (~80%)
-  const almostAllCount = Math.floor(chairPositions.length * 0.8);
+  // 4. Wait for ~50% spirits seated, then start dimming + rotation easing early
+  const halfCount = Math.floor(chairPositions.length * 0.5);
   await new Promise((resolve) => {
     const check = setInterval(() => {
       const settledCount = spirits.filter((s) => s.settled).length;
-      if (settledCount >= almostAllCount) {
+      if (settledCount >= halfCount) {
         clearInterval(check);
         resolve();
       }
@@ -1463,7 +1477,8 @@ export async function runTrailerSequence() {
   const fadeSteps = 20;
   const stepTime = (pulseAudioFadeDuration * 1000) / fadeSteps;
   let step = 0;
-  await new Promise((resolve) => {
+  // Don't await — let it fade in background while rotation eases
+  const audioFadePromise = new Promise((resolve) => {
     const fadeInterval = setInterval(() => {
       step++;
       const level = 1 - step / fadeSteps;
@@ -1476,16 +1491,19 @@ export async function runTrailerSequence() {
     }, stepTime);
   });
 
-  // 7. Ease grid rotation to zero (ease-out cubic for smooth deceleration)
-  const rotSlowDuration = 4000;
+  // 7. Ease grid rotation to zero smoothly (ease-out quintic for very gradual stop)
+  //    We animate the speed directly — the main loop reads it each frame via
+  //    texture.rotation -= textureRotationSettings.speed * deltaTime
+  //    This does NOT cause skips because we only ever write smaller values.
+  const rotSlowDuration = 5000;
   const rotSlowStart = performance.now();
   const origSpeed = textureRotationSettings.speed;
-  await new Promise((resolve) => {
+  const rotSlowPromise = new Promise((resolve) => {
     function slowDown() {
       const elapsed = performance.now() - rotSlowStart;
       const t = Math.min(elapsed / rotSlowDuration, 1);
-      // Ease-out cubic: fast start, gentle stop — feels like natural deceleration
-      const eased = 1 - Math.pow(1 - t, 3);
+      // Ease-out quintic — very smooth, long tail
+      const eased = 1 - Math.pow(1 - t, 5);
       textureRotationSettings.speed = origSpeed * (1 - eased);
       if (t < 1) {
         requestAnimationFrame(slowDown);
@@ -1494,15 +1512,18 @@ export async function runTrailerSequence() {
         resolve();
       }
     }
-    slowDown();
+    requestAnimationFrame(slowDown);
   });
 
-  // Stop text step rotation
+  // Stop text step rotation (this is the per-cell BPM stepping, separate from grid)
   setTextRotationEnabled(false);
 
-  // 8. Dim room lights (NO fanfare yet — fanfare plays after dim)
+  // 8. Start dimming early (runs in parallel with rotation easing)
   const dimDur = 10;
   dimRoomLights(dimDur, { playFanfare: false });
+
+  // Wait for rotation + audio fade to finish
+  await Promise.all([rotSlowPromise, audioFadePromise]);
 
   // 9. Wait for all spirits to settle
   await new Promise((resolve) => {
@@ -1514,8 +1535,8 @@ export async function runTrailerSequence() {
     }, 200);
   });
 
-  // 9b. "Late guest" — one final spirit rushes in (shorter pause than before)
-  await new Promise((r) => setTimeout(r, 1000));
+  // 9b. "Late guest" — one final spirit rushes in after a noticeable pause
+  await new Promise((r) => setTimeout(r, 4000));
   spawnLateGuest();
 
   // Wait for the late guest to settle
@@ -1534,15 +1555,15 @@ export async function runTrailerSequence() {
     await new Promise((r) => setTimeout(r, 200));
   }
 
-  // 11. Enable scramble, then play fanfare with synced word flashes on dome
+  // 11. Play fanfare with synced word flashes (no scramble — clean text + bloom pump)
   console.log("Chair spirits: starting fanfare word sequence");
-  setTextScrambleEnabled(true);
 
   await playFanfareWithWords();
 
   console.log("Chair spirits: fanfare word sequence complete");
 
-  // 12. Brief hold on last word, then set up final announcement
+  // 12. Set up final announcement with scramble-in effect
+  setTextScrambleEnabled(true);
   scrambleToNewText({
     1: "OPEN CALL",
     2: "IS LIVE",
