@@ -136,7 +136,7 @@ body.dome-mode .page-section:has(#canvas-container) a {
 
 a:link:not(:has(img)),
 a:visited:not(:has(img)) {
-  padding: 0.4em 0.5em;
+  padding: 0.2em 0.4em;
   border-radius: 0.2em;
 }
 
