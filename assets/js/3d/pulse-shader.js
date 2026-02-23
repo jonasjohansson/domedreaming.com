@@ -32,6 +32,7 @@ uniform float uPulseIntensity;
 uniform float uRotation;  // Texture rotation in radians
 uniform float uTickIntensity;  // 0-1, for pulse pulsation on ticks
 uniform int uActivePulse;  // Which pulse reacts to tick (-1 = none)
+uniform float uBrightness;  // 0-1, overall output brightness (for cinematic fade)
 
 varying vec2 vUv;
 
@@ -88,6 +89,9 @@ void main() {
   // Blend pulse glow with base
   vec3 finalColor = baseColor.rgb + vec3(pulseGlow * uPulseIntensity);
 
+  // Apply overall brightness (cinematic fade to black)
+  finalColor *= uBrightness;
+
   gl_FragColor = vec4(finalColor, baseColor.a);
 }
 `;
@@ -110,7 +114,8 @@ export function createPulseUniforms(baseTexture) {
     uPulseIntensity: { value: 1.0 },
     uRotation: { value: 0 },  // Texture rotation in radians
     uTickIntensity: { value: 0 },  // Tick pulsation intensity
-    uActivePulse: { value: -1 }  // Which pulse is pulsating
+    uActivePulse: { value: -1 },  // Which pulse is pulsating
+    uBrightness: { value: 1.0 }  // Overall output brightness (1 = full, 0 = black)
   };
 
   return pulseUniforms;

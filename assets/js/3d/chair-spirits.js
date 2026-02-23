@@ -740,19 +740,12 @@ function applyDimLevel(t) {
     renderer.toneMappingExposure = savedExposure * (1 - exposureT * 0.8);
   }
 
-  // Gradually dim the dome screen generative visuals (lines, text, patterns)
+  // Fade the entire dome screen output (typography, grid lines, pulses) to black
   const screenMat = getScreenMaterial();
-  if (screenMat && savedScreenEmissive !== null) {
-    screenMat.emissiveIntensity = savedScreenEmissive * (1 - screenT);
-    if (screenMat.color) {
-      const c = 1 - screenT;
-      screenMat.color.setRGB(c, c, c);
+  if (screenMat && screenMat.uniforms) {
+    if (screenMat.uniforms.uBrightness) {
+      screenMat.uniforms.uBrightness.value = 1.0 - screenT;
     }
-    // Also dim shader uniforms (pulse brightness) for generative content
-    if (screenMat.uniforms && screenMat.uniforms.uPulseIntensity) {
-      screenMat.uniforms.uPulseIntensity.value = 1.0 * (1 - screenT);
-    }
-    screenMat.needsUpdate = true;
   }
 
   // Darken floor to a darker hue of the MainStructure color
@@ -794,17 +787,12 @@ function applyRestoreLevel(t) {
     renderer.toneMappingExposure = savedExposure * (0.2 + exposureT * 0.8);
   }
 
-  // Restore the dome screen and generative visuals
+  // Restore the dome screen generative visuals
   const screenMat = getScreenMaterial();
-  if (screenMat && savedScreenEmissive !== null) {
-    screenMat.emissiveIntensity = savedScreenEmissive * screenT;
-    if (screenMat.color) {
-      screenMat.color.setRGB(screenT, screenT, screenT);
+  if (screenMat && screenMat.uniforms) {
+    if (screenMat.uniforms.uBrightness) {
+      screenMat.uniforms.uBrightness.value = screenT;
     }
-    if (screenMat.uniforms && screenMat.uniforms.uPulseIntensity) {
-      screenMat.uniforms.uPulseIntensity.value = screenT;
-    }
-    screenMat.needsUpdate = true;
   }
 
   // Restore floor color
@@ -830,28 +818,8 @@ export function dimRoomLights(duration = 3) {
   dimming = true;
   restoring = false;
 
-  // Fade pulse audio (drones/ticks) in sync with screen graphics fading out.
-  // Screen graphics start fading at 30% of dim progress, so delay the audio fade.
-  // The fanfare has its own gain chain and is NOT affected by this.
-  const audioFadeDelay = duration * 0.3; // when screen graphics start dimming
-  const audioFadeDuration = duration * 0.5; // fade over the same window
-  setTimeout(() => {
-    // Gradually reduce pulse audio volume to zero
-    const steps = 20;
-    const stepTime = (audioFadeDuration * 1000) / steps;
-    let step = 0;
-    const fadeInterval = setInterval(() => {
-      step++;
-      const level = 1 - step / steps;
-      setMasterVolume(Math.max(0, level * 0.5)); // 0.5 is default master volume
-      if (step >= steps) {
-        clearInterval(fadeInterval);
-        stopPulseAudio();
-      }
-    }, stepTime);
-  }, audioFadeDelay * 1000);
-
-  // Play cinematic fanfare (uses its own audio chain, unaffected by pulse fade)
+  // Play cinematic fanfare (uses its own audio chain, unaffected by pulse audio)
+  // Pulse audio should already be faded out by the caller (runTrailerSequence)
   playCinematicFanfare(duration);
   console.log(`Chair spirits: dimming lights over ${duration}s`);
 }
@@ -914,18 +882,10 @@ function applyScreenFade(t) {
 
   const level = screenFadeIn ? t : 1 - t;
 
-  if (screenMat.emissiveIntensity !== undefined && savedScreenEmissive !== null) {
-    screenMat.emissiveIntensity = savedScreenEmissive * level;
+  // Fade shader brightness uniform (controls entire screen output)
+  if (screenMat.uniforms && screenMat.uniforms.uBrightness) {
+    screenMat.uniforms.uBrightness.value = (savedScreenUniforms?.brightness || 1.0) * level;
   }
-  if (screenMat.color) {
-    const base = savedScreenColor || new THREE.Color(1, 1, 1);
-    screenMat.color.setRGB(base.r * level, base.g * level, base.b * level);
-  }
-  // Fade shader uniforms (pulse shader brightness)
-  if (screenMat.uniforms && screenMat.uniforms.uBrightness && savedScreenUniforms) {
-    screenMat.uniforms.uBrightness.value = (savedScreenUniforms.brightness || 1.0) * level;
-  }
-  screenMat.needsUpdate = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -1178,21 +1138,42 @@ export async function runTrailerSequence(videoUrl) {
   // 2. Spirits float in
   startSpiritsSequence();
 
-  // 3. Wait for half the spirits to spawn, then start dimming
-  const halfCount = Math.floor(chairPositions.length / 2);
+  // 3. Wait for most spirits to be seated (~80%)
+  const almostAllCount = Math.floor(chairPositions.length * 0.8);
   await new Promise((resolve) => {
     const check = setInterval(() => {
-      if (spirits.length >= halfCount) {
+      const settledCount = spirits.filter((s) => s.settled).length;
+      if (settledCount >= almostAllCount) {
         clearInterval(check);
         resolve();
       }
     }, 200);
   });
 
-  // Start dimming once half have spawned
-  dimRoomLights(15);
+  // 4. Fade out the ambient tick/drone sounds first (buildup silence)
+  const pulseAudioFadeDuration = 3; // seconds of anticipation
+  const steps = 20;
+  const stepTime = (pulseAudioFadeDuration * 1000) / steps;
+  let step = 0;
+  await new Promise((resolve) => {
+    const fadeInterval = setInterval(() => {
+      step++;
+      const level = 1 - step / steps;
+      setMasterVolume(Math.max(0, level * 0.5));
+      if (step >= steps) {
+        clearInterval(fadeInterval);
+        stopPulseAudio();
+        resolve();
+      }
+    }, stepTime);
+  });
 
-  // 4. Wait for all spirits to settle
+  // 5. Now start the cinematic sequence: fanfare + lights dim + screen fades
+  //    All happen together so sound and visuals are in sync
+  const fanfareDuration = 12;
+  dimRoomLights(fanfareDuration);
+
+  // 5. Wait for all spirits to settle while dimming continues
   await new Promise((resolve) => {
     const check = setInterval(() => {
       if (isSequenceComplete()) {
@@ -1202,14 +1183,10 @@ export async function runTrailerSequence(videoUrl) {
     }, 200);
   });
 
-  // 5. Ensure dim finishes if spirits settled early
+  // 6. Ensure dim finishes
   while (dimming) {
     await new Promise((r) => setTimeout(r, 200));
   }
-
-  // 6. Fade screen content to black before swapping to video
-  startScreenFadeOut(2);
-  await new Promise((r) => setTimeout(r, 2200));
 
   // 5. Play video on dome
   console.log("Chair spirits: playing video on dome");
