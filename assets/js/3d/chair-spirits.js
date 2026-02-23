@@ -1398,15 +1398,15 @@ async function playFanfareWithWords() {
   // The original fanfare is ~21s; at 0.891x it's ~23.5s.
   // Each entry specifies which text line (1-5) the word appears on.
   const wordSequence = [
-    { time: 1500,  word: "DOME",      line: 3, flash: 1000 },
-    { time: 4000,  word: "DREAMING",  line: 4, flash: 1000 },
-    { time: 7000,  word: "OPEN",      line: 2, flash: 900  },
-    { time: 9000,  word: "CALL",      line: 5, flash: 900  },
-    { time: 11500, word: "LIVE",      line: 3, flash: 1000 },
-    { time: 14000, word: "NOW",       line: 2, flash: 1000 },
-    { time: 16000, word: "APPLY",     line: 4, flash: 1000 },
-    { time: 18000, word: "LATEST",    line: 3, flash: 900  },
-    { time: 20000, word: "1 MARCH",   line: 5, flash: 1400 },
+    { time: 528,   word: "DOME",      line: 3, flash: 900  },
+    { time: 1623,  word: "DREAMING",  line: 4, flash: 1800 },
+    { time: 3718,  word: "OPEN",      line: 2, flash: 1200 },
+    { time: 5153,  word: "CALL",      line: 5, flash: 3500 },
+    { time: 9116,  word: "LIVE",      line: 3, flash: 1800 },
+    { time: 11192, word: "NOW",       line: 2, flash: 1800 },
+    { time: 13401, word: "APPLY",     line: 4, flash: 5400 },
+    // Final hit: all words together
+    { time: 19308, word: null,        line: 0, flash: 2500 },
   ];
 
   const startTime = performance.now();
@@ -1417,12 +1417,43 @@ async function playFanfareWithWords() {
     if (waitTime > 0) {
       await new Promise((r) => setTimeout(r, waitTime));
     }
-    console.log(`Chair spirits: "${entry.word}" (line ${entry.line})`);
-    flashWordOnDome(entry.word, entry.line, entry.flash);
+
+    if (entry.word === null) {
+      // Final hit: show all words together across all lines
+      console.log("Chair spirits: ALL WORDS");
+      setTextContent(1, "DOME");
+      setTextContent(2, "DREAMING");
+      setTextContent(3, "OPEN CALL");
+      setTextContent(4, "LIVE NOW");
+      setTextContent(5, "APPLY");
+      // Brightness pump for the final reveal
+      const screenMat = getScreenMaterial();
+      if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+        const pumpStart = performance.now();
+        const pumpDur = entry.flash;
+        function finalPump() {
+          const t = Math.min((performance.now() - pumpStart) / pumpDur, 1);
+          let brightness;
+          if (t < 0.1) {
+            brightness = (t / 0.1) * 1.5;
+          } else if (t < 0.5) {
+            brightness = 1.5 - (t - 0.1) / 0.4 * 0.5;
+          } else {
+            brightness = 1.0; // hold bright — leads into final announcement
+          }
+          screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
+          if (t < 1) requestAnimationFrame(finalPump);
+        }
+        finalPump();
+      }
+    } else {
+      console.log(`Chair spirits: "${entry.word}" (line ${entry.line})`);
+      flashWordOnDome(entry.word, entry.line, entry.flash);
+    }
   }
 
-  // Hold last word briefly, then dim to black
-  await new Promise((r) => setTimeout(r, 2500));
+  // Hold the final combined display, then dim
+  await new Promise((r) => setTimeout(r, 3000));
 
   const screenMat = getScreenMaterial();
   if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
