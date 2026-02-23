@@ -14,6 +14,11 @@ export let fbxMeshes = [];
 export let glbLights = [];
 export let glbLightsGroup = null;
 export let hotspots = [];
+/** Chair marker world positions extracted from the GLB */
+export let chairMarkerPositions = [];
+/** Spawn entry points for spirits */
+export let spawnPointLeft = null;
+export let spawnPointRight = null;
 
 export function loadModel() {
   const loader = new GLTFLoader();
@@ -27,7 +32,7 @@ export function loadModel() {
 
   // Use fetchpriority="low" hint for 3D model to not block LCP
   loader.load(
-    "assets/models/wisdome.glb",
+    "assets/models/wisdome002.glb",
     (gltf) => {
       if (!gltf || !gltf.scene) {
         console.error("GLB loaded but scene is missing");
@@ -178,6 +183,12 @@ export function loadModel() {
               material.needsUpdate = true;
             }
 
+            // Shrink floor width/depth so it doesn't poke through the dome screen
+            if (name.includes("floor")) {
+              child.scale.x *= 0.90;
+              child.scale.z *= 0.90;
+            }
+
             fbxMeshes.push({
               mesh: child,
               name: child.name || "Unnamed",
@@ -186,6 +197,31 @@ export function loadModel() {
           }
         }
       });
+
+      // Extract chair marker positions from Cube objects and spawn points
+      // These are small cubes placed in Blender at each chair location
+      safeTraverse(object, (child) => {
+        const name = (child.name || "").toLowerCase();
+        if (name === "startingpointleft") {
+          spawnPointLeft = new THREE.Vector3();
+          child.getWorldPosition(spawnPointLeft);
+          child.visible = false;
+        } else if (name === "startingpointright") {
+          spawnPointRight = new THREE.Vector3();
+          child.getWorldPosition(spawnPointRight);
+          child.visible = false;
+        } else if (name.startsWith("chairmarker") || (name.startsWith("cube") && child.isMesh)) {
+          const pos = new THREE.Vector3();
+          child.getWorldPosition(pos);
+          chairMarkerPositions.push(pos);
+          // Hide the marker cubes — they're data only
+          child.visible = false;
+        }
+      });
+
+      if (chairMarkerPositions.length > 0) {
+        console.log(`Model: extracted ${chairMarkerPositions.length} chair markers`);
+      }
 
       // Fallback screen detection - check if screen was found
       let screenObjectFound = false;

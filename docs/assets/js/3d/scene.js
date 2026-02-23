@@ -1,18 +1,15 @@
 import * as THREE from "three";
 
 export const scene = new THREE.Scene();
-scene.background = new THREE.Color(0xd8d8d8); // Light gray default, will be updated to match Main color
+scene.background = new THREE.Color(0x000000); // Black — screen uses additive blending
 
 /**
  * Set the scene background color to match the Main_Structure color
  * This ensures the 3D canvas blends seamlessly with the page sections
  */
 export function setSceneBackground(color) {
-  if (color && typeof color === 'object') {
-    scene.background = new THREE.Color(color.r, color.g, color.b);
-  } else if (typeof color === 'string') {
-    scene.background = new THREE.Color(color);
-  }
+  // Keep background black — screen uses additive blending
+  scene.background = new THREE.Color(0x000000);
 }
 
 export const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);

@@ -714,6 +714,21 @@ export function setupPolarGridGUI() {
   trailerFolder.add(trailerActions, "restoreLights").name("Restore Lights");
   trailerFolder.close();
 
+  // ============ FLOOR SCALE (find Floor mesh from model) ============
+  import("./model.js").then((model) => {
+    if (!model.fbxMeshes) return;
+    const floorItem = model.fbxMeshes.find(
+      (m) => m.name.toLowerCase().includes("floor")
+    );
+    if (!floorItem) return;
+    const floor = floorItem.mesh;
+    const floorFolder = polarGridGUI.addFolder("Floor");
+    floorFolder.add(floor.scale, "x", 0.5, 1.2, 0.01).name("Scale X").listen();
+    floorFolder.add(floor.scale, "y", 0.5, 1.2, 0.01).name("Scale Y").listen();
+    floorFolder.add(floor.scale, "z", 0.5, 1.2, 0.01).name("Scale Z").listen();
+    floorFolder.close();
+  });
+
   // Main GUI panel stays open
 
   // Store regenerate function for external use

@@ -7,16 +7,14 @@
  */
 
 import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { scene } from "./scene.js";
-import { safeTraverse, pruneObjectChildren } from "./utils.js";
+import { safeTraverse } from "./utils.js";
 import {
   lightingSettings,
   setAmbientIntensity,
   setDirectIntensity,
 } from "./lighting.js";
-import { glbLights } from "./model.js";
+import { glbLights, fbxMeshes, chairMarkerPositions, spawnPointLeft, spawnPointRight } from "./model.js";
 import { getNavMeshQuery } from "./navmesh.js";
 import { getMaterial } from "./utils.js";
 import { initAudio } from "./pulse-audio.js";
@@ -73,159 +71,200 @@ const RAMP_DURATION = 2.5;
 const DEFAULT_TRAILER_VIDEO = "assets/video/ParallelPromoLQ.mp4";
 
 // ---------------------------------------------------------------------------
-// Cinematic sound — low rumble during dim using Tone.js
+// Cinematic fanfare — bombastic intro sound (20th Century Fox style)
+// Built entirely with Tone.js: sub-bass, brass chords, timpani, crescendo
 // ---------------------------------------------------------------------------
 
-let rumbleSynth = null;
-let rumbleFilter = null;
-let rumbleGain = null;
+let fanfareNodes = []; // all Tone nodes to dispose
 
-async function playDimRumble(duration) {
+async function ensureTone() {
+  let T = window.Tone;
+  if (!T) {
+    await initAudio();
+    T = window.Tone;
+  }
+  if (!T) return null;
+  if (T.context.state !== "running") await T.start();
+  return T;
+}
+
+function disposeFanfare() {
+  fanfareNodes.forEach((n) => {
+    try { n.dispose(); } catch (_) {}
+  });
+  fanfareNodes = [];
+}
+
+/**
+ * Play a bombastic cinematic fanfare over `duration` seconds.
+ * Layers: sub-bass rumble, brass-like synth chords, timpani hits, cymbal swell.
+ */
+async function playCinematicFanfare(duration) {
   try {
-    const Tone = window.Tone;
-    if (!Tone) {
-      await initAudio();
-      if (!window.Tone) return;
-    }
+    const T = await ensureTone();
+    if (!T) return;
+    disposeFanfare();
 
-    // Ensure audio context is running
-    if (Tone.context.state !== "running") {
-      await Tone.start();
-    }
+    // Master bus: reverb → destination
+    const reverb = new T.Reverb({ decay: 4, wet: 0.35 });
+    await reverb.generate();
+    reverb.toDestination();
+    fanfareNodes.push(reverb);
 
-    // Clean up previous rumble
-    disposeDimRumble();
+    const masterGain = new T.Gain(0).connect(reverb);
+    fanfareNodes.push(masterGain);
 
-    // Low-pass filter sweeps from 60Hz up to 300Hz
-    rumbleFilter = new Tone.Filter({
-      frequency: 60,
-      type: "lowpass",
-      rolloff: -24,
-    }).toDestination();
-
-    rumbleGain = new Tone.Gain(0).connect(rumbleFilter);
-
-    // Deep rumble: two detuned oscillators
-    rumbleSynth = new Tone.Synth({
-      oscillator: { type: "sawtooth" },
-      envelope: { attack: duration * 0.4, decay: 0.5, sustain: 0.6, release: duration * 0.3 },
-      volume: -18,
-    }).connect(rumbleGain);
-
-    // Fade gain in
-    rumbleGain.gain.rampTo(0.7, duration * 0.5);
-
-    // Sweep filter up
-    rumbleFilter.frequency.rampTo(300, duration * 0.8);
-
-    // Play a very low note
-    rumbleSynth.triggerAttack("C1");
-
-    // Release and fade out near the end
+    // Fade master in over first 40%, peak, then fade out last 20%
+    masterGain.gain.rampTo(0.85, duration * 0.4);
     setTimeout(() => {
-      if (rumbleGain) rumbleGain.gain.rampTo(0, duration * 0.3);
-      if (rumbleSynth) rumbleSynth.triggerRelease();
-    }, duration * 700); // 70% through
+      if (masterGain) masterGain.gain.rampTo(0, duration * 0.25);
+    }, duration * 750);
 
-    // Dispose after done
-    setTimeout(() => disposeDimRumble(), (duration + 1) * 1000);
+    // ── 1. Sub-bass rumble ──────────────────────────────────────────
+    const subFilter = new T.Filter({ frequency: 80, type: "lowpass", rolloff: -24 }).connect(masterGain);
+    fanfareNodes.push(subFilter);
+
+    const sub = new T.Synth({
+      oscillator: { type: "sawtooth" },
+      envelope: { attack: duration * 0.3, decay: 1, sustain: 0.7, release: duration * 0.3 },
+      volume: -14,
+    }).connect(subFilter);
+    fanfareNodes.push(sub);
+
+    sub.triggerAttack("C1");
+    subFilter.frequency.rampTo(200, duration * 0.7);
+
+    // ── 2. Brass-like fanfare chords (stacked fifths, bright sawtooth) ──
+    const brassFilter = new T.Filter({ frequency: 400, type: "lowpass", rolloff: -12 }).connect(masterGain);
+    fanfareNodes.push(brassFilter);
+    brassFilter.frequency.rampTo(3000, duration * 0.6); // filter opens = brighter
+
+    // Chord: C major spread voicing (C3, G3, E4, C5)
+    const brassNotes = ["C3", "G3", "E4", "C5"];
+    const brassPolySynth = new T.PolySynth(T.Synth, {
+      oscillator: { type: "sawtooth" },
+      envelope: { attack: duration * 0.25, decay: 0.5, sustain: 0.8, release: duration * 0.3 },
+      volume: -20,
+    }).connect(brassFilter);
+    fanfareNodes.push(brassPolySynth);
+
+    // Stagger chord entry for dramatic build
+    brassPolySynth.triggerAttack(["C3", "G3"], "+0");
+    setTimeout(() => {
+      try { brassPolySynth.triggerAttack(["E4"]); } catch (_) {}
+    }, duration * 200); // 20%
+    setTimeout(() => {
+      try { brassPolySynth.triggerAttack(["C5"]); } catch (_) {}
+    }, duration * 350); // 35%
+
+    // Key change / resolution at climax: modulate to wider voicing
+    setTimeout(() => {
+      try {
+        brassPolySynth.releaseAll();
+        brassPolySynth.triggerAttack(["C3", "E3", "G3", "C4", "E4", "G4", "C5"]);
+      } catch (_) {}
+    }, duration * 550); // 55% = climax
+
+    // ── 3. Timpani hits ─────────────────────────────────────────────
+    const timpaniSynth = new T.MembraneSynth({
+      pitchDecay: 0.08,
+      octaves: 6,
+      envelope: { attack: 0.01, decay: 1.5, sustain: 0, release: 1 },
+      volume: -10,
+    }).connect(masterGain);
+    fanfareNodes.push(timpaniSynth);
+
+    // Schedule hits: dramatic timpani pattern
+    const hitTimes = [0.05, 0.2, 0.35, 0.55, 0.65, 0.75]; // fraction of duration
+    const hitNotes = ["C2", "C2", "G1", "C2", "G1", "C2"];
+    hitTimes.forEach((frac, i) => {
+      setTimeout(() => {
+        try { timpaniSynth.triggerAttackRelease(hitNotes[i], "2n"); } catch (_) {}
+      }, duration * frac * 1000);
+    });
+
+    // ── 4. Cymbal swell (noise → filter sweep) ─────────────────────
+    const noiseFilter = new T.Filter({ frequency: 500, type: "bandpass", Q: 0.5 }).connect(masterGain);
+    fanfareNodes.push(noiseFilter);
+    noiseFilter.frequency.rampTo(8000, duration * 0.6);
+
+    const noiseGain = new T.Gain(0).connect(noiseFilter);
+    fanfareNodes.push(noiseGain);
+    noiseGain.gain.rampTo(0.12, duration * 0.5);
+    setTimeout(() => {
+      if (noiseGain) noiseGain.gain.rampTo(0, duration * 0.2);
+    }, duration * 700);
+
+    const noise = new T.Noise("white").connect(noiseGain);
+    fanfareNodes.push(noise);
+    noise.start();
+
+    // ── 5. High string shimmer (adds sparkle at climax) ─────────────
+    const shimmer = new T.PolySynth(T.Synth, {
+      oscillator: { type: "sine" },
+      envelope: { attack: duration * 0.3, decay: 0.5, sustain: 0.6, release: duration * 0.3 },
+      volume: -26,
+    }).connect(masterGain);
+    fanfareNodes.push(shimmer);
+
+    setTimeout(() => {
+      try { shimmer.triggerAttack(["E5", "G5", "C6"]); } catch (_) {}
+    }, duration * 400);
+
+    // ── Release and cleanup ─────────────────────────────────────────
+    setTimeout(() => {
+      try {
+        sub.triggerRelease();
+        brassPolySynth.releaseAll();
+        shimmer.releaseAll();
+        noise.stop();
+      } catch (_) {}
+    }, duration * 800); // 80%
+
+    setTimeout(() => disposeFanfare(), (duration + 2) * 1000);
+    console.log(`Chair spirits: cinematic fanfare playing (${duration}s)`);
   } catch (e) {
-    console.warn("Chair spirits: rumble sound skipped", e);
+    console.warn("Chair spirits: fanfare sound skipped", e);
   }
 }
 
-function disposeDimRumble() {
-  try {
-    if (rumbleSynth) { rumbleSynth.dispose(); rumbleSynth = null; }
-    if (rumbleFilter) { rumbleFilter.dispose(); rumbleFilter = null; }
-    if (rumbleGain) { rumbleGain.dispose(); rumbleGain = null; }
-  } catch (e) { /* already disposed */ }
-}
-
 // ---------------------------------------------------------------------------
-// GLB loading — extract marker positions, then discard the geometry
+// Initialize chair markers from the main model (wisdome002.glb)
+// Positions are extracted by model.js during load — no separate GLB needed
 // ---------------------------------------------------------------------------
 
-export async function loadChairMarkers() {
-  const loader = new GLTFLoader();
-  const dracoLoader = new DRACOLoader();
-  dracoLoader.setDecoderPath(
-    "https://cdn.jsdelivr.net/npm/three@0.181.0/examples/jsm/libs/draco/gltf/"
+export function loadChairMarkers() {
+  // Use positions already extracted by model.js from wisdome002.glb
+  const positions = [...chairMarkerPositions];
+
+  if (positions.length === 0) {
+    console.warn("Chair spirits: no chair markers found in model — call after model loads");
+    return Promise.resolve(0);
+  }
+
+  // Shuffle for visual variety
+  for (let i = positions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [positions[i], positions[j]] = [positions[j], positions[i]];
+  }
+
+  chairPositions = positions;
+
+  if (spawnPointLeft) spawnLeft.copy(spawnPointLeft);
+  else spawnLeft.set(-5, 2, 0);
+
+  if (spawnPointRight) spawnRight.copy(spawnPointRight);
+  else spawnRight.set(5, 2, 0);
+
+  // Create container group
+  spiritsGroup = new THREE.Group();
+  spiritsGroup.name = "ChairSpirits";
+  scene.add(spiritsGroup);
+
+  console.log(
+    `Chair spirits: initialized ${positions.length} markers from main model, spawn L/R set`
   );
-  loader.setDRACOLoader(dracoLoader);
-
-  return new Promise((resolve, reject) => {
-    loader.load(
-      "assets/models/wisdome-chairs.glb",
-      (gltf) => {
-        const root = gltf.scene;
-        pruneObjectChildren(root);
-
-        // Temporarily add to scene so world matrices resolve
-        scene.add(root);
-        root.updateMatrixWorld(true);
-
-        const positions = [];
-        let left = null;
-        let right = null;
-
-        safeTraverse(root, (child) => {
-          const name = (child.name || "").toLowerCase();
-          if (name === "startingpointleft") {
-            left = new THREE.Vector3();
-            child.getWorldPosition(left);
-          } else if (name === "startingpointright") {
-            right = new THREE.Vector3();
-            child.getWorldPosition(right);
-          } else if (name.startsWith("chairmarker")) {
-            const pos = new THREE.Vector3();
-            child.getWorldPosition(pos);
-            positions.push(pos);
-          }
-        });
-
-        // Remove GLB — markers are data only
-        scene.remove(root);
-        root.traverse((child) => {
-          if (child.geometry) child.geometry.dispose();
-          if (child.material) {
-            if (Array.isArray(child.material))
-              child.material.forEach((m) => m.dispose());
-            else child.material.dispose();
-          }
-        });
-
-        // Shuffle for visual variety
-        for (let i = positions.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [positions[i], positions[j]] = [positions[j], positions[i]];
-        }
-
-        chairPositions = positions;
-
-        if (left) spawnLeft.copy(left);
-        else spawnLeft.set(-5, 2, 0);
-
-        if (right) spawnRight.copy(right);
-        else spawnRight.set(5, 2, 0);
-
-        // Create container group
-        spiritsGroup = new THREE.Group();
-        spiritsGroup.name = "ChairSpirits";
-        scene.add(spiritsGroup);
-
-        console.log(
-          `Chair spirits: loaded ${positions.length} markers, spawn L/R set`
-        );
-        resolve(positions.length);
-      },
-      undefined,
-      (err) => {
-        console.error("Chair spirits: failed to load GLB", err);
-        reject(err);
-      }
-    );
-  });
+  return Promise.resolve(positions.length);
 }
 
 // ---------------------------------------------------------------------------
@@ -685,7 +724,7 @@ export function dimRoomLights(duration = 3) {
   }
 
   // Play cinematic rumble
-  playDimRumble(duration);
+  playCinematicFanfare(duration);
   console.log(`Chair spirits: dimming lights over ${duration}s`);
 }
 

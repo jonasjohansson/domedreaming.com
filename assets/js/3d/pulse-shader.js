@@ -135,7 +135,9 @@ export function createPulseShaderMaterial(baseTexture) {
     uniforms: uniforms,
     vertexShader: pulseVertexShader,
     fragmentShader: pulseFragmentShader,
-    transparent: false,
+    transparent: true,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
   });
 
   return material;
