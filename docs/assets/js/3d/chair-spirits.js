@@ -1514,48 +1514,28 @@ export async function runTrailerSequence() {
   // Stop text step rotation (per-cell BPM stepping, separate from grid)
   setTextRotationEnabled(false);
 
-  // 7. Start dimming lights (6s — want to reach darkness quickly for fanfare)
+  // 7. Start dimming lights (6s)
   const dimDur = 6;
   dimRoomLights(dimDur, { playFanfare: false });
 
-  // Wait for rotation + audio fade to finish (dim continues in background)
-  await Promise.all([rotSlowPromise, audioFadePromise]);
-
-  // 8. Wait for all spirits to settle
+  // 8. ONLY wait for the dim to finish — don't wait for spirits or late guest.
+  //    The dim is 6s. Rotation (5s) and audio fade (5s) finish within that too.
   await new Promise((resolve) => {
-    const check = setInterval(() => {
-      if (isSequenceComplete()) {
-        clearInterval(check);
+    const dimCheck = setInterval(() => {
+      if (!dimming) {
+        clearInterval(dimCheck);
         resolve();
       }
-    }, 200);
+    }, 100);
   });
 
-  // 9. "Late guest" — one final spirit rushes in after a noticeable pause
-  await new Promise((r) => setTimeout(r, 4000));
-  spawnLateGuest();
-
-  // Wait for the late guest to settle
-  await new Promise((resolve) => {
-    const check = setInterval(() => {
-      const unsettled = spirits.filter((s) => !s.settled && !s.removed).length;
-      if (unsettled === 0) {
-        clearInterval(check);
-        resolve();
-      }
-    }, 200);
-  });
-
-  // Wait for dim to finish (room should be fully dark now)
-  while (dimming) {
-    await new Promise((r) => setTimeout(r, 200));
-  }
-
-  // 10. NOW the screen is black (uBrightness = 0, uGridFade = 0) — safe to
-  //     regenerate the texture without images. No visible skip since screen is dark.
+  // Screen is now fully dark — safe to regenerate texture without images
   setImageCellsEnabled(false);
 
-  // 11. Start fanfare with word flashes immediately
+  // Fire late guest in background (arrives during the fanfare — doesn't block)
+  setTimeout(() => spawnLateGuest(), 2000);
+
+  // 9. Start fanfare IMMEDIATELY — room is dark, music begins
   console.log("Chair spirits: starting fanfare word sequence");
   await playFanfareWithWords();
 
