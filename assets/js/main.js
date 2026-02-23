@@ -205,6 +205,8 @@ async function load3DModules() {
     window.reverseTrailer = reverseTrailer;
     window.dimAndPlayFilm = dimAndPlayFilm;
     window.stopFilm = stopFilm;
+    window.playFanfareWithWords = chairSpiritsModule.playFanfareWithWords;
+    window.toggleTimeline = chairSpiritsModule.toggleTimeline;
   } catch (error) {
     console.error("Error loading 3D modules:", error);
   }

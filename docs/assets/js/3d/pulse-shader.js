@@ -94,8 +94,8 @@ void main() {
   // Text pixels are typically brighter than grid lines.
   // uGridFade = 1.0 means everything visible, 0.0 means only bright text remains.
   float pixelBrightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
-  float textThreshold = 0.35;  // pixels above this are considered "text"
-  float keepFactor = smoothstep(textThreshold * 0.5, textThreshold, pixelBrightness);
+  float textThreshold = 0.45;  // pixels above this are considered "text"
+  float keepFactor = smoothstep(textThreshold * 0.7, textThreshold, pixelBrightness);
   float fadeFactor = mix(uGridFade, 1.0, keepFactor);
   finalColor *= fadeFactor;
 

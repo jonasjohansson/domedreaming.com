@@ -81,6 +81,39 @@
   rel="apple-touch-icon"
   href="assets/favicon/favicon-96x96.png" />
 
+<!-- Structured data for the festival -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Festival",
+  "name": "{{ meta.title }}",
+  "description": "{{ meta.description }}",
+  "url": "{{ meta.url }}",
+  "image": "{{ meta.og.image }}",
+  "startDate": "2026-05-07",
+  "endDate": "2026-05-12",
+  "location": [
+    {
+      "@type": "Place",
+      "name": "Wisdome Stockholm",
+      "address": { "@type": "PostalAddress", "addressLocality": "Stockholm", "addressCountry": "SE" }
+    },
+    {
+      "@type": "Place",
+      "name": "Wisdome Malmö",
+      "address": { "@type": "PostalAddress", "addressLocality": "Malmö", "addressCountry": "SE" }
+    }
+  ],
+  "organizer": {
+    "@type": "Organization",
+    "name": "Dome Dreaming",
+    "url": "{{ meta.url }}"
+  },
+  "eventAttendanceMode": "https://schema.org/OfflineEventAttendanceMode",
+  "eventStatus": "https://schema.org/EventScheduled"
+}
+</script>
+
 <!-- Preload critical fonts -->
 <link
   rel="preload"

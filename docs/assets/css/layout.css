@@ -171,6 +171,31 @@ a[disabled] {
   pointer-events: none;
 }
 
+/* Inline button styled as a text link (enter-dome) */
+button.enter-dome-link {
+  display: inline;
+  width: auto;
+  height: auto;
+  background: var(--bg-chairs-color, #54313a);
+  color: #ffffff;
+  border: none;
+  padding: 0.1em 0.3em;
+  border-radius: 0.2em;
+  font: inherit;
+  text-transform: none;
+  letter-spacing: inherit;
+  cursor: pointer;
+  position: relative;
+  z-index: 100;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0.2);
+}
+
+button.enter-dome-link:hover {
+  filter: brightness(1.2);
+  background: var(--bg-chairs-color, #54313a);
+  color: #ffffff;
+}
+
 main button,
 main a.button {
   font-size: var(--font-size-base);
@@ -190,7 +215,6 @@ main a.button {
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-lg);
-  outline: none;
   text-decoration: none;
 }
 
@@ -205,7 +229,6 @@ main a.button:hover,
 main a.button:focus {
   background-color: var(--color-text);
   color: var(--color-bg);
-  outline: none;
 }
 
 main button[disabled] {

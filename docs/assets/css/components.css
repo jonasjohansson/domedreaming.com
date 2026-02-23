@@ -1,8 +1,3 @@
-/* Loading overlay - hidden by default */
-#loading-overlay {
-  display: none;
-}
-
 main h1 {
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-normal);

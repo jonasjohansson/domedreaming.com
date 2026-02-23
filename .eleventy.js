@@ -55,6 +55,8 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("*.pdf");
   eleventyConfig.addPassthroughCopy("CNAME");
   eleventyConfig.addPassthroughCopy("sw.js");
+  eleventyConfig.addPassthroughCopy("robots.txt");
+  eleventyConfig.addPassthroughCopy("sitemap.xml");
 
   // Use different output directories for dev vs build
   // Default to _site for dev, use docs for production builds

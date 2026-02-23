@@ -45,7 +45,7 @@ export const polarGridSettings = {
   text5FlipY: true,
   text5FontSize: 100,
   text5StartSector: 27,
-  text5Content: "OPEN CALL IS LIVE!",
+  text5Content: "",
   text5CellMode: true,
   // Label flip options
   labelsFlipX: false,
@@ -1691,6 +1691,17 @@ export function setTextContent(lineIndex, newContent) {
   }
 }
 
+export function setTextStartSector(lineIndex, sector) {
+  const key = `text${lineIndex}StartSector`;
+  if (key in polarGridSettings) {
+    polarGridSettings[key] = sector;
+    if (currentTexture && currentTexture._polarGridParams && currentTexture._polarGridParams.curvedTexts) {
+      const ct = currentTexture._polarGridParams.curvedTexts[lineIndex - 1];
+      if (ct) ct.startSector = sector;
+    }
+  }
+}
+
 /**
  * Scramble all text lines to new content simultaneously.
  * Each character scrambles through random chars before resolving to the new text.
@@ -1779,4 +1790,13 @@ export function setImageCellsEnabled(enabled) {
   if (polarGridSettings.regenerate) {
     polarGridSettings.regenerate();
   }
+}
+
+/**
+ * Enable or disable pulse dot animation on the grid.
+ * When disabled the moving dots stop being drawn and updated.
+ * @param {boolean} enabled
+ */
+export function setPulsesEnabled(enabled) {
+  polarGridSettings.pulsesEnabled = enabled;
 }

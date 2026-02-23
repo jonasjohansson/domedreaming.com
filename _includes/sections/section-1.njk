@@ -1,18 +1,22 @@
-<section class="page-section grid">
+<section class="page-section grid" aria-label="Festival information">
   <div class="page-content">
     <div class="block center x-2 w-14 y-10 h-7">
       <div class="content-header">
-        <p>
+        <h1>
           DOME DREAMING<br /><a
-            href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome+Dreaming+Festival+%E2%80%93+Stockholm&dates=20260507T000000/20260510T000000&location=Stockholm">
+            href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome+Dreaming+Festival+%E2%80%93+Stockholm&dates=20260507T000000/20260510T000000&location=Stockholm"
+            target="_blank"
+            rel="noopener">
             Stockholm, 7–9 May</a
           >
           ·
           <a
-            href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome+Dreaming+Festival+%E2%80%93+Malm%C3%B6&dates=20260512T000000/20260513T000000&location=Malm%C3%B6">
+            href="https://calendar.google.com/calendar/render?action=TEMPLATE&text=Dome+Dreaming+Festival+%E2%80%93+Malm%C3%B6&dates=20260512T000000/20260513T000000&location=Malm%C3%B6"
+            target="_blank"
+            rel="noopener">
             Malmö, 12 May</a
           >
-        </p>
+        </h1>
       </div>
       <div class="content-main">
         <p>
@@ -20,27 +24,30 @@
           <a
             href="https://forms.gle/vatrcmZZBhLMNHsN7"
             target="_blank"
+            rel="noopener"
             class="join-open-call"
             >open call</a
           >. Enter
-          <a
-            href="#"
+          <button
+            type="button"
             id="enter-dome-link"
             class="enter-dome-link"
-            >the dome</a
+            >the dome</button
           >
           and use our
           <a
             href="https://preview.domedreaming.com/"
             target="_blank"
+            rel="noopener"
             >preview tool</a
           >. Full programme released in March.
+        </p>
       </div>
 
       <div class="content-logos logos">
         {% for logo in logos.partners %}
-        <a href="{{ logo.href }}" target="_blank">
-          <img src="{{ logo.src }}" alt="{{ logo.alt }}" loading="lazy" decoding="async" />
+        <a href="{{ logo.href }}" target="_blank" rel="noopener">
+          <img src="{{ logo.src }}" alt="{{ logo.alt }}" width="80" height="40" loading="lazy" decoding="async" />
         </a>
         {% endfor %}
       </div>
@@ -51,85 +58,101 @@
           <a
             href="https://www.jonasjohansson.se/"
             target="_blank"
+            rel="noopener"
             >Jonas Johansson</a
           >,
           <a
             href="https://www.ivar.studio/"
             target="_blank"
+            rel="noopener"
             >Fredrik Edström</a
           >
           and
           <a
             href="https://www.linkedin.com/in/sebastian-h%C3%A4ger-53054b155/"
             target="_blank"
+            rel="noopener"
             >Sebastian Häger</a
           >, in collaboration with
           <a
             href="https://aavistusfestival.fi"
             target="_blank"
+            rel="noopener"
             >Aavistus</a
           >,
           <a
             href="https://www.instagram.com/kokongfestival/"
             target="_blank"
+            rel="noopener"
             >Kokong</a
           >,
           <a
             href="https://www.balticanaloglab.lv/"
             target="_blank"
+            rel="noopener"
             >Baltic Analog Lab</a
           >
           and
           <a
             href="https://www.nava.community"
             target="_blank"
+            rel="noopener"
             >Nordic Audiovisual Artists</a
           >. Student day in coordination with
           <a
             href="https://kkh.se/"
             target="_blank"
+            rel="noopener"
             >KKH</a
           >,
           <a
             href="https://www.uniarts.se/"
             target="_blank"
+            rel="noopener"
             >SKH</a
           >,
           <a
-            href="http://konstfack.se/"
+            href="https://konstfack.se/"
             target="_blank"
+            rel="noopener"
             >Konstfack</a
           >
           and
           <a
             href="https://www.ostragreviefolkhogskola.com/"
             target="_blank"
+            rel="noopener"
             >Östra Grevie Folkhögskola</a
           >. Supported by
           <a
             href="https://www.tekniskamuseet.se/"
             target="_blank"
+            rel="noopener"
             >Tekniska museet</a
           >,
           <a
             href="https://malmo.se/"
             target="_blank"
+            rel="noopener"
             >Malmö Stad</a
           >
           and
           <a
             href="https://www.regionstockholm.se/"
             target="_blank"
+            rel="noopener"
             >Region Stockholm</a
           >. 3D model by
           <a
             href="https://smash.studio/"
             target="_blank"
+            rel="noopener"
             >Ashley Reed</a
-          >. Original dome visualiser by <a href="https://www.instagram.com/possan/">Per-Olov Jernberg</a>. Design and development by
+          >. Original dome visualiser by <a href="https://www.instagram.com/possan/" rel="noopener">Per-Olov Jernberg</a>. Design and development by
           <a
             href="https://jonasjohansson.se/"
             target="_blank"
+            rel="noopener"
             >Jonas Johansson</a
           >.
         </p>
@@ -137,7 +160,7 @@
       </div>
     </div>
   </div>
-  <div id="canvas-container">
+  <div id="canvas-container" aria-hidden="true">
     <div id="drop-zone"></div>
   </div>
 </section>

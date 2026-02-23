@@ -694,12 +694,40 @@ export function setupPolarGridGUI() {
 
   trailerFolder.add(trailerActions, "runTrailer").name("Run Full Trailer");
   trailerFolder.add(trailerActions, "reverseTrailer").name("Reverse Trailer");
+  trailerFolder.add({
+    playFanfare: () => {
+      if (window.playFanfareWithWords) window.playFanfareWithWords();
+    },
+  }, "playFanfare").name("Play Fanfare Only");
+  trailerFolder.add({
+    timeline: () => {
+      if (window.toggleTimeline) window.toggleTimeline();
+    },
+  }, "timeline").name("Cue Timeline");
   trailerFolder.add(trailerActions, "dimAndPlayFilm").name("Dim + Play Film");
   trailerFolder.add(trailerActions, "stopFilm").name("Stop Film");
   trailerFolder.add(trailerActions, "startSpirits").name("Start Spirits");
   trailerFolder.add(trailerActions, "reverseSpirits").name("Reverse Spirits");
   trailerFolder.add(trailerActions, "dimLights").name("Dim Lights");
   trailerFolder.add(trailerActions, "restoreLights").name("Restore Lights");
+
+  // Fanfare word cue timing (lazy-loaded from chair-spirits module)
+  import("./chair-spirits.js").then((mod) => {
+    if (!mod.fanfareCues) return;
+    const cuesFolder = trailerFolder.addFolder("Fanfare Cues");
+    const cues = mod.fanfareCues;
+    for (const key of Object.keys(cues)) {
+      const cue = cues[key];
+      const label = cue.word || "ALL";
+      const f = cuesFolder.addFolder(`${key}: ${label}`);
+      f.add(cue, "time", 0, 25000, 1).name("Time (ms)");
+      f.add(cue, "flash", 50, 5000, 50).name("Flash (ms)");
+      f.add(cue, "line", 0, 5, 1).name("Line");
+      f.close();
+    }
+    cuesFolder.close();
+  });
+
   trailerFolder.close();
 
   // ============ FLOOR SCALE (find Floor mesh from model) ============

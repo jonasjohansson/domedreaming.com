@@ -23,10 +23,12 @@ import { textureRotationSettings } from "../core/settings.js";
 import {
   scrambleToNewText,
   setTextContent,
+  setTextStartSector,
   setTextRotationEnabled,
   setTextRotationBPM,
   setTextScrambleEnabled,
   setImageCellsEnabled,
+  setPulsesEnabled,
   polarGridSettings,
 } from "./polar-grid-texture.js";
 
@@ -74,7 +76,7 @@ let restoreDuration = 3;
 /** Height spirits float above the navmesh ground */
 const SPIRIT_FLOAT_HEIGHT = 0.8;
 /** Speed spirits travel along the path (units/sec) */
-const SPIRIT_SPEED = 0.99;
+const SPIRIT_SPEED = 1.24;
 /** Speed variance so they don't all move in lockstep */
 const SPIRIT_SPEED_JITTER = 0.2;
 /** Time (seconds) for spirit light to ramp from zero to full intensity */
@@ -83,13 +85,545 @@ const RAMP_DURATION = 2.5;
 /** Default trailer video (used by dimAndPlayFilm legacy path) */
 const DEFAULT_TRAILER_VIDEO = "assets/video/ParallelPromoLQ.mp4";
 
+/**
+ * Fanfare word cue settings — editable via GUI.
+ * Each cue: { time (ms), word, line (1-5), flash (ms) }
+ * word=null means flash all accumulated words. line=0 for null words.
+ */
+export const fanfareCues = {
+  cue1:  { time:   210, word: "DOME",      line: 3, flash:  400 },
+  cue2:  { time:   560, word: "DOME",      line: 3, flash:  800 },
+  cue3:  { time:  1435, word: "DREAMING",  line: 3, flash:  250 },
+  cue4:  { time:  1799, word: "DREAMING",  line: 3, flash:  800 },
+  cue5:  { time:  3720, word: "OPEN CALL", line: 3, flash:  250 },
+  cue6:  { time:  4061, word: "OPEN CALL", line: 3, flash: 1000 },
+  cue7:  { time:  5119, word: "LIVE NOW",  line: 3, flash:  500 },
+  cue8:  { time:  5629, word: "LIVE NOW",  line: 3, flash:  800 },
+  cue9:  { time:  6320, word: "LIVE NOW",  line: 3, flash: 1500 },
+  cue10: { time:  9550, word: "LIVE NOW",  line: 3, flash:  650 },
+  cue11: { time: 10780, word: "LIVE NOW",  line: 3, flash:  700 },
+  cue12: { time: 12340, word: "APPLY",     line: 3, flash:  500 },
+  cue13: { time: 13150, word: "APPLY",     line: 3, flash:  900 },
+  cue14: { time: 14820, word: "APPLY",     line: 3, flash:  450 },
+  cue15: { time: 15470, word: "APPLY",     line: 3, flash:  850 },
+  cue16: { time: 18200, word: null,        line: 0, flash: 2750 },
+  cue17: { time: 21760, word: null,        line: 0, flash: 3000 },
+};
+
+// ---------------------------------------------------------------------------
+// Timeline visualisation overlay
+// ---------------------------------------------------------------------------
+
+const TIMELINE_DURATION = 24000; // ms — total timeline length for display
+const WORD_COLORS = {
+  "DOME": "#FF6B6B",
+  "DREAMING": "#4ECDC4",
+  "OPEN CALL": "#FFE66D",
+  "LIVE NOW": "#A8E6CF",
+  "APPLY": "#DDA0DD",
+  null: "#FFFFFF",
+};
+
+let timelineOverlay = null;
+let timelinePlayhead = null;
+let timelineAnimId = null;
+let timelineStartTime = null;
+/** Pause state for timeline playback */
+let timelinePaused = false;
+let timelinePausedElapsed = 0;
+
+function saveCuesToStorage() {
+  try {
+    const data = {};
+    for (const [key, cue] of Object.entries(fanfareCues)) {
+      data[key] = { time: cue.time, flash: cue.flash, line: cue.line };
+    }
+    localStorage.setItem("fanfareCues", JSON.stringify(data));
+    localStorage.setItem("fanfareCuesVersion", String(CUES_VERSION));
+  } catch (e) {}
+}
+
+/** Bump this when hardcoded cue defaults change to invalidate stale localStorage */
+const CUES_VERSION = 2;
+
+function loadCuesFromStorage() {
+  try {
+    const ver = localStorage.getItem("fanfareCuesVersion");
+    if (ver !== String(CUES_VERSION)) {
+      // Stale or missing — clear old data and use hardcoded defaults
+      localStorage.removeItem("fanfareCues");
+      localStorage.setItem("fanfareCuesVersion", String(CUES_VERSION));
+      return;
+    }
+    const raw = localStorage.getItem("fanfareCues");
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    for (const [key, saved] of Object.entries(data)) {
+      if (fanfareCues[key]) {
+        if (saved.time !== undefined) fanfareCues[key].time = saved.time;
+        if (saved.flash !== undefined) fanfareCues[key].flash = saved.flash;
+        if (saved.line !== undefined) fanfareCues[key].line = saved.line;
+      }
+    }
+    console.log("Loaded fanfare cues from localStorage");
+  } catch (e) {}
+}
+
+// Load saved cues on module init
+loadCuesFromStorage();
+
+export function toggleTimeline() {
+  if (timelineOverlay) {
+    closeTimeline();
+  } else {
+    openTimeline();
+  }
+}
+
+/** Waveform data cache */
+let waveformData = null; // { peaks: Float32Array, durationMs: number }
+const WAVEFORM_PEAKS_COUNT = 2000;
+/** Playback rate used for the fanfare (2 semitones down) */
+const FANFARE_PLAYBACK_RATE = Math.pow(2, -2 / 12); // ~0.891
+
+async function decodeWaveform() {
+  if (waveformData) return waveformData;
+  try {
+    const resp = await fetch("assets/audio/fanfare_002.mp3");
+    const buf = await resp.arrayBuffer();
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const decoded = await audioCtx.decodeAudioData(buf);
+    const nativeDurationMs = decoded.duration * 1000;
+    // Real-world playback duration at the slowed rate
+    const playbackDurationMs = nativeDurationMs / FANFARE_PLAYBACK_RATE;
+    // Merge channels into mono peaks
+    const raw = decoded.getChannelData(0);
+    const second = decoded.numberOfChannels > 1 ? decoded.getChannelData(1) : null;
+    const samplesPerPeak = Math.floor(raw.length / WAVEFORM_PEAKS_COUNT);
+    const peaks = new Float32Array(WAVEFORM_PEAKS_COUNT);
+    for (let i = 0; i < WAVEFORM_PEAKS_COUNT; i++) {
+      let max = 0;
+      const start = i * samplesPerPeak;
+      const end = Math.min(start + samplesPerPeak, raw.length);
+      for (let j = start; j < end; j++) {
+        let sample = Math.abs(raw[j]);
+        if (second) sample = Math.max(sample, Math.abs(second[j]));
+        if (sample > max) max = sample;
+      }
+      peaks[i] = max;
+    }
+    audioCtx.close();
+    waveformData = { peaks, durationMs: playbackDurationMs };
+    return waveformData;
+  } catch (e) {
+    console.warn("Waveform decode failed:", e);
+    return null;
+  }
+}
+
+function drawWaveform(canvas, data) {
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width;
+  const h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  if (!data || !data.peaks) return;
+
+  const { peaks, durationMs } = data;
+  // The waveform represents durationMs of real-world playback time.
+  // Scale it so it aligns with the timeline (TIMELINE_DURATION ms = full width).
+  const waveformWidthPx = (durationMs / TIMELINE_DURATION) * w;
+  const barW = waveformWidthPx / peaks.length;
+
+  ctx.fillStyle = "rgba(255,255,255,0.12)";
+  for (let i = 0; i < peaks.length; i++) {
+    const barH = peaks[i] * h * 0.9;
+    const x = i * barW;
+    if (x > w) break; // don't draw beyond canvas
+    const y = (h - barH) / 2;
+    ctx.fillRect(x, y, Math.max(1, barW - 0.5), barH);
+  }
+}
+
+/** Track pixel width — wider than viewport to allow scroll */
+const TRACK_PX_WIDTH = 2400;
+
+function openTimeline() {
+  if (timelineOverlay) return;
+
+  const el = document.createElement("div");
+  el.id = "fanfare-timeline";
+  el.innerHTML = `
+    <style>
+      #fanfare-timeline {
+        position: fixed; bottom: 0; left: 0; right: 0;
+        height: 320px; background: rgba(0,0,0,0.94);
+        z-index: 10000; font-family: monospace; color: #ccc;
+        user-select: none; border-top: 1px solid #333;
+        display: flex; flex-direction: column;
+      }
+      #fanfare-timeline .tl-header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 6px 12px; font-size: 11px; background: #111;
+        flex-shrink: 0;
+      }
+      #fanfare-timeline .tl-header button {
+        background: #333; color: #fff; border: none; padding: 4px 12px;
+        cursor: pointer; font-size: 11px; font-family: monospace; margin-left: 6px;
+        border-radius: 2px;
+      }
+      #fanfare-timeline .tl-header button:hover { background: #555; }
+      #fanfare-timeline .tl-scroll {
+        flex: 1; overflow-x: auto; overflow-y: hidden;
+        padding: 8px 12px 12px;
+      }
+      #fanfare-timeline .tl-track {
+        position: relative; height: 100%;
+        width: ${TRACK_PX_WIDTH}px;
+        background: #1a1a1a; border: 1px solid #333;
+      }
+      #fanfare-timeline .tl-waveform {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        pointer-events: none;
+      }
+      #fanfare-timeline .tl-tick {
+        position: absolute; top: 0; bottom: 0; width: 1px; background: #333;
+      }
+      #fanfare-timeline .tl-tick-label {
+        position: absolute; top: 2px; font-size: 9px; color: #555;
+        transform: translateX(-50%);
+      }
+      #fanfare-timeline .tl-cue {
+        position: absolute;
+      }
+      #fanfare-timeline .tl-cue-marker {
+        width: 7px; background: currentColor; position: absolute; top: 0;
+        border-radius: 1px; cursor: ew-resize; left: -2px;
+      }
+      #fanfare-timeline .tl-cue-flash {
+        position: absolute; top: 0; opacity: 0.15; background: currentColor;
+      }
+      #fanfare-timeline .tl-cue-flash-handle {
+        position: absolute; top: 0; right: -2px; width: 5px; height: 100%;
+        cursor: col-resize; background: currentColor; opacity: 0.5;
+        border-radius: 0 2px 2px 0;
+      }
+      #fanfare-timeline .tl-cue-flash-handle:hover { opacity: 0.8; }
+      #fanfare-timeline .tl-cue-label {
+        position: absolute; font-size: 9px; white-space: nowrap;
+        text-shadow: 0 0 3px #000;
+      }
+      #fanfare-timeline .tl-cue-time {
+        position: absolute; font-size: 8px; color: #888; white-space: nowrap;
+      }
+      #fanfare-timeline .tl-playhead {
+        position: absolute; top: 0; bottom: 0; width: 2px;
+        background: #ff0; z-index: 10; pointer-events: none;
+        display: none;
+      }
+    </style>
+    <div class="tl-header">
+      <span>Fanfare Cue Timeline — drag markers | right-click flash | double-click to seek</span>
+      <div>
+        <button id="tl-play">Play</button>
+        <button id="tl-copy">Copy</button>
+        <button id="tl-reset">Reset</button>
+        <button id="tl-close">Close</button>
+      </div>
+    </div>
+    <div class="tl-scroll" id="tl-scroll">
+      <div class="tl-track" id="tl-track">
+        <canvas class="tl-waveform" id="tl-waveform"></canvas>
+        <div class="tl-playhead" id="tl-playhead"></div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(el);
+  timelineOverlay = el;
+
+  const scrollContainer = el.querySelector("#tl-scroll");
+  const track = el.querySelector("#tl-track");
+  const waveformCanvas = el.querySelector("#tl-waveform");
+  timelinePlayhead = el.querySelector("#tl-playhead");
+
+  // Size the waveform canvas to match the track
+  const trackH = track.clientHeight || 260;
+  waveformCanvas.width = TRACK_PX_WIDTH;
+  waveformCanvas.height = trackH;
+
+  // Decode and draw waveform asynchronously
+  decodeWaveform().then((data) => {
+    if (data && waveformCanvas.isConnected) {
+      drawWaveform(waveformCanvas, data);
+    }
+  });
+
+  // Draw second ticks
+  for (let s = 0; s <= TIMELINE_DURATION / 1000; s++) {
+    const xPx = (s * 1000 / TIMELINE_DURATION) * TRACK_PX_WIDTH;
+    const tick = document.createElement("div");
+    tick.className = "tl-tick";
+    tick.style.left = xPx + "px";
+    track.appendChild(tick);
+    const label = document.createElement("div");
+    label.className = "tl-tick-label";
+    label.style.left = xPx + "px";
+    label.textContent = s + "s";
+    track.appendChild(label);
+  }
+
+  // Assign row positions per unique word (for vertical stacking)
+  const wordRows = {};
+  const uniqueWords = [...new Set(Object.values(fanfareCues).map(c => c.word))];
+  uniqueWords.forEach((w, i) => { wordRows[w] = i; });
+  const rowCount = uniqueWords.length;
+  const rowH = Math.min((trackH - 20) / rowCount, 45); // cap row height
+
+  // Draw cues
+  for (const [key, cue] of Object.entries(fanfareCues)) {
+    const row = wordRows[cue.word];
+    const color = WORD_COLORS[cue.word] || "#888";
+    const xPx = (cue.time / TIMELINE_DURATION) * TRACK_PX_WIDTH;
+    const topPx = 16 + row * rowH;
+
+    const group = document.createElement("div");
+    group.className = "tl-cue";
+    group.style.left = xPx + "px";
+    group.style.top = topPx + "px";
+    group.style.color = color;
+    group.dataset.key = key;
+
+    // Flash duration bar
+    const flash = document.createElement("div");
+    flash.className = "tl-cue-flash";
+    flash.style.height = (rowH - 2) + "px";
+    flash.style.left = "0";
+
+    // Resize handle on right edge of flash bar
+    const flashHandle = document.createElement("div");
+    flashHandle.className = "tl-cue-flash-handle";
+    flashHandle.style.height = (rowH - 2) + "px";
+    flash.appendChild(flashHandle);
+
+    // Marker line
+    const marker = document.createElement("div");
+    marker.className = "tl-cue-marker";
+    marker.style.height = (rowH - 2) + "px";
+
+    // Label
+    const label = document.createElement("div");
+    label.className = "tl-cue-label";
+    label.style.top = "-1px";
+    label.style.left = "8px";
+    label.style.color = color;
+    label.textContent = cue.word || "ALL";
+
+    // Time + flash info
+    const timeLabel = document.createElement("div");
+    timeLabel.className = "tl-cue-time";
+    timeLabel.style.bottom = "-12px";
+    timeLabel.style.left = "0";
+    const updateTimeLabel = () => {
+      timeLabel.textContent = (cue.time / 1000).toFixed(2) + "s / " + cue.flash + "ms";
+    };
+    updateTimeLabel();
+
+    group.appendChild(flash);
+    group.appendChild(marker);
+    group.appendChild(label);
+    group.appendChild(timeLabel);
+    track.appendChild(group);
+
+    // Recalc flash width in px (fixed-width track, no % needed)
+    const updateFlashWidth = () => {
+      flash.style.width = (cue.flash / TIMELINE_DURATION * TRACK_PX_WIDTH) + "px";
+    };
+    updateFlashWidth();
+
+    // Update group position from cue time
+    const updateGroupPos = () => {
+      group.style.left = (cue.time / TIMELINE_DURATION * TRACK_PX_WIDTH) + "px";
+    };
+
+    // Drag marker to reposition cue time
+    let dragging = false;
+    // Drag flash handle to resize flash duration
+    let resizing = false;
+
+    flashHandle.addEventListener("mousedown", (e) => {
+      resizing = true;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    marker.addEventListener("mousedown", (e) => {
+      dragging = true;
+      e.preventDefault();
+      e.stopPropagation();
+    });
+    group.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      // Remove any existing inline editor
+      const old = track.querySelector(".tl-inline-edit");
+      if (old) old.remove();
+      // Create inline input at the cue position
+      const input = document.createElement("input");
+      input.className = "tl-inline-edit";
+      input.type = "number";
+      input.value = cue.flash;
+      input.min = 50;
+      input.step = 50;
+      input.style.cssText = `
+        position: absolute; top: ${topPx - 18}px;
+        left: ${group.style.left};
+        width: 60px; background: #222; color: #fff; border: 1px solid #666;
+        font: 11px monospace; padding: 2px 4px; z-index: 20; outline: none;
+      `;
+      track.appendChild(input);
+      input.focus();
+      input.select();
+      const commit = () => {
+        const v = parseInt(input.value);
+        if (!isNaN(v) && v >= 50) {
+          cue.flash = v;
+          updateFlashWidth();
+          updateTimeLabel();
+          saveCuesToStorage();
+        }
+        input.remove();
+      };
+      input.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter") commit();
+        if (ev.key === "Escape") input.remove();
+      });
+      input.addEventListener("blur", commit);
+    });
+    window.addEventListener("mousemove", (e) => {
+      if (resizing) {
+        const groupLeft = group.getBoundingClientRect().left;
+        const dx = e.clientX - groupLeft;
+        const newFlash = Math.max(50, Math.round((dx / TRACK_PX_WIDTH) * TIMELINE_DURATION / 50) * 50);
+        cue.flash = newFlash;
+        updateFlashWidth();
+        updateTimeLabel();
+      } else if (dragging) {
+        const rect = track.getBoundingClientRect();
+        const x = Math.max(0, Math.min(e.clientX - rect.left, TRACK_PX_WIDTH));
+        const newTime = Math.round((x / TRACK_PX_WIDTH) * TIMELINE_DURATION);
+        cue.time = newTime;
+        updateGroupPos();
+        updateTimeLabel();
+      }
+    });
+    window.addEventListener("mouseup", () => {
+      if (dragging || resizing) {
+        dragging = false;
+        resizing = false;
+        saveCuesToStorage();
+      }
+    });
+  }
+
+  // Double-click on track to seek and play from that position
+  track.addEventListener("dblclick", (e) => {
+    const rect = track.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const seekMs = Math.round((x / TRACK_PX_WIDTH) * TIMELINE_DURATION);
+    console.log(`Timeline: seek to ${(seekMs / 1000).toFixed(2)}s`);
+    if (window.playFanfareWithWords) {
+      window.playFanfareWithWords({ startFromMs: seekMs });
+      startTimelinePlayhead(seekMs);
+    }
+  });
+
+  // Play button
+  el.querySelector("#tl-play").addEventListener("click", () => {
+    if (fanfarePlaying && timelinePaused) {
+      resumeFanfare();
+    } else if (fanfarePlaying) {
+      pauseFanfare();
+    } else if (window.playFanfareWithWords) {
+      window.playFanfareWithWords();
+      startTimelinePlayhead();
+    }
+  });
+
+  // Copy button — copies current cue timings to clipboard
+  el.querySelector("#tl-copy").addEventListener("click", () => {
+    const lines = Object.entries(fanfareCues).map(([key, cue]) => {
+      const w = cue.word === null ? "null" : `"${cue.word}"`;
+      return `  ${key}: { time: ${String(cue.time).padStart(5)}, word: ${w.padStart(12)}, line: ${cue.line}, flash: ${String(cue.flash).padStart(4)} },`;
+    });
+    const text = lines.join("\n");
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = el.querySelector("#tl-copy");
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = "Copy"; }, 1500);
+    });
+    console.log("Fanfare cues:\n" + text);
+  });
+
+  // Reset button — restore hardcoded defaults
+  el.querySelector("#tl-reset").addEventListener("click", () => {
+    localStorage.removeItem("fanfareCues");
+    location.reload();
+  });
+
+  // Close button
+  el.querySelector("#tl-close").addEventListener("click", closeTimeline);
+}
+
+function startTimelinePlayhead(offsetMs = 0) {
+  if (!timelinePlayhead) return;
+  timelinePlayhead.style.display = "block";
+  timelineStartTime = performance.now() - offsetMs;
+  if (timelineAnimId) cancelAnimationFrame(timelineAnimId);
+
+  // Auto-scroll the container to keep the playhead in view
+  const scrollContainer = timelineOverlay ? timelineOverlay.querySelector("#tl-scroll") : null;
+
+  function tick() {
+    const elapsed = performance.now() - timelineStartTime;
+    const xPx = Math.min((elapsed / TIMELINE_DURATION) * TRACK_PX_WIDTH, TRACK_PX_WIDTH);
+    timelinePlayhead.style.left = xPx + "px";
+
+    // Keep playhead visible by scrolling the container
+    if (scrollContainer) {
+      const viewLeft = scrollContainer.scrollLeft;
+      const viewRight = viewLeft + scrollContainer.clientWidth;
+      if (xPx > viewRight - 60) {
+        scrollContainer.scrollLeft = xPx - scrollContainer.clientWidth * 0.3;
+      }
+    }
+
+    if (elapsed < TIMELINE_DURATION) {
+      timelineAnimId = requestAnimationFrame(tick);
+    } else {
+      timelinePlayhead.style.display = "none";
+    }
+  }
+  timelineAnimId = requestAnimationFrame(tick);
+}
+
+function closeTimeline() {
+  if (timelineAnimId) cancelAnimationFrame(timelineAnimId);
+  if (timelineOverlay) {
+    timelineOverlay.remove();
+    timelineOverlay = null;
+    timelinePlayhead = null;
+  }
+}
+
 /** Saved rotation / text state for restore after trailer */
 let savedGridRotationSpeed = null;
 let savedTextRotationEnabled = null;
 let savedTextRotationBPM = null;
 let savedTextScrambleEnabled = null;
 let savedTextContents = null;
+let savedTextStartSectors = null;
 let savedImageCellsEnabled = null;
+let savedPulsesEnabled = null;
+let savedPulseSize = null;
+let savedPulseSpeed = null;
 
 // ---------------------------------------------------------------------------
 // Cinematic fanfare — bombastic intro sound (20th Century Fox style)
@@ -98,6 +632,7 @@ let savedImageCellsEnabled = null;
 
 let fanfareAudio = null; // HTMLAudioElement for fanfare
 let fanfareNodes = []; // Tone nodes for any effects
+let fanfarePlaying = false; // true while fanfare word sequence is active
 
 async function ensureTone() {
   let T = window.Tone;
@@ -114,6 +649,8 @@ async function ensureTone() {
 let fanfareRawNodes = [];
 
 function disposeFanfare() {
+  fanfarePlaying = false;
+  timelinePaused = false;
   if (fanfareAudio) {
     fanfareAudio.pause();
     fanfareAudio.src = "";
@@ -132,6 +669,48 @@ function disposeFanfare() {
   fanfareNodes = [];
 }
 
+function pauseFanfare() {
+  if (!fanfarePlaying || timelinePaused) return;
+  timelinePaused = true;
+  // Pause the audio
+  if (fanfareAudio && !fanfareAudio.paused) fanfareAudio.pause();
+  // Freeze the playhead
+  if (timelineStartTime !== null) {
+    timelinePausedElapsed = performance.now() - timelineStartTime;
+  }
+  if (timelineAnimId) {
+    cancelAnimationFrame(timelineAnimId);
+    timelineAnimId = null;
+  }
+  updatePlayButton();
+}
+
+function resumeFanfare() {
+  if (!timelinePaused) return;
+  timelinePaused = false;
+  // Resume audio
+  if (fanfareAudio && fanfareAudio.paused) fanfareAudio.play().catch(() => {});
+  // Adjust both timeline and word-loop start times so they resume from the paused position
+  const now = performance.now();
+  timelineStartTime = now - timelinePausedElapsed;
+  fanfareStartTime = now - timelinePausedElapsed;
+  startTimelinePlayhead(timelinePausedElapsed);
+  updatePlayButton();
+}
+
+function updatePlayButton() {
+  if (!timelineOverlay) return;
+  const btn = timelineOverlay.querySelector("#tl-play");
+  if (!btn) return;
+  if (fanfarePlaying && timelinePaused) {
+    btn.textContent = "Resume";
+  } else if (fanfarePlaying) {
+    btn.textContent = "Pause";
+  } else {
+    btn.textContent = "Play";
+  }
+}
+
 /** Raw Web Audio gain node for fanfare volume control */
 let fanfareGain = null;
 
@@ -141,15 +720,28 @@ let fanfareGain = null;
  * Adds a sub-bass synth layer via Tone.js for extra weight.
  * Audio is modulated (slight pitch shift, EQ coloring) so it's not identical to the original.
  */
-async function playCinematicFanfare(duration) {
+async function playCinematicFanfare(duration, { startOffset = 0 } = {}) {
   try {
     disposeFanfare();
 
     const audio = new Audio("assets/audio/fanfare_002.mp3");
     audio.crossOrigin = "anonymous";
+    audio.preload = "auto";
     // Slight pitch shift — 2 semitones down for a deeper, more cinematic feel
     audio.playbackRate = Math.pow(2, -2 / 12); // ~0.891
     fanfareAudio = audio;
+
+    // Wait for audio to be ready before seeking
+    if (startOffset > 0) {
+      await new Promise((resolve) => {
+        const doSeek = () => {
+          audio.currentTime = startOffset * audio.playbackRate;
+          resolve();
+        };
+        if (audio.readyState >= 1) doSeek();
+        else audio.addEventListener("loadedmetadata", doSeek, { once: true });
+      });
+    }
 
     const T = await ensureTone();
     if (T) {
@@ -712,11 +1304,10 @@ function saveCurrentLightValues() {
 }
 
 function applyDimLevel(t) {
-  // Staggered: direct → ambient → GLB → screen → exposure
+  // Room lights only — screen fade is handled separately for sequenced timing
   const directT = Math.min(t / 0.4, 1);
   const ambientT = Math.min(Math.max((t - 0.1) / 0.4, 0), 1);
   const glbT = Math.min(Math.max((t - 0.2) / 0.4, 0), 1);
-  const screenT = Math.min(Math.max((t - 0.3) / 0.5, 0), 1);
   const exposureT = Math.min(Math.max((t - 0.5) / 0.5, 0), 1);
 
   setDirectIntensity(savedDirect * (1 - directT));
@@ -741,20 +1332,6 @@ function applyDimLevel(t) {
   // Dim renderer exposure for deeper overall darkness
   if (savedExposure !== null) {
     renderer.toneMappingExposure = savedExposure * (1 - exposureT * 0.8);
-  }
-
-  // Fade grid lines, images, and pulses — AND dim typography with them
-  const screenMat = getScreenMaterial();
-  if (screenMat && screenMat.uniforms) {
-    if (screenMat.uniforms.uGridFade) {
-      screenMat.uniforms.uGridFade.value = 1.0 - screenT;
-    }
-    // Dim overall brightness so typography fades out too
-    if (screenMat.uniforms.uBrightness) {
-      // Typography dims slightly later than grid (starts at t=0.4, full dark by t=1.0)
-      const brightnessT = Math.min(Math.max((t - 0.4) / 0.6, 0), 1);
-      screenMat.uniforms.uBrightness.value = 1.0 - brightnessT;
-    }
   }
 
   // Darken floor to a darker hue of the MainStructure color
@@ -1352,33 +1929,71 @@ function setTrailerMode(on) {
  * @param {number} line — which text line (1-5) to place it on
  * @param {number} flashDuration — total brightness pulse duration in ms
  */
+/** Pulse generation counter — only the latest pulse controls brightness */
+let pulseGeneration = 0;
+
+/** Number of radial sectors in the polar grid */
+const NUM_SECTORS = 36;
+/** The visual center sector (derived from original 13-char text at startSector 24 with flipX) */
+const CENTER_SECTOR = 16.5;
+
+/** Final composition layout — used by the ALL (null) cue */
+const FINAL_LAYOUT = {
+  1: "DOME",
+  2: "DREAMING",
+  3: "OPEN CALL",
+  4: "LIVE NOW",
+  5: "APPLY",
+};
+
+function centerTextOnLine(lineIndex, text) {
+  setTextContent(lineIndex, text);
+  if (text.length > 0) {
+    const sector = Math.round(CENTER_SECTOR + text.length / 2);
+    setTextStartSector(lineIndex, sector % NUM_SECTORS);
+  }
+}
+
 function flashWordOnDome(word, line = 3, flashDuration = 800) {
   const screenMat = getScreenMaterial();
 
-  // Place word directly (no scramble) on the specified line, clear others
-  for (let i = 1; i <= 5; i++) {
-    setTextContent(i, i === line ? word : "");
+  if (word !== null) {
+    // Solo mode: clear all lines, show only this word centered on its line
+    for (let i = 1; i <= 5; i++) {
+      if (i === line) {
+        centerTextOnLine(i, word);
+      } else {
+        setTextContent(i, "");
+      }
+    }
+  } else {
+    // ALL mode: show all words together on their final lines
+    for (let i = 1; i <= 5; i++) {
+      centerTextOnLine(i, FINAL_LAYOUT[i] || "");
+    }
   }
 
-  // Brightness pump: 0 → peak → 0 (fully dark between words)
+  // Brightness pump: 0 → peak → 0 (fully dark between flashes)
+  // Cancel any previous pulse so they don't fight over uBrightness
   if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+    const gen = ++pulseGeneration;
     const startTime = performance.now();
     function pulse() {
+      if (gen !== pulseGeneration) return; // superseded by a newer pulse
       const elapsed = performance.now() - startTime;
       const t = Math.min(elapsed / flashDuration, 1);
-      // Sharp attack (10%), bright hold (30%), full decay to black (60%)
       let brightness;
-      if (t < 0.1) {
-        brightness = (t / 0.1) * 1.5; // overshoot to 1.5 for bloom punch
+      if (t < 0.15) {
+        brightness = (t / 0.15) * 1.2; // quick ramp to 1.2
       } else if (t < 0.4) {
-        brightness = 1.5 - (t - 0.1) / 0.3 * 0.5; // settle from 1.5 to 1.0
+        brightness = 1.2 - (t - 0.15) / 0.25 * 0.2; // settle to 1.0
       } else {
-        brightness = 1.0 * (1 - (t - 0.4) / 0.6); // decay fully to 0
+        brightness = 1.0 * (1 - (t - 0.4) / 0.6);
         brightness *= brightness; // ease-in for smooth fade to black
       }
       screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
       if (t < 1) requestAnimationFrame(pulse);
-      else screenMat.uniforms.uBrightness.value = 0; // ensure clean zero
+      else screenMat.uniforms.uBrightness.value = 0;
     }
     pulse();
   }
@@ -1390,61 +2005,88 @@ function flashWordOnDome(word, line = 3, flashDuration = 800) {
  * Words appear on different text lines for visual variety.
  * No scramble effect — clean text with brightness pumps.
  */
-async function playFanfareWithWords() {
-  // Start the fanfare audio
-  await playCinematicFanfare();
+/** Incremented each time playFanfareWithWords starts — older runs check and bail */
+let fanfareRunId = 0;
+/** Module-level start time so pause/resume can adjust it */
+let fanfareStartTime = 0;
 
-  // Word sequence with timestamps matched to the pitched-down fanfare peaks.
-  // The original fanfare is ~21s; at 0.891x it's ~23.5s.
-  // Each entry specifies which text line (1-5) the word appears on.
-  const wordSequence = [
-    { time: 528,   word: "DOME",      line: 3, flash: 900  },
-    { time: 1623,  word: "DREAMING",  line: 4, flash: 1800 },
-    { time: 3718,  word: "OPEN",      line: 2, flash: 1200 },
-    { time: 5153,  word: "CALL",      line: 5, flash: 3500 },
-    { time: 9116,  word: "LIVE",      line: 3, flash: 1800 },
-    { time: 11192, word: "NOW",       line: 2, flash: 1800 },
-    { time: 13401, word: "APPLY",     line: 4, flash: 5400 },
-    // Final hit: all words together
-    { time: 19308, word: null,        line: 0, flash: 2500 },
-  ];
+export async function playFanfareWithWords({ startFromMs = 0 } = {}) {
+  // Stop any existing fanfare (audio + abort previous word loop)
+  disposeFanfare();
+  const runId = ++fanfareRunId;
+  fanfarePlaying = true;
+  updatePlayButton();
 
-  const startTime = performance.now();
+  // Clear all text lines, ensure grid lines are hidden
+  for (let i = 1; i <= 5; i++) {
+    setTextContent(i, "");
+  }
+  const screenMat = getScreenMaterial();
+  if (screenMat && screenMat.uniforms) {
+    if (screenMat.uniforms.uGridFade) screenMat.uniforms.uGridFade.value = 0;
+    if (screenMat.uniforms.uBrightness) screenMat.uniforms.uBrightness.value = 0;
+  }
+
+  // Start the fanfare audio (with seek offset in seconds)
+  await playCinematicFanfare(undefined, { startOffset: startFromMs / 1000 });
+
+  // Build word sequence from GUI-editable fanfareCues, sorted by time
+  const wordSequence = Object.values(fanfareCues)
+    .slice()
+    .sort((a, b) => a.time - b.time);
+
+  fanfareStartTime = performance.now() - startFromMs;
 
   for (const entry of wordSequence) {
-    const now = performance.now();
-    const waitTime = entry.time - (now - startTime);
-    if (waitTime > 0) {
-      await new Promise((r) => setTimeout(r, waitTime));
+    // Abort if a newer run started
+    if (runId !== fanfareRunId) return;
+
+    // Skip cues before our start point
+    if (entry.time < startFromMs) continue;
+
+    // Wait until cue time, respecting pause
+    let remaining = entry.time - (performance.now() - fanfareStartTime);
+    while (remaining > 0) {
+      if (runId !== fanfareRunId) return;
+      if (timelinePaused) {
+        // Spin-wait while paused (check every 100ms)
+        await new Promise((r) => setTimeout(r, 100));
+        // Recalculate remaining — fanfareStartTime is adjusted on resume
+        remaining = entry.time - (performance.now() - fanfareStartTime);
+        continue;
+      }
+      const sleepMs = Math.min(remaining, 50);
+      await new Promise((r) => setTimeout(r, sleepMs));
+      remaining = entry.time - (performance.now() - fanfareStartTime);
     }
+    if (runId !== fanfareRunId) return;
 
     if (entry.word === null) {
-      // Final hit: show all words together across all lines
-      console.log("Chair spirits: ALL WORDS");
-      setTextContent(1, "DOME");
-      setTextContent(2, "DREAMING");
-      setTextContent(3, "OPEN CALL");
-      setTextContent(4, "LIVE NOW");
-      setTextContent(5, "APPLY");
-      // Brightness pump for the final reveal
+      // Flash all accumulated words together
+      const isFinalHit = entry === wordSequence[wordSequence.length - 1];
+      console.log(`Chair spirits: ALL WORDS flash${isFinalHit ? " (FINAL)" : ""}`);
       const screenMat = getScreenMaterial();
       if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
-        const pumpStart = performance.now();
-        const pumpDur = entry.flash;
-        function finalPump() {
-          const t = Math.min((performance.now() - pumpStart) / pumpDur, 1);
-          let brightness;
-          if (t < 0.1) {
-            brightness = (t / 0.1) * 1.5;
-          } else if (t < 0.5) {
-            brightness = 1.5 - (t - 0.1) / 0.4 * 0.5;
-          } else {
-            brightness = 1.0; // hold bright — leads into final announcement
+        if (isFinalHit) {
+          // Final hit: punch to 1.5 then hold at 1.0
+          const pumpStart = performance.now();
+          function finalPump() {
+            const t = Math.min((performance.now() - pumpStart) / 600, 1);
+            let brightness;
+            if (t < 0.15) {
+              brightness = (t / 0.15) * 1.5;
+            } else {
+              brightness = 1.5 - (t - 0.15) / 0.85 * 0.5;
+            }
+            screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
+            if (t < 1) requestAnimationFrame(finalPump);
+            else screenMat.uniforms.uBrightness.value = 1.0;
           }
-          screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
-          if (t < 1) requestAnimationFrame(finalPump);
+          finalPump();
+        } else {
+          // Intermediate flash: same pump as individual words
+          flashWordOnDome(null, 0, entry.flash);
         }
-        finalPump();
       }
     } else {
       console.log(`Chair spirits: "${entry.word}" (line ${entry.line})`);
@@ -1452,13 +2094,11 @@ async function playFanfareWithWords() {
     }
   }
 
-  // Hold the final combined display, then dim
-  await new Promise((r) => setTimeout(r, 3000));
-
-  const screenMat = getScreenMaterial();
-  if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
-    screenMat.uniforms.uBrightness.value = 0;
-  }
+  // Hold the final combined display briefly, then hand off to announcement
+  await new Promise((r) => setTimeout(r, 2000));
+  fanfarePlaying = false;
+  updatePlayButton();
+  // Brightness stays at 1.0 — the announcement scramble-in happens seamlessly
 }
 
 export async function runTrailerSequence() {
@@ -1479,9 +2119,14 @@ export async function runTrailerSequence() {
   savedTextRotationBPM = polarGridSettings.textRotationBPM;
   savedTextScrambleEnabled = polarGridSettings.textScrambleEnabled;
   savedImageCellsEnabled = polarGridSettings.imageCellsEnabled;
+  savedPulsesEnabled = polarGridSettings.pulsesEnabled;
+  savedPulseSize = polarGridSettings.pulseSize;
+  savedPulseSpeed = polarGridSettings.pulseSpeed;
   savedTextContents = {};
+  savedTextStartSectors = {};
   for (let i = 1; i <= 5; i++) {
     savedTextContents[i] = polarGridSettings[`text${i}Content`];
+    savedTextStartSectors[i] = polarGridSettings[`text${i}StartSector`];
   }
 
   // Make sure any previous fanfare is cleaned up
@@ -1491,7 +2136,7 @@ export async function runTrailerSequence() {
   startSpiritsSequence();
 
   // 4. Wait for ~40% spirits seated — then begin the cinematic buildup
-  const earlyCount = Math.floor(chairPositions.length * 0.4);
+  const earlyCount = Math.floor(chairPositions.length * 0.25);
   await new Promise((resolve) => {
     const check = setInterval(() => {
       const settledCount = spirits.filter((s) => s.settled).length;
@@ -1504,19 +2149,26 @@ export async function runTrailerSequence() {
 
   // === Everything below runs in parallel for a layered cinematic buildup ===
 
-  // 5. Fade out pulse audio in background
+  // 5. Fade out pulse audio AND visual pulse dots in background
   const pulseAudioFadeDuration = 5;
   const fadeSteps = 20;
   const stepTime = (pulseAudioFadeDuration * 1000) / fadeSteps;
   let step = 0;
+  const origPulseSize = polarGridSettings.pulseSize;
+  const origPulseSpeed = polarGridSettings.pulseSpeed;
   const audioFadePromise = new Promise((resolve) => {
     const fadeInterval = setInterval(() => {
       step++;
       const level = 1 - step / fadeSteps;
       setMasterVolume(Math.max(0, level * 0.5));
+      // Fade visual pulse dots (size + speed) in sync with audio
+      polarGridSettings.pulseSize = origPulseSize * level;
+      polarGridSettings.pulseSpeed = origPulseSpeed * level;
       if (step >= fadeSteps) {
         clearInterval(fadeInterval);
         stopPulseAudio();
+        polarGridSettings.pulseSize = 0;
+        polarGridSettings.pulseSpeed = 0;
         resolve();
       }
     }, stepTime);
@@ -1545,12 +2197,12 @@ export async function runTrailerSequence() {
   // Stop text step rotation (per-cell BPM stepping, separate from grid)
   setTextRotationEnabled(false);
 
-  // 7. Start dimming lights (6s)
-  const dimDur = 6;
+  // 7. Dim room lights — delayed 3s from cinematic buildup start, then 4s duration
+  const dimDur = 4;
+  await new Promise((r) => setTimeout(r, 3000));
   dimRoomLights(dimDur, { playFanfare: false });
 
-  // 8. ONLY wait for the dim to finish — don't wait for spirits or late guest.
-  //    The dim is 6s. Rotation (5s) and audio fade (5s) finish within that too.
+  // 8. Wait for lights to finish dimming
   await new Promise((resolve) => {
     const dimCheck = setInterval(() => {
       if (!dimming) {
@@ -1558,6 +2210,27 @@ export async function runTrailerSequence() {
         resolve();
       }
     }, 100);
+  });
+
+  // 9. THEN fade screen/grid out over 2s (sequenced after lights)
+  const screenMat = getScreenMaterial();
+  await new Promise((resolve) => {
+    const fadeStart = performance.now();
+    const fadeDur = 2000;
+    function fadeScreen() {
+      const t = Math.min((performance.now() - fadeStart) / fadeDur, 1);
+      if (screenMat && screenMat.uniforms) {
+        if (screenMat.uniforms.uGridFade) {
+          screenMat.uniforms.uGridFade.value = 1.0 - t;
+        }
+        if (screenMat.uniforms.uBrightness) {
+          screenMat.uniforms.uBrightness.value = 1.0 - t;
+        }
+      }
+      if (t < 1) requestAnimationFrame(fadeScreen);
+      else resolve();
+    }
+    fadeScreen();
   });
 
   // Screen is now fully dark — safe to regenerate texture without images
@@ -1572,37 +2245,11 @@ export async function runTrailerSequence() {
 
   console.log("Chair spirits: fanfare word sequence complete");
 
-  // 12. Set up final announcement with scramble-in effect
-  setTextScrambleEnabled(true);
-  scrambleToNewText({
-    1: "OPEN CALL",
-    2: "IS LIVE",
-    3: "DOME DREAMING",
-    4: "FULLDOME FILM FESTIVAL",
-    5: "DEADLINE 1ST OF MARCH",
-  }, 600);
+  // All words are now displayed together from the final ALL cue.
+  // Hold the display, then reverse.
+  await new Promise((r) => setTimeout(r, 2500));
 
-  // Bring brightness back up to show the final announcement
-  const screenMat = getScreenMaterial();
-  if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
-    const rampStart = performance.now();
-    await new Promise((resolve) => {
-      function rampUp() {
-        const t = Math.min((performance.now() - rampStart) / 2000, 1);
-        screenMat.uniforms.uBrightness.value = t;
-        if (t < 1) requestAnimationFrame(rampUp);
-        else resolve();
-      }
-      rampUp();
-    });
-  }
-
-  console.log("Chair spirits: open call announcement revealed");
-
-  // Hold the announcement
-  await new Promise((r) => setTimeout(r, 6000));
-
-  // 13. Reverse everything
+  // Reverse everything
   await reverseTrailer(4);
 }
 
@@ -1612,7 +2259,12 @@ export async function reverseTrailer(duration = 3) {
   // Stop fanfare if still playing
   disposeFanfare();
 
-  // Scramble text back to original content
+  // Restore start sectors and scramble text back to original content
+  if (savedTextStartSectors) {
+    for (let i = 1; i <= 5; i++) {
+      setTextStartSector(i, savedTextStartSectors[i]);
+    }
+  }
   if (savedTextContents) {
     scrambleToNewText(savedTextContents, 400);
   }
@@ -1651,6 +2303,11 @@ export async function reverseTrailer(duration = 3) {
   if (savedImageCellsEnabled !== null) {
     setImageCellsEnabled(savedImageCellsEnabled);
   }
+
+  // Restore pulse dots on the grid (size, speed, and enabled flag)
+  if (savedPulseSize !== null) polarGridSettings.pulseSize = savedPulseSize;
+  if (savedPulseSpeed !== null) polarGridSettings.pulseSpeed = savedPulseSpeed;
+  if (savedPulsesEnabled !== null) setPulsesEnabled(savedPulsesEnabled);
 
   // Fade text back in
   setTrailerMode(false);
