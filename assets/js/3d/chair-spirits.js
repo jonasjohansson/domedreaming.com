@@ -52,6 +52,7 @@ let savedDirect = null;
 let savedGlbIntensities = [];
 let savedScreenEmissive = null;
 let savedExposure = null;
+let savedFloorColor = null;
 /** Whether lights are currently dimmed / restoring */
 let dimming = false;
 let restoring = false;
@@ -107,8 +108,8 @@ async function playCinematicFanfare(duration) {
     if (!T) return;
     disposeFanfare();
 
-    // Master bus: reverb → destination
-    const reverb = new T.Reverb({ decay: 4, wet: 0.35 });
+    // Master bus: large reverb → destination
+    const reverb = new T.Reverb({ decay: 6, wet: 0.4 });
     await reverb.generate();
     reverb.toDestination();
     fanfareNodes.push(reverb);
@@ -116,114 +117,157 @@ async function playCinematicFanfare(duration) {
     const masterGain = new T.Gain(0).connect(reverb);
     fanfareNodes.push(masterGain);
 
-    // Fade master in over first 40%, peak, then fade out last 20%
-    masterGain.gain.rampTo(0.85, duration * 0.4);
+    // Slow build to full volume, sustain, then fade with the visual dim
+    masterGain.gain.rampTo(1.0, duration * 0.5);
     setTimeout(() => {
-      if (masterGain) masterGain.gain.rampTo(0, duration * 0.25);
-    }, duration * 750);
+      if (masterGain) masterGain.gain.rampTo(0, duration * 0.3);
+    }, duration * 700);
 
-    // ── 1. Sub-bass rumble ──────────────────────────────────────────
-    const subFilter = new T.Filter({ frequency: 80, type: "lowpass", rolloff: -24 }).connect(masterGain);
+    // ── 1. Sub-bass rumble (floor shaking low end) ──────────────────
+    const subFilter = new T.Filter({ frequency: 60, type: "lowpass", rolloff: -24 }).connect(masterGain);
     fanfareNodes.push(subFilter);
 
     const sub = new T.Synth({
       oscillator: { type: "sawtooth" },
-      envelope: { attack: duration * 0.3, decay: 1, sustain: 0.7, release: duration * 0.3 },
-      volume: -14,
+      envelope: { attack: duration * 0.4, decay: 2, sustain: 0.8, release: duration * 0.3 },
+      volume: -10,
     }).connect(subFilter);
     fanfareNodes.push(sub);
 
     sub.triggerAttack("C1");
-    subFilter.frequency.rampTo(200, duration * 0.7);
+    subFilter.frequency.rampTo(250, duration * 0.8);
 
-    // ── 2. Brass-like fanfare chords (stacked fifths, bright sawtooth) ──
-    const brassFilter = new T.Filter({ frequency: 400, type: "lowpass", rolloff: -12 }).connect(masterGain);
+    // ── 2. Brass fanfare (big Hollywood horns) ──────────────────────
+    const brassFilter = new T.Filter({ frequency: 300, type: "lowpass", rolloff: -12 }).connect(masterGain);
     fanfareNodes.push(brassFilter);
-    brassFilter.frequency.rampTo(3000, duration * 0.6); // filter opens = brighter
+    brassFilter.frequency.rampTo(4000, duration * 0.7);
 
-    // Chord: C major spread voicing (C3, G3, E4, C5)
-    const brassNotes = ["C3", "G3", "E4", "C5"];
-    const brassPolySynth = new T.PolySynth(T.Synth, {
+    const brass = new T.PolySynth(T.Synth, {
       oscillator: { type: "sawtooth" },
-      envelope: { attack: duration * 0.25, decay: 0.5, sustain: 0.8, release: duration * 0.3 },
-      volume: -20,
+      envelope: { attack: duration * 0.2, decay: 0.5, sustain: 0.85, release: duration * 0.3 },
+      volume: -16,
     }).connect(brassFilter);
-    fanfareNodes.push(brassPolySynth);
+    fanfareNodes.push(brass);
 
-    // Stagger chord entry for dramatic build
-    brassPolySynth.triggerAttack(["C3", "G3"], "+0");
+    // Staggered entry — building tension
+    brass.triggerAttack(["C3", "G3"], "+0");
     setTimeout(() => {
-      try { brassPolySynth.triggerAttack(["E4"]); } catch (_) {}
-    }, duration * 200); // 20%
+      try { brass.triggerAttack(["E4", "C4"]); } catch (_) {}
+    }, duration * 150);
     setTimeout(() => {
-      try { brassPolySynth.triggerAttack(["C5"]); } catch (_) {}
-    }, duration * 350); // 35%
+      try { brass.triggerAttack(["G4", "C5"]); } catch (_) {}
+    }, duration * 300);
 
-    // Key change / resolution at climax: modulate to wider voicing
+    // CLIMAX — full orchestra chord with key change feel
     setTimeout(() => {
       try {
-        brassPolySynth.releaseAll();
-        brassPolySynth.triggerAttack(["C3", "E3", "G3", "C4", "E4", "G4", "C5"]);
+        brass.releaseAll();
+        brass.triggerAttack(["C3", "E3", "G3", "Bb3", "C4", "E4", "G4", "C5", "E5"]);
       } catch (_) {}
-    }, duration * 550); // 55% = climax
+    }, duration * 500);
 
-    // ── 3. Timpani hits ─────────────────────────────────────────────
-    const timpaniSynth = new T.MembraneSynth({
+    // ── 3. Horn swell (warm mid-range power) ────────────────────────
+    const hornFilter = new T.Filter({ frequency: 600, type: "lowpass", rolloff: -12 }).connect(masterGain);
+    fanfareNodes.push(hornFilter);
+    hornFilter.frequency.rampTo(2500, duration * 0.6);
+
+    const horn = new T.PolySynth(T.Synth, {
+      oscillator: { type: "triangle" },
+      envelope: { attack: duration * 0.35, decay: 1, sustain: 0.7, release: duration * 0.3 },
+      volume: -18,
+    }).connect(hornFilter);
+    fanfareNodes.push(horn);
+
+    setTimeout(() => {
+      try { horn.triggerAttack(["F3", "A3", "C4", "F4"]); } catch (_) {}
+    }, duration * 100);
+    // Resolve to C at climax
+    setTimeout(() => {
+      try {
+        horn.releaseAll();
+        horn.triggerAttack(["C3", "E3", "G3", "C4"]);
+      } catch (_) {}
+    }, duration * 500);
+
+    // ── 4. Timpani rolls and hits ───────────────────────────────────
+    const timpani = new T.MembraneSynth({
       pitchDecay: 0.08,
       octaves: 6,
-      envelope: { attack: 0.01, decay: 1.5, sustain: 0, release: 1 },
-      volume: -10,
+      envelope: { attack: 0.01, decay: 2, sustain: 0, release: 1.5 },
+      volume: -6,
     }).connect(masterGain);
-    fanfareNodes.push(timpaniSynth);
+    fanfareNodes.push(timpani);
 
-    // Schedule hits: dramatic timpani pattern
-    const hitTimes = [0.05, 0.2, 0.35, 0.55, 0.65, 0.75]; // fraction of duration
-    const hitNotes = ["C2", "C2", "G1", "C2", "G1", "C2"];
+    // Dramatic pattern: building roll into climax
+    const hitTimes = [0.03, 0.12, 0.22, 0.32, 0.42, 0.50, 0.52, 0.60, 0.70, 0.80];
+    const hitNotes = ["C2", "G1", "C2", "G1", "C2", "C2", "G1", "C2", "G1", "C2"];
     hitTimes.forEach((frac, i) => {
       setTimeout(() => {
-        try { timpaniSynth.triggerAttackRelease(hitNotes[i], "2n"); } catch (_) {}
+        try { timpani.triggerAttackRelease(hitNotes[i], "2n"); } catch (_) {}
       }, duration * frac * 1000);
     });
 
-    // ── 4. Cymbal swell (noise → filter sweep) ─────────────────────
-    const noiseFilter = new T.Filter({ frequency: 500, type: "bandpass", Q: 0.5 }).connect(masterGain);
+    // ── 5. Cymbal swell + crash ─────────────────────────────────────
+    const noiseFilter = new T.Filter({ frequency: 400, type: "bandpass", Q: 0.4 }).connect(masterGain);
     fanfareNodes.push(noiseFilter);
-    noiseFilter.frequency.rampTo(8000, duration * 0.6);
+    noiseFilter.frequency.rampTo(10000, duration * 0.5);
 
     const noiseGain = new T.Gain(0).connect(noiseFilter);
     fanfareNodes.push(noiseGain);
-    noiseGain.gain.rampTo(0.12, duration * 0.5);
+    noiseGain.gain.rampTo(0.18, duration * 0.5);
+    // Cymbal crash at climax then sustain
     setTimeout(() => {
-      if (noiseGain) noiseGain.gain.rampTo(0, duration * 0.2);
-    }, duration * 700);
+      if (noiseGain) {
+        noiseGain.gain.rampTo(0.25, 0.1); // crash
+        setTimeout(() => noiseGain.gain.rampTo(0, duration * 0.25), 200);
+      }
+    }, duration * 500);
 
     const noise = new T.Noise("white").connect(noiseGain);
     fanfareNodes.push(noise);
     noise.start();
 
-    // ── 5. High string shimmer (adds sparkle at climax) ─────────────
+    // ── 6. String shimmer (ethereal sparkle at climax) ──────────────
     const shimmer = new T.PolySynth(T.Synth, {
       oscillator: { type: "sine" },
-      envelope: { attack: duration * 0.3, decay: 0.5, sustain: 0.6, release: duration * 0.3 },
-      volume: -26,
+      envelope: { attack: duration * 0.25, decay: 0.5, sustain: 0.7, release: duration * 0.3 },
+      volume: -22,
     }).connect(masterGain);
     fanfareNodes.push(shimmer);
 
     setTimeout(() => {
-      try { shimmer.triggerAttack(["E5", "G5", "C6"]); } catch (_) {}
+      try { shimmer.triggerAttack(["C5", "E5", "G5", "C6"]); } catch (_) {}
     }, duration * 400);
 
-    // ── Release and cleanup ─────────────────────────────────────────
+    // ── 7. Deep power chord (cinematic punch at climax) ─────────────
+    const powerFilter = new T.Filter({ frequency: 200, type: "lowpass", rolloff: -12 }).connect(masterGain);
+    fanfareNodes.push(powerFilter);
+    powerFilter.frequency.rampTo(1500, duration * 0.3);
+
+    const power = new T.PolySynth(T.Synth, {
+      oscillator: { type: "square" },
+      envelope: { attack: 0.05, decay: 1, sustain: 0.6, release: duration * 0.3 },
+      volume: -22,
+    }).connect(powerFilter);
+    fanfareNodes.push(power);
+
+    setTimeout(() => {
+      try { power.triggerAttack(["C2", "G2", "C3"]); } catch (_) {}
+    }, duration * 500);
+
+    // ── Release everything together ─────────────────────────────────
     setTimeout(() => {
       try {
         sub.triggerRelease();
-        brassPolySynth.releaseAll();
+        brass.releaseAll();
+        horn.releaseAll();
         shimmer.releaseAll();
+        power.releaseAll();
         noise.stop();
       } catch (_) {}
-    }, duration * 800); // 80%
+    }, duration * 850);
 
-    setTimeout(() => disposeFanfare(), (duration + 2) * 1000);
+    setTimeout(() => disposeFanfare(), (duration + 3) * 1000);
     console.log(`Chair spirits: cinematic fanfare playing (${duration}s)`);
   } catch (e) {
     console.warn("Chair spirits: fanfare sound skipped", e);
@@ -609,6 +653,19 @@ export function updateSpirits(dt) {
 // Cinematic light dimming (includes screen/dome)
 // ---------------------------------------------------------------------------
 
+/** Find floor mesh from fbxMeshes by name */
+function getFloorMesh() {
+  const entry = fbxMeshes.find((m) => m.name.toLowerCase().includes("floor"));
+  return entry ? entry : null;
+}
+
+/** Find main structure color to derive floor cinema color */
+function getMainStructureColor() {
+  const entry = fbxMeshes.find((m) => m.name.toLowerCase().includes("main"));
+  if (entry && entry.originalColor) return entry.originalColor.clone();
+  return new THREE.Color(0x222222);
+}
+
 /** Cache the screen object ref (avoid circular import with texture.js) */
 let _screenObj = null;
 function getScreen() {
@@ -641,6 +698,13 @@ function saveCurrentLightValues() {
   const screenMat = getScreenMaterial();
   if (screenMat) {
     savedScreenEmissive = screenMat.emissiveIntensity ?? 1.0;
+  }
+
+  // Save floor color
+  const floor = getFloorMesh();
+  if (floor) {
+    const mat = getMaterial(floor.mesh);
+    if (mat && mat.color) savedFloorColor = mat.color.clone();
   }
 }
 
@@ -690,6 +754,22 @@ function applyDimLevel(t) {
     }
     screenMat.needsUpdate = true;
   }
+
+  // Darken floor to a darker hue of the MainStructure color
+  if (savedFloorColor) {
+    const floor = getFloorMesh();
+    if (floor) {
+      const mat = getMaterial(floor.mesh);
+      if (mat && mat.color) {
+        const mainColor = getMainStructureColor();
+        const hsl = {};
+        mainColor.getHSL(hsl);
+        // Target: same hue, lower saturation, much darker lightness
+        const targetColor = new THREE.Color().setHSL(hsl.h, hsl.s * 0.5, hsl.l * 0.15);
+        mat.color.copy(savedFloorColor).lerp(targetColor, glbT);
+      }
+    }
+  }
 }
 
 function applyRestoreLevel(t) {
@@ -726,6 +806,21 @@ function applyRestoreLevel(t) {
     }
     screenMat.needsUpdate = true;
   }
+
+  // Restore floor color
+  if (savedFloorColor) {
+    const floor = getFloorMesh();
+    if (floor) {
+      const mat = getMaterial(floor.mesh);
+      if (mat && mat.color) {
+        const mainColor = getMainStructureColor();
+        const hsl = {};
+        mainColor.getHSL(hsl);
+        const darkColor = new THREE.Color().setHSL(hsl.h, hsl.s * 0.5, hsl.l * 0.15);
+        mat.color.copy(darkColor).lerp(savedFloorColor, glbT);
+      }
+    }
+  }
 }
 
 export function dimRoomLights(duration = 3) {
@@ -735,16 +830,16 @@ export function dimRoomLights(duration = 3) {
   dimming = true;
   restoring = false;
 
-  // Fade audio out over the dim duration then stop
+  // Fade audio out over the full dim duration (matches visual fade)
   try {
     const Tone = window.Tone;
     if (Tone && Tone.Destination) {
-      Tone.Destination.volume.rampTo(-Infinity, duration * 0.8);
+      Tone.Destination.volume.rampTo(-Infinity, duration);
       setTimeout(() => {
         if (window.stopAudio) window.stopAudio();
         // Reset destination volume for later use
         if (Tone.Destination) Tone.Destination.volume.value = 0;
-      }, duration * 1000);
+      }, (duration + 0.5) * 1000);
     } else if (window.stopAudio) {
       window.stopAudio();
     }
