@@ -21,6 +21,11 @@
   text-align: center;
 }
 
+.content-main,
+.content-credits {
+  text-align: left;
+}
+
 .block:has(img):not(:has(.image-caption)) {
   justify-content: stretch;
   align-items: stretch;
