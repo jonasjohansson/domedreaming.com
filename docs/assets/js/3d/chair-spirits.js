@@ -102,10 +102,10 @@ export const fanfareCues = {
   cue9:  { time:  6320, word: "LIVE NOW",  line: 3, flash: 1500 },
   cue10: { time:  9550, word: "LIVE NOW",  line: 3, flash:  650 },
   cue11: { time: 10780, word: "LIVE NOW",  line: 3, flash:  700 },
-  cue12: { time: 12340, word: "APPLY",     line: 3, flash:  500 },
-  cue13: { time: 13150, word: "APPLY",     line: 3, flash:  900 },
-  cue14: { time: 14820, word: "APPLY",     line: 3, flash:  450 },
-  cue15: { time: 15470, word: "APPLY",     line: 3, flash:  850 },
+  cue12: { time: 12340, word: "APPLY!",     line: 3, flash:  500 },
+  cue13: { time: 13150, word: "APPLY!",     line: 3, flash:  900 },
+  cue14: { time: 14820, word: "APPLY!",     line: 3, flash:  450 },
+  cue15: { time: 15470, word: "APPLY!",     line: 3, flash:  850 },
   cue16: { time: 18200, word: null,        line: 0, flash: 2750 },
   cue17: { time: 21760, word: null,        line: 0, flash: 3000 },
 };
@@ -120,7 +120,7 @@ const WORD_COLORS = {
   "DREAMING": "#4ECDC4",
   "OPEN CALL": "#FFE66D",
   "LIVE NOW": "#A8E6CF",
-  "APPLY": "#DDA0DD",
+  "APPLY!": "#DDA0DD",
   null: "#FFFFFF",
 };
 
@@ -1929,6 +1929,43 @@ function setTrailerMode(on) {
  * @param {number} line — which text line (1-5) to place it on
  * @param {number} flashDuration — total brightness pulse duration in ms
  */
+// ---------------------------------------------------------------------------
+// Spirit light flash — pulse settled spirits in sync with fanfare cues
+// ---------------------------------------------------------------------------
+let spiritFlashGen = 0;
+
+function flashSpiritLights(duration) {
+  const gen = ++spiritFlashGen;
+  const start = performance.now();
+  // Dimmed baseline values (matching dimRoomLights at full dim)
+  const baseOpacity = 0.255; // 0.85 * 0.3
+  const baseLightInt = 0.18; // 0.6 * 0.3
+  const peakOpacity = 0.95;
+  const peakLightInt = 1.2;
+
+  function tick() {
+    if (gen !== spiritFlashGen) return;
+    const t = Math.min((performance.now() - start) / duration, 1);
+    let factor;
+    if (t < 0.15) {
+      factor = t / 0.15;
+    } else {
+      factor = 1 - (t - 0.15) / 0.85;
+      factor *= factor; // ease-out
+    }
+    const opacity = baseOpacity + (peakOpacity - baseOpacity) * factor;
+    const lightInt = baseLightInt + (peakLightInt - baseLightInt) * factor;
+
+    for (const spirit of spirits) {
+      if (spirit.removed || spirit.fadingOut || !spirit.settled) continue;
+      spirit.material.opacity = opacity;
+      if (spirit.light) spirit.light.intensity = lightInt;
+    }
+    if (t < 1) requestAnimationFrame(tick);
+  }
+  tick();
+}
+
 /** Pulse generation counter — only the latest pulse controls brightness */
 let pulseGeneration = 0;
 
@@ -1943,7 +1980,7 @@ const FINAL_LAYOUT = {
   2: "DREAMING",
   3: "OPEN CALL",
   4: "LIVE NOW",
-  5: "APPLY",
+  5: "APPLY!",
 };
 
 function centerTextOnLine(lineIndex, text) {
@@ -1955,6 +1992,9 @@ function centerTextOnLine(lineIndex, text) {
 }
 
 function flashWordOnDome(word, line = 3, flashDuration = 800) {
+  // Pulse settled spirit lights in sync with the dome flash
+  flashSpiritLights(flashDuration);
+
   const screenMat = getScreenMaterial();
 
   if (word !== null) {
@@ -2197,9 +2237,9 @@ export async function runTrailerSequence() {
   // Stop text step rotation (per-cell BPM stepping, separate from grid)
   setTextRotationEnabled(false);
 
-  // 7. Dim room lights — delayed 3s from cinematic buildup start, then 4s duration
-  const dimDur = 4;
-  await new Promise((r) => setTimeout(r, 3000));
+  // 7. Dim room lights — delayed 6s from cinematic buildup start, then 5s duration
+  const dimDur = 5;
+  await new Promise((r) => setTimeout(r, 6000));
   dimRoomLights(dimDur, { playFanfare: false });
 
   // 8. Wait for lights to finish dimming
@@ -2308,6 +2348,12 @@ export async function reverseTrailer(duration = 3) {
   if (savedPulseSize !== null) polarGridSettings.pulseSize = savedPulseSize;
   if (savedPulseSpeed !== null) polarGridSettings.pulseSpeed = savedPulseSpeed;
   if (savedPulsesEnabled !== null) setPulsesEnabled(savedPulsesEnabled);
+
+  // Restart pulse audio (was stopped during trailer) and restore master volume
+  setMasterVolume(0.5);
+  if (window.startAudio) {
+    try { await window.startAudio(); } catch (e) { /* ignore */ }
+  }
 
   // Fade text back in
   setTrailerMode(false);
