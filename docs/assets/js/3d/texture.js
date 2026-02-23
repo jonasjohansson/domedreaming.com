@@ -674,6 +674,46 @@ export function setupPolarGridGUI() {
 
   cameraFolder.close();
 
+  // ============ TRAILER GROUP ============
+  const trailerFolder = polarGridGUI.addFolder("Trailer");
+
+  const trailerActions = {
+    startSpirits: () => {
+      if (window.startSpiritsSequence) window.startSpiritsSequence();
+    },
+    reverseSpirits: () => {
+      if (window.reverseSpiritsSequence) window.reverseSpiritsSequence();
+    },
+    dimLights: () => {
+      if (window.dimRoomLights) window.dimRoomLights(3);
+    },
+    restoreLights: () => {
+      if (window.restoreRoomLights) window.restoreRoomLights(2);
+    },
+    runTrailer: () => {
+      if (window.runTrailerSequence) window.runTrailerSequence();
+    },
+    reverseTrailer: () => {
+      if (window.reverseTrailer) window.reverseTrailer();
+    },
+    dimAndPlayFilm: () => {
+      if (window.dimAndPlayFilm) window.dimAndPlayFilm();
+    },
+    stopFilm: () => {
+      if (window.stopFilm) window.stopFilm();
+    },
+  };
+
+  trailerFolder.add(trailerActions, "runTrailer").name("Run Full Trailer");
+  trailerFolder.add(trailerActions, "reverseTrailer").name("Reverse Trailer");
+  trailerFolder.add(trailerActions, "dimAndPlayFilm").name("Dim + Play Film");
+  trailerFolder.add(trailerActions, "stopFilm").name("Stop Film");
+  trailerFolder.add(trailerActions, "startSpirits").name("Start Spirits");
+  trailerFolder.add(trailerActions, "reverseSpirits").name("Reverse Spirits");
+  trailerFolder.add(trailerActions, "dimLights").name("Dim Lights");
+  trailerFolder.add(trailerActions, "restoreLights").name("Restore Lights");
+  trailerFolder.close();
+
   // Main GUI panel stays open
 
   // Store regenerate function for external use

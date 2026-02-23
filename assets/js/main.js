@@ -10,6 +10,9 @@ let updateScreenLighting, touchMovement;
 let updateListenerPosition;
 let startAudio, stopAudio;
 let updateShaderRotation;
+let loadChairMarkers, startSpiritsSequence, updateSpirits, reverseSpiritsSequence;
+let dimRoomLights, restoreRoomLights, runTrailerSequence, reverseTrailer;
+let dimAndPlayFilm, stopFilm;
 let threeJsLoaded = false;
 
 import {
@@ -28,6 +31,7 @@ import { initResponsiveHeights } from "./layout/responsive-height.js";
 import { updateViewportHeightCSS } from "./core/utils.js";
 import { initDomeMode, setCanvas, setAudioFunctions } from "./ui/dome-mode.js";
 import { initTouchControls, setTouchMovementRef } from "./ui/touch-controls.js";
+import { initTextShuffle } from "./layout/text-shuffle.js";
 
 let animationFrameId = null;
 let lastTime = 0;
@@ -61,6 +65,7 @@ async function init() {
         initScrollIncrement();
         initResponsiveHeights();
         initDashboard();
+        initTextShuffle();
       },
       { timeout: 100 }
     );
@@ -69,6 +74,7 @@ async function init() {
       initScrollIncrement();
       initResponsiveHeights();
       initDashboard();
+      initTextShuffle();
     }, 0);
   }
 
@@ -166,6 +172,18 @@ async function load3DModules() {
     startAudio = pulseAudioModule.startAudio;
     stopAudio = pulseAudioModule.stopAudio;
 
+    const chairSpiritsModule = await import("./3d/chair-spirits.js");
+    loadChairMarkers = chairSpiritsModule.loadChairMarkers;
+    startSpiritsSequence = chairSpiritsModule.startSpiritsSequence;
+    updateSpirits = chairSpiritsModule.updateSpirits;
+    reverseSpiritsSequence = chairSpiritsModule.reverseSpiritsSequence;
+    dimRoomLights = chairSpiritsModule.dimRoomLights;
+    restoreRoomLights = chairSpiritsModule.restoreRoomLights;
+    runTrailerSequence = chairSpiritsModule.runTrailerSequence;
+    reverseTrailer = chairSpiritsModule.reverseTrailer;
+    dimAndPlayFilm = chairSpiritsModule.dimAndPlayFilm;
+    stopFilm = chairSpiritsModule.stopFilm;
+
     // Set references for extracted modules
     setTouchMovementRef(touchMovement);
     setAudioFunctions(startAudio, stopAudio);
@@ -177,6 +195,16 @@ async function load3DModules() {
     window.loadVideo = loadVideo;
     window.disconnectWebcam = disconnectWebcam;
     window.loadDefaultScreenTexture = loadDefaultScreenTexture;
+    window.stopAudio = stopAudio;
+    window.startAudio = startAudio;
+    window.startSpiritsSequence = startSpiritsSequence;
+    window.reverseSpiritsSequence = reverseSpiritsSequence;
+    window.dimRoomLights = dimRoomLights;
+    window.restoreRoomLights = restoreRoomLights;
+    window.runTrailerSequence = runTrailerSequence;
+    window.reverseTrailer = reverseTrailer;
+    window.dimAndPlayFilm = dimAndPlayFilm;
+    window.stopFilm = stopFilm;
   } catch (error) {
     console.error("Error loading 3D modules:", error);
   }
@@ -369,6 +397,11 @@ function setupEventListeners() {
       loadModel();
       startRenderLoop();
     }
+    if (loadChairMarkers) {
+      loadChairMarkers().catch((err) =>
+        console.warn("Chair markers load skipped:", err)
+      );
+    }
   };
 
   if ("requestIdleCallback" in window) {
@@ -406,6 +439,7 @@ function animate(currentTime) {
     lastCameraSaveTime = currentTime;
   }
 
+  if (updateSpirits) updateSpirits(deltaTime);
   if (getCurrentImageTexture) updateTextureRotation(deltaTime);
   if (updateScreenLighting) updateScreenLighting(currentTime);
 
