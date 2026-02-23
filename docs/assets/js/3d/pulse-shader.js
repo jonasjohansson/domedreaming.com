@@ -33,6 +33,7 @@ uniform float uRotation;  // Texture rotation in radians
 uniform float uTickIntensity;  // 0-1, for pulse pulsation on ticks
 uniform int uActivePulse;  // Which pulse reacts to tick (-1 = none)
 uniform float uBrightness;  // 0-1, overall output brightness (for cinematic fade)
+uniform float uGridFade;    // 0-1, fades grid lines while preserving bright text
 
 varying vec2 vUv;
 
@@ -86,10 +87,19 @@ void main() {
     pulseGlow += (glow * 0.5 + core * 0.8) * intensityBoost;
   }
 
-  // Blend pulse glow with base
-  vec3 finalColor = baseColor.rgb + vec3(pulseGlow * uPulseIntensity);
+  // Blend pulse glow with base (pulses fade with grid)
+  vec3 finalColor = baseColor.rgb + vec3(pulseGlow * uPulseIntensity * uGridFade);
 
-  // Apply overall brightness (cinematic fade to black)
+  // Selective fade: dim grid lines/images while preserving bright text.
+  // Text pixels are typically brighter than grid lines.
+  // uGridFade = 1.0 means everything visible, 0.0 means only bright text remains.
+  float pixelBrightness = dot(finalColor, vec3(0.299, 0.587, 0.114));
+  float textThreshold = 0.35;  // pixels above this are considered "text"
+  float keepFactor = smoothstep(textThreshold * 0.5, textThreshold, pixelBrightness);
+  float fadeFactor = mix(uGridFade, 1.0, keepFactor);
+  finalColor *= fadeFactor;
+
+  // Apply overall brightness on top (for full blackout if needed)
   finalColor *= uBrightness;
 
   gl_FragColor = vec4(finalColor, baseColor.a);
@@ -115,7 +125,8 @@ export function createPulseUniforms(baseTexture) {
     uRotation: { value: 0 },  // Texture rotation in radians
     uTickIntensity: { value: 0 },  // Tick pulsation intensity
     uActivePulse: { value: -1 },  // Which pulse is pulsating
-    uBrightness: { value: 1.0 }  // Overall output brightness (1 = full, 0 = black)
+    uBrightness: { value: 1.0 },  // Overall output brightness (1 = full, 0 = black)
+    uGridFade: { value: 1.0 }  // Grid/lines fade (1 = all visible, 0 = only text)
   };
 
   return pulseUniforms;
