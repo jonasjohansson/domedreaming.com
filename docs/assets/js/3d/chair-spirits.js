@@ -1360,23 +1360,25 @@ function flashWordOnDome(word, line = 3, flashDuration = 800) {
     setTextContent(i, i === line ? word : "");
   }
 
-  // Brightness pump: 0 → peak → dim hold
+  // Brightness pump: 0 → peak → 0 (fully dark between words)
   if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
     const startTime = performance.now();
     function pulse() {
       const elapsed = performance.now() - startTime;
       const t = Math.min(elapsed / flashDuration, 1);
-      // Sharp attack (10%), bright hold (30%), slow decay to dim glow (60%)
+      // Sharp attack (10%), bright hold (30%), full decay to black (60%)
       let brightness;
       if (t < 0.1) {
         brightness = (t / 0.1) * 1.5; // overshoot to 1.5 for bloom punch
       } else if (t < 0.4) {
         brightness = 1.5 - (t - 0.1) / 0.3 * 0.5; // settle from 1.5 to 1.0
       } else {
-        brightness = 1.0 - (t - 0.4) / 0.6 * 0.8; // decay to 0.2 dim glow
+        brightness = 1.0 * (1 - (t - 0.4) / 0.6); // decay fully to 0
+        brightness *= brightness; // ease-in for smooth fade to black
       }
       screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
       if (t < 1) requestAnimationFrame(pulse);
+      else screenMat.uniforms.uBrightness.value = 0; // ensure clean zero
     }
     pulse();
   }
@@ -1512,20 +1514,14 @@ export async function runTrailerSequence() {
   // Stop text step rotation (per-cell BPM stepping, separate from grid)
   setTextRotationEnabled(false);
 
-  // 7. Start dimming lights (8s duration — faster than before)
-  const dimDur = 8;
+  // 7. Start dimming lights (6s — want to reach darkness quickly for fanfare)
+  const dimDur = 6;
   dimRoomLights(dimDur, { playFanfare: false });
 
-  // 8. Remove images from the grid AFTER 2.5s — by then uGridFade is low enough
-  //    (~0.5) that the texture swap is masked and won't cause a visible skip.
-  setTimeout(() => {
-    setImageCellsEnabled(false);
-  }, 2500);
-
-  // Wait for rotation + audio fade to finish
+  // Wait for rotation + audio fade to finish (dim continues in background)
   await Promise.all([rotSlowPromise, audioFadePromise]);
 
-  // 9. Wait for all spirits to settle
+  // 8. Wait for all spirits to settle
   await new Promise((resolve) => {
     const check = setInterval(() => {
       if (isSequenceComplete()) {
@@ -1535,14 +1531,9 @@ export async function runTrailerSequence() {
     }, 200);
   });
 
-  // 9b. "Late guest" — one final spirit rushes in after a noticeable pause
+  // 9. "Late guest" — one final spirit rushes in after a noticeable pause
   await new Promise((r) => setTimeout(r, 4000));
   spawnLateGuest();
-
-  // 10. Start fanfare NOW (while late guest is still travelling and dim is finishing)
-  //     This gives the fanfare a head start so the music builds during the final moments
-  console.log("Chair spirits: starting fanfare word sequence");
-  const fanfarePromise = playFanfareWithWords();
 
   // Wait for the late guest to settle
   await new Promise((resolve) => {
@@ -1555,13 +1546,18 @@ export async function runTrailerSequence() {
     }, 200);
   });
 
-  // Wait for dim to finish (if it hasn't already)
+  // Wait for dim to finish (room should be fully dark now)
   while (dimming) {
     await new Promise((r) => setTimeout(r, 200));
   }
 
-  // Wait for the fanfare word sequence to complete
-  await fanfarePromise;
+  // 10. NOW the screen is black (uBrightness = 0, uGridFade = 0) — safe to
+  //     regenerate the texture without images. No visible skip since screen is dark.
+  setImageCellsEnabled(false);
+
+  // 11. Start fanfare with word flashes immediately
+  console.log("Chair spirits: starting fanfare word sequence");
+  await playFanfareWithWords();
 
   console.log("Chair spirits: fanfare word sequence complete");
 
