@@ -61,7 +61,7 @@ export const polarGridSettings = {
   // Dot size (center point and grid intersection dots)
   dotSize: 4,
   // Pulse animation settings
-  pulsesEnabled: false,
+  pulsesEnabled: true,
   pulseCount: 4,
   pulseSpeed: 0.5,
   pulseSize: 12,

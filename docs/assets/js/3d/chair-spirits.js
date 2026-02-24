@@ -2259,13 +2259,16 @@ export async function runTrailerSequence() {
   // Fade out page text
   setTrailerMode(true);
 
-  // 1. Start audio if available (ambient soundscape while spirits find seats)
+  // 1. Spirits float in immediately — visible as soon as we enter trailer mode
+  startSpiritsSequence();
+
+  // 2. Start audio if available (ambient soundscape while spirits find seats)
   //    Re-enable audio system in case it was stopped by a previous run
   if (window.startAudio) {
     try { await window.startAudio(); } catch (e) { /* needs gesture */ }
   }
 
-  // 2. Save current rotation, text, and image state for later restore
+  // 3. Save current rotation, text, and image state for later restore
   savedGridRotationSpeed = textureRotationSettings.speed;
   savedTextRotationEnabled = polarGridSettings.textRotationEnabled;
   savedTextRotationBPM = polarGridSettings.textRotationBPM;
@@ -2284,9 +2287,6 @@ export async function runTrailerSequence() {
 
   // Make sure any previous fanfare is cleaned up
   disposeFanfare();
-
-  // 3. Spirits float in
-  startSpiritsSequence();
 
   // 4. Wait for ~40% spirits seated — then begin the cinematic buildup
   const earlyCount = Math.floor(chairPositions.length * 0.25);
@@ -2461,10 +2461,20 @@ export async function reverseTrailer(duration = 3) {
     setImageCellsEnabled(savedImageCellsEnabled);
   }
 
-  // Restore pulse dots on the grid (size, speed, and enabled flag)
-  if (savedPulseSize !== null) polarGridSettings.pulseSize = savedPulseSize;
-  if (savedPulseSpeed !== null) polarGridSettings.pulseSpeed = savedPulseSpeed;
+  // Gradually restore pulse dots (size + speed ease-in to match room restore)
   if (savedPulsesEnabled !== null) setPulsesEnabled(savedPulsesEnabled);
+  const pulseRestoreStart = performance.now();
+  const pulseRestoreDur = duration * 1000;
+  const tgtPulseSize = savedPulseSize ?? 0;
+  const tgtPulseSpeed = savedPulseSpeed ?? 0;
+  function restorePulse() {
+    const t = Math.min((performance.now() - pulseRestoreStart) / pulseRestoreDur, 1);
+    const eased = t * t; // ease-in quadratic — gentle start
+    polarGridSettings.pulseSize = tgtPulseSize * eased;
+    polarGridSettings.pulseSpeed = tgtPulseSpeed * eased;
+    if (t < 1) requestAnimationFrame(restorePulse);
+  }
+  restorePulse();
 
   // Restart pulse audio (was stopped during trailer) and restore master volume
   setMasterVolume(0.5);
@@ -2472,6 +2482,10 @@ export async function reverseTrailer(duration = 3) {
     try { await window.startAudio(); } catch (e) { /* ignore */ }
   }
 
-  // Fade text back in
-  setTrailerMode(false);
+  // Exit dome mode (fades text back in via CSS transition, restores layout)
+  if (window.exitDomeMode) {
+    window.exitDomeMode();
+  } else {
+    setTrailerMode(false);
+  }
 }

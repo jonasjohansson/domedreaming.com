@@ -382,7 +382,7 @@ function setupEventListeners() {
   // Initialize touch controls (extracted module)
   initTouchControls();
 
-  // "Enter the dome" link handler
+  // "Enter the dome" link handler — enters dome mode and runs the full trailer
   const enterDomeLink = document.getElementById("enter-dome-link");
   if (enterDomeLink) {
     enterDomeLink.addEventListener("click", async (e) => {
@@ -390,8 +390,13 @@ function setupEventListeners() {
       if (!startAudio) {
         await load3DModules();
       }
+      // Enter dome mode first (canvas sizing, overflow, etc.)
       if (window.enterDomeModeWithAudio) {
         window.enterDomeModeWithAudio();
+      }
+      // Then run the trailer sequence (dome-mode already set, so setTrailerMode is a no-op)
+      if (window.runTrailerSequence) {
+        window.runTrailerSequence();
       }
     });
   }

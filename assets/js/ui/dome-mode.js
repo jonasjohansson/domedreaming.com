@@ -171,6 +171,10 @@ export function initDomeMode() {
     }
   };
 
+  window.exitDomeMode = () => {
+    exitDomeMode();
+  };
+
   if (keyboardExitBtn) {
     keyboardExitBtn.addEventListener("click", (e) => {
       e.stopPropagation();

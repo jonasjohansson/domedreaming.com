@@ -174,13 +174,6 @@ export function setupCameraControls() {
     if (e.key === "e" || e.key === "E") {
       setQeRotationSpeed(-1.5); // Rotate left
     }
-    // T triggers trailer sequence
-    if (e.key === "t" || e.key === "T") {
-      if (window.runTrailerSequence && !window._trailerRunning) {
-        window._trailerRunning = true;
-        window.runTrailerSequence().finally(() => { window._trailerRunning = false; });
-      }
-    }
   });
 
   window.addEventListener("keyup", (e) => {
