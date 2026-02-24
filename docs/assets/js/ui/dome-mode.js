@@ -180,7 +180,7 @@ export function initDomeMode() {
       e.stopPropagation();
       if (!body.classList.contains("dome-mode")) {
         enterDomeMode(true);
-      } else if (isMobile()) {
+      } else if (isMobile() && !window._trailerRunning) {
         exitDomeMode();
         if (stopAudioFn) {
           try {
@@ -197,7 +197,7 @@ export function initDomeMode() {
       e.preventDefault();
       if (!body.classList.contains("dome-mode")) {
         enterDomeMode(true);
-      } else if (isMobile()) {
+      } else if (isMobile() && !window._trailerRunning) {
         exitDomeMode();
         if (stopAudioFn) {
           try {
@@ -226,7 +226,7 @@ export function initDomeMode() {
   });
 
   function onPointerLockChange() {
-    if (isExitingDomeMode) {
+    if (isExitingDomeMode || window._trailerRunning) {
       return;
     }
 
@@ -239,6 +239,7 @@ export function initDomeMode() {
       setTimeout(() => {
         if (
           !isExitingDomeMode &&
+          !window._trailerRunning &&
           body.classList.contains("dome-mode") &&
           !(
             document.pointerLockElement === canvas ||
@@ -247,6 +248,13 @@ export function initDomeMode() {
           )
         ) {
           exitDomeMode();
+          if (stopAudioFn) {
+            try {
+              stopAudioFn();
+            } catch (error) {
+              console.warn("Could not stop audio:", error);
+            }
+          }
         }
       }, 50);
     }
