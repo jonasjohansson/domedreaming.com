@@ -213,7 +213,7 @@ export function initDomeMode() {
   updateEnterExitButton();
 
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && body.classList.contains("dome-mode")) {
+    if (e.key === "Escape" && body.classList.contains("dome-mode") && !window._trailerRunning) {
       exitDomeMode();
       if (stopAudioFn) {
         try {

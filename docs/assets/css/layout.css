@@ -183,6 +183,13 @@ button.enter-dome-link:hover {
   color: #000000;
 }
 
+button.enter-dome-link:focus,
+button.enter-dome-link:active {
+  background: rgba(255, 255, 255, 0.85);
+  color: #000000;
+  outline: none;
+}
+
 main button,
 main a.button {
   font-size: var(--font-size-base);

@@ -2235,6 +2235,7 @@ export async function playFanfareWithWords({ startFromMs = 0, preStartedAudio = 
 }
 
 export async function runTrailerSequence() {
+  window._trailerRunning = true;
   console.log("Chair spirits: trailer sequence started");
 
   // Pre-create fanfare audio IMMEDIATELY within the user gesture window.
@@ -2483,6 +2484,7 @@ export async function reverseTrailer(duration = 3) {
   }
 
   // Exit dome mode (fades text back in via CSS transition, restores layout)
+  window._trailerRunning = false;
   if (window.exitDomeMode) {
     window.exitDomeMode();
   } else {
