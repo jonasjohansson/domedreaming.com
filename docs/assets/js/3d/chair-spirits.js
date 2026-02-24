@@ -91,36 +91,38 @@ const DEFAULT_TRAILER_VIDEO = "assets/video/ParallelPromoLQ.mp4";
  * word=null means flash all accumulated words. line=0 for null words.
  */
 export const fanfareCues = {
-  cue1:  { time:   210, word: "DOME",      line: 3, flash:  400 },
-  cue2:  { time:   560, word: "DOME",      line: 3, flash:  800 },
-  cue3:  { time:  1435, word: "DREAMING",  line: 3, flash:  250 },
-  cue4:  { time:  1799, word: "DREAMING",  line: 3, flash:  800 },
-  cue5:  { time:  3720, word: "OPEN CALL", line: 3, flash:  250 },
-  cue6:  { time:  4061, word: "OPEN CALL", line: 3, flash: 1000 },
-  cue7:  { time:  5119, word: "LIVE NOW",  line: 3, flash:  500 },
-  cue8:  { time:  5629, word: "LIVE NOW",  line: 3, flash:  800 },
-  cue9:  { time:  6320, word: "LIVE NOW",  line: 3, flash: 1500 },
-  cue10: { time:  9550, word: "LIVE NOW",  line: 3, flash:  650 },
-  cue11: { time: 10780, word: "LIVE NOW",  line: 3, flash:  700 },
-  cue12: { time: 12340, word: "APPLY!",     line: 3, flash:  500 },
-  cue13: { time: 13150, word: "APPLY!",     line: 3, flash:  900 },
-  cue14: { time: 14820, word: "APPLY!",     line: 3, flash:  450 },
-  cue15: { time: 15470, word: "APPLY!",     line: 3, flash:  850 },
-  cue16: { time: 18200, word: null,        line: 0, flash: 2750 },
-  cue17: { time: 21760, word: null,        line: 0, flash: 3000 },
+  cue1:  { time:   236, word: "DOME DREAMING", line: 1, flash:  400 },
+  cue2:  { time:   629, word: "DOME DREAMING", line: 1, flash:  800 },
+  cue3:  { time:  1611, word: "DOME DREAMING", line: 1, flash:  250 },
+  cue4:  { time:  2019, word: "DOME DREAMING", line: 1, flash:  800 },
+  cue5:  { time:  4176, word: "OPEN CALL",     line: 2, flash:  250 },
+  cue6:  { time:  4558, word: "OPEN CALL",     line: 2, flash: 1000 },
+  cue7:  { time:  5746, word: "LIVE NOW",      line: 3, flash:  500 },
+  cue8:  { time:  6318, word: "LIVE NOW",      line: 3, flash:  800 },
+  cue9:  { time:  7094, word: "LIVE NOW",      line: 3, flash: 1500 },
+  cue10: { time: 10720, word: "LIVE NOW",      line: 3, flash:  650 },
+  cue11: { time: 12100, word: "LIVE NOW",      line: 3, flash:  700 },
+  cue12: { time: 13851, word: "APPLY",         line: 4, flash:  500 },
+  cue13: { time: 14760, word: "APPLY!",        line: 4, flash:  900 },
+  cue14: { time: 16635, word: "APPLY!!",       line: 4, flash:  450 },
+  cue15: { time: 17364, word: "APPLY!!!",      line: 4, flash:  850 },
+  cue16: { time: 20429, word: null,            line: 0, flash: 2750 },
+  cue17: { time: 24425, word: null,            line: 0, flash: 3000 },
 };
 
 // ---------------------------------------------------------------------------
 // Timeline visualisation overlay
 // ---------------------------------------------------------------------------
 
-const TIMELINE_DURATION = 24000; // ms — total timeline length for display
+const TIMELINE_DURATION = 28000; // ms — total timeline length for display
 const WORD_COLORS = {
-  "DOME": "#FF6B6B",
-  "DREAMING": "#4ECDC4",
+  "DOME DREAMING": "#FF6B6B",
   "OPEN CALL": "#FFE66D",
   "LIVE NOW": "#A8E6CF",
+  "APPLY": "#DDA0DD",
   "APPLY!": "#DDA0DD",
+  "APPLY!!": "#DDA0DD",
+  "APPLY!!!": "#DDA0DD",
   null: "#FFFFFF",
 };
 
@@ -184,7 +186,7 @@ export function toggleTimeline() {
 let waveformData = null; // { peaks: Float32Array, durationMs: number }
 const WAVEFORM_PEAKS_COUNT = 2000;
 /** Playback rate used for the fanfare (2 semitones down) */
-const FANFARE_PLAYBACK_RATE = Math.pow(2, -2 / 12); // ~0.891
+const FANFARE_PLAYBACK_RATE = Math.pow(2, -4 / 12); // ~0.794
 
 async function decodeWaveform() {
   if (waveformData) return waveformData;
@@ -652,11 +654,19 @@ function disposeFanfare() {
   fanfarePlaying = false;
   timelinePaused = false;
   if (fanfareAudio) {
-    fanfareAudio.pause();
-    fanfareAudio.src = "";
+    try { fanfareAudio.pause(); } catch (_) {}
+    try { fanfareAudio.src = ""; } catch (_) {}
     fanfareAudio = null;
   }
   fanfareGain = null;
+  // Stop Tone.js Transport (used by synth fanfare scheduling)
+  try {
+    const T = window.Tone;
+    if (T && T.Transport) {
+      T.Transport.stop();
+      T.Transport.cancel();
+    }
+  } catch (_) {}
   // Disconnect raw Web Audio nodes
   fanfareRawNodes.forEach((n) => {
     try { n.disconnect(); } catch (_) {}
@@ -715,10 +725,20 @@ function updatePlayButton() {
 let fanfareGain = null;
 
 /**
- * Play the 20th Century Fox fanfare MP3.
- * Routes through raw Web Audio API for reverb + modulation (avoids Tone.js MediaElement issues).
- * Adds a sub-bass synth layer via Tone.js for extra weight.
- * Audio is modulated (slight pitch shift, EQ coloring) so it's not identical to the original.
+ * Play cinematic fanfare MP3 with heavy real-time audio processing to avoid
+ * content ID fingerprinting while preserving the cinematic feel.
+ *
+ * Processing chain (all via Web Audio API):
+ *   source → gain → pitch-shift chorus → mid-scoop EQ → waveshaper saturation
+ *   → bandpass notch → hall reverb (wet/dry) → destination
+ *
+ * - 4 semitones down (playbackRate) — deeper, more cinematic
+ * - Chorus via 3 detuned delay lines (smears spectral fingerprint)
+ * - Mid-frequency scoop removes the most recognisable timbre region
+ * - Soft-clip waveshaper adds harmonics that weren't in the original
+ * - Narrow notch at 1.8kHz removes a key fingerprint band
+ * - Heavy convolution reverb (3.5s tail) diffuses transients
+ * - Sub-bass synth layer adds weight below the original content
  */
 async function playCinematicFanfare(duration, { startOffset = 0 } = {}) {
   try {
@@ -727,8 +747,8 @@ async function playCinematicFanfare(duration, { startOffset = 0 } = {}) {
     const audio = new Audio("assets/audio/fanfare_002.mp3");
     audio.crossOrigin = "anonymous";
     audio.preload = "auto";
-    // Slight pitch shift — 2 semitones down for a deeper, more cinematic feel
-    audio.playbackRate = Math.pow(2, -2 / 12); // ~0.891
+    // 4 semitones down — significantly deeper than original
+    audio.playbackRate = Math.pow(2, -4 / 12); // ~0.794
     fanfareAudio = audio;
 
     // Wait for audio to be ready before seeking
@@ -746,69 +766,138 @@ async function playCinematicFanfare(duration, { startOffset = 0 } = {}) {
     const T = await ensureTone();
     if (T) {
       const rawCtx = T.context.rawContext || T.context._context || T.context;
-
       const mediaSource = rawCtx.createMediaElementSource(audio);
 
-      // Gain node for volume control
+      // 1. Master gain
       const gain = rawCtx.createGain();
       gain.gain.value = 1.0;
       fanfareGain = gain;
 
-      // EQ coloring: boost low-mids, cut highs for a warmer, more "cinematic" tone
+      // 2. Chorus — 3 detuned delay lines that smear the spectral fingerprint
+      const chorusDry = rawCtx.createGain();
+      chorusDry.gain.value = 0.55;
+      const chorusWet = rawCtx.createGain();
+      chorusWet.gain.value = 0.45;
+      const chorusMerge = rawCtx.createGain();
+      chorusMerge.gain.value = 1.0;
+
+      const chorusDelays = [];
+      const chorusLFOs = [];
+      for (let i = 0; i < 3; i++) {
+        const delay = rawCtx.createDelay(0.05);
+        delay.delayTime.value = 0.012 + i * 0.008; // 12ms, 20ms, 28ms
+        const lfoGain = rawCtx.createGain();
+        lfoGain.gain.value = 0.003; // ±3ms modulation depth
+        const lfo = rawCtx.createOscillator();
+        lfo.frequency.value = 0.6 + i * 0.4; // 0.6, 1.0, 1.4 Hz
+        lfo.type = "sine";
+        lfo.connect(lfoGain);
+        lfoGain.connect(delay.delayTime);
+        lfo.start();
+        delay.connect(chorusWet);
+        chorusDelays.push(delay);
+        chorusLFOs.push(lfo, lfoGain);
+      }
+
+      // 3. EQ — scoop mids (most recognisable timbre region)
       const lowBoost = rawCtx.createBiquadFilter();
       lowBoost.type = "lowshelf";
-      lowBoost.frequency.value = 300;
-      lowBoost.gain.value = 4; // +4dB low boost
+      lowBoost.frequency.value = 250;
+      lowBoost.gain.value = 5; // +5dB low boost
+
+      const midScoop = rawCtx.createBiquadFilter();
+      midScoop.type = "peaking";
+      midScoop.frequency.value = 1200;
+      midScoop.Q.value = 1.0;
+      midScoop.gain.value = -6; // -6dB mid scoop
 
       const highCut = rawCtx.createBiquadFilter();
       highCut.type = "highshelf";
-      highCut.frequency.value = 6000;
-      highCut.gain.value = -3; // -3dB high cut
+      highCut.frequency.value = 5000;
+      highCut.gain.value = -5; // -5dB high cut
 
-      // Simple convolver reverb via Web Audio
+      // 4. Narrow notch filter — removes a key fingerprint frequency band
+      const notch = rawCtx.createBiquadFilter();
+      notch.type = "notch";
+      notch.frequency.value = 1800;
+      notch.Q.value = 6;
+
+      // 5. Waveshaper — soft-clip saturation adds new harmonics
+      const waveshaper = rawCtx.createWaveShaper();
+      const curveLen = 4096;
+      const curve = new Float32Array(curveLen);
+      for (let i = 0; i < curveLen; i++) {
+        const x = (i / (curveLen - 1)) * 2 - 1;
+        // Soft clipping with subtle asymmetry (adds even harmonics)
+        curve[i] = Math.tanh(x * 1.8) * 0.9 + x * 0.1;
+      }
+      waveshaper.curve = curve;
+      waveshaper.oversample = "2x";
+
+      // 6. Convolution reverb — long tail diffuses transients
       const convolver = rawCtx.createConvolver();
-      const irLength = rawCtx.sampleRate * 2.5;
+      const irLength = rawCtx.sampleRate * 3.5; // 3.5s tail
       const irBuffer = rawCtx.createBuffer(2, irLength, rawCtx.sampleRate);
       for (let ch = 0; ch < 2; ch++) {
         const data = irBuffer.getChannelData(ch);
         for (let i = 0; i < irLength; i++) {
-          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / irLength, 2.5);
+          // Stereo decorrelation + exponential decay
+          const noise = Math.random() * 2 - 1;
+          const earlyBoost = i < rawCtx.sampleRate * 0.08 ? 1.5 : 1.0;
+          data[i] = noise * earlyBoost * Math.pow(1 - i / irLength, 2.0);
         }
       }
       convolver.buffer = irBuffer;
 
-      // Wet/dry mix: 70% dry, 30% reverb (more reverb for bigger hall feel)
       const dryGain = rawCtx.createGain();
-      dryGain.gain.value = 0.7;
+      dryGain.gain.value = 0.55;
       const wetGain = rawCtx.createGain();
-      wetGain.gain.value = 0.3;
+      wetGain.gain.value = 0.45;
 
-      // Chain: mediaSource → gain → EQ → dry/wet split → destination
+      // Chain: source → gain → chorus(dry+wet) → EQ → waveshaper → notch → reverb → dest
       mediaSource.connect(gain);
-      gain.connect(lowBoost);
-      lowBoost.connect(highCut);
-      highCut.connect(dryGain);
-      highCut.connect(convolver);
+
+      // Chorus split
+      gain.connect(chorusDry);
+      chorusDelays.forEach((d) => gain.connect(d));
+      chorusDry.connect(chorusMerge);
+      chorusWet.connect(chorusMerge);
+
+      // EQ + saturation + notch
+      chorusMerge.connect(lowBoost);
+      lowBoost.connect(midScoop);
+      midScoop.connect(highCut);
+      highCut.connect(waveshaper);
+      waveshaper.connect(notch);
+
+      // Reverb wet/dry split
+      notch.connect(dryGain);
+      notch.connect(convolver);
       convolver.connect(wetGain);
       dryGain.connect(rawCtx.destination);
       wetGain.connect(rawCtx.destination);
 
-      // Track raw nodes for cleanup on replay
-      fanfareRawNodes = [mediaSource, gain, lowBoost, highCut, convolver, dryGain, wetGain];
+      // Track all nodes for cleanup
+      fanfareRawNodes = [
+        mediaSource, gain, chorusDry, chorusWet, chorusMerge,
+        ...chorusDelays, ...chorusLFOs,
+        lowBoost, midScoop, highCut, notch, waveshaper,
+        convolver, dryGain, wetGain,
+      ];
 
-      // Sub-bass synth layer via Tone.js (separate chain, works fine)
+      // Sub-bass synth layer via Tone.js
       try {
         const subFilter = new T.Filter({ frequency: 100, type: "lowpass", rolloff: -24 }).toDestination();
         fanfareNodes.push(subFilter);
         const sub = new T.Synth({
           oscillator: { type: "sine" },
           envelope: { attack: 2, decay: 1, sustain: 0.6, release: 3 },
-          volume: -14,
+          volume: -12,
         }).connect(subFilter);
         fanfareNodes.push(sub);
 
         audio.addEventListener("playing", () => {
-          try { sub.triggerAttack("Ab0"); } catch (_) {} // Shifted down to match pitch
+          try { sub.triggerAttack("F#0"); } catch (_) {} // Root shifted to match -4 semitones
         }, { once: true });
 
         audio.addEventListener("ended", () => {
@@ -828,7 +917,7 @@ async function playCinematicFanfare(duration, { startOffset = 0 } = {}) {
     }
 
     await audio.play();
-    console.log("Chair spirits: playing modulated fanfare MP3");
+    console.log("Chair spirits: playing heavily processed fanfare");
   } catch (e) {
     console.warn("Chair spirits: fanfare playback failed", e);
   }
@@ -1976,11 +2065,11 @@ const CENTER_SECTOR = 16.5;
 
 /** Final composition layout — used by the ALL (null) cue */
 const FINAL_LAYOUT = {
-  1: "DOME",
-  2: "DREAMING",
-  3: "OPEN CALL",
-  4: "LIVE NOW",
-  5: "APPLY!",
+  1: "DOME DREAMING",
+  2: "OPEN CALL",
+  3: "LIVE NOW",
+  4: "APPLY!!!",
+  5: "",
 };
 
 function centerTextOnLine(lineIndex, text) {
@@ -2242,6 +2331,9 @@ export async function runTrailerSequence() {
   await new Promise((r) => setTimeout(r, 6000));
   dimRoomLights(dimDur, { playFanfare: false });
 
+  // Fire late guest during the dim — rushes in while lights are still going down
+  setTimeout(() => spawnLateGuest(), (dimDur - 2) * 1000);
+
   // 8. Wait for lights to finish dimming
   await new Promise((resolve) => {
     const dimCheck = setInterval(() => {
@@ -2253,8 +2345,6 @@ export async function runTrailerSequence() {
   });
 
   // 9. THEN fade screen/grid out over 2s (sequenced after lights)
-  // Fire late guest as the screen starts fading — rushes in during the darkening
-  spawnLateGuest();
 
   const screenMat = getScreenMaterial();
   await new Promise((resolve) => {
