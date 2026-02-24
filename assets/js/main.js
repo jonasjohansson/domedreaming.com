@@ -384,12 +384,19 @@ function setupEventListeners() {
 
   // "Enter the dome" — enters dome mode and runs the full trailer
   const enterDomeLink = document.getElementById("enter-dome-link");
+  let enteringDome = false;
   async function enterDomeAndRunTrailer() {
-    if (!startAudio) {
-      await load3DModules();
-    }
-    if (window.runTrailerSequence) {
-      window.runTrailerSequence();
+    if (enteringDome || window._trailerRunning) return;
+    enteringDome = true;
+    try {
+      if (!startAudio) {
+        await load3DModules();
+      }
+      if (window.runTrailerSequence) {
+        window.runTrailerSequence();
+      }
+    } finally {
+      enteringDome = false;
     }
   }
   if (enterDomeLink) {

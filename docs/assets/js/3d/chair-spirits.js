@@ -60,7 +60,6 @@ let spiritInstancedMesh = null;
 let spiritSharedMat = null;
 const MAX_SPIRITS = 100; // pre-allocate instance slots
 const _instanceMatrix = new THREE.Matrix4();
-const _instancePos = new THREE.Vector3();
 const _instanceColor = new THREE.Color();
 
 function ensureSpiritInstancedMesh() {
@@ -1087,6 +1086,9 @@ function easeInOutCubic(t) {
 function createSpirit(targetPos, spawnPos, precomputedWaypoints) {
   ensureSpiritInstancedMesh();
 
+  // Prevent overflow past pre-allocated buffer
+  if (spiritInstancedMesh.count >= MAX_SPIRITS) return null;
+
   const hue = 0.12 + (Math.random() - 0.5) * 0.06;
   const color = new THREE.Color().setHSL(hue, 0.9, 0.75);
 
@@ -1329,7 +1331,9 @@ function spawnLateGuest() {
   // Pick a random spawn side
   const spawnPos = Math.random() > 0.5 ? spawnLeft : spawnRight;
 
-  const lateSpirit = createSpirit(target, spawnPos);
+  const waypoints = computeSpiritPath(spawnPos, target);
+  const lateSpirit = createSpirit(target, spawnPos, waypoints);
+  if (!lateSpirit) return; // at capacity
   // Override speed to be 3x faster — in a hurry!
   lateSpirit.speed = SPIRIT_SPEED * 3;
   // Shine extra bright — this one stands out
@@ -1352,7 +1356,9 @@ export function updateSpirits(dt) {
     while (spawnTimer >= interval && spawnIndex < spawnQueue.length) {
       spawnTimer -= interval;
       const { targetPos, spawnPos, waypoints } = spawnQueue[spawnIndex];
-      spirits.push(createSpirit(targetPos, spawnPos, waypoints));
+      const spirit = createSpirit(targetPos, spawnPos, waypoints);
+      if (!spirit) { spawning = false; break; }
+      spirits.push(spirit);
       spawnIndex++;
     }
     if (spawnIndex >= spawnQueue.length) {
