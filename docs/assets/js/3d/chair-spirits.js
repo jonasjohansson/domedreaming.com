@@ -2269,6 +2269,19 @@ export async function runTrailerSequence() {
     setTrailerMode(true);
   }
 
+  // Wait for chair positions to load (model may still be loading on slow connections)
+  if (chairPositions.length === 0) {
+    console.log("Chair spirits: waiting for chair markers to load...");
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (chairPositions.length > 0) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 200);
+    });
+  }
+
   // 1. Spirits float in immediately
   startSpiritsSequence();
 
