@@ -15,6 +15,10 @@ const PRECACHE_ASSETS = [
   "/assets/css/main.css",
   "/assets/js/vendor.bundle.js",
   "/assets/js/app.bundle.js",
+  "/assets/js/libs/recast-navigation/core.mjs",
+  "/assets/js/libs/recast-navigation/wasm-compat.js",
+  "/assets/js/libs/recast-navigation/generators.mjs",
+  "/assets/js/libs/recast-navigation/three.mjs",
   "/assets/fonts/OffBit-Regular.woff2",
   "/assets/favicon/favicon-96x96.png",
 ];

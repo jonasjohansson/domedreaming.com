@@ -134,7 +134,7 @@
   as="fetch"
   crossorigin="anonymous" />
 
-<!-- Import map - vendor bundle for Three.js, CDN for recast-navigation -->
+<!-- Import map - vendor bundle for Three.js, local recast-navigation -->
 <script type="importmap">
   {
     "imports": {
@@ -151,10 +151,10 @@
       "three/addons/lines/LineSegments2.js": "/assets/js/vendor.bundle.js",
       "three/addons/lines/LineSegmentsGeometry.js": "/assets/js/vendor.bundle.js",
       "lil-gui": "/assets/js/vendor.bundle.js",
-      "@recast-navigation/core": "https://cdn.jsdelivr.net/npm/@recast-navigation/core@0.43.0/dist/index.mjs",
-      "@recast-navigation/wasm": "https://cdn.jsdelivr.net/npm/@recast-navigation/wasm@0.43.0/dist/recast-navigation.wasm-compat.js",
-      "@recast-navigation/generators": "https://cdn.jsdelivr.net/npm/@recast-navigation/generators@0.43.0/dist/index.mjs",
-      "@recast-navigation/three": "https://cdn.jsdelivr.net/npm/@recast-navigation/three@0.43.0/dist/index.mjs"
+      "@recast-navigation/core": "/assets/js/libs/recast-navigation/core.mjs",
+      "@recast-navigation/wasm": "/assets/js/libs/recast-navigation/wasm-compat.js",
+      "@recast-navigation/generators": "/assets/js/libs/recast-navigation/generators.mjs",
+      "@recast-navigation/three": "/assets/js/libs/recast-navigation/three.mjs"
     }
   }
 </script>

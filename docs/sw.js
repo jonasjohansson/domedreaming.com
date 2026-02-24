@@ -5,7 +5,7 @@
 
 // Cache version - automatically updated on each build
 // This ensures cache clears on every new push
-const CACHE_VERSION = "BUILD_TIMESTAMP";
+const CACHE_VERSION = "20260224-2";
 const CACHE_NAME = `domedreaming-v${CACHE_VERSION}`;
 const RUNTIME_CACHE = `domedreaming-runtime-v${CACHE_VERSION}`;
 
@@ -15,6 +15,10 @@ const PRECACHE_ASSETS = [
   "/assets/css/main.css",
   "/assets/js/vendor.bundle.js",
   "/assets/js/app.bundle.js",
+  "/assets/js/libs/recast-navigation/core.mjs",
+  "/assets/js/libs/recast-navigation/wasm-compat.js",
+  "/assets/js/libs/recast-navigation/generators.mjs",
+  "/assets/js/libs/recast-navigation/three.mjs",
   "/assets/fonts/OffBit-Regular.woff2",
   "/assets/favicon/favicon-96x96.png",
 ];
