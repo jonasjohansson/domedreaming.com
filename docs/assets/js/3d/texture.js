@@ -132,30 +132,23 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     configureTexture(texture);
     texture.rotation = 0;
 
-    // Use WebGL shader for pulse animation (much better performance)
-    if (polarGridSettings.pulsesEnabled) {
-      // Create shader material with pulses rendered on GPU
-      const shaderMaterial = createPulseShaderMaterial(texture);
-      screenObject.material = shaderMaterial;
+    // Always use shader material (needed for uGridFade/uBrightness fanfare control)
+    const shaderMaterial = createPulseShaderMaterial(texture);
+    screenObject.material = shaderMaterial;
 
-      // Start shader-based pulse animation
+    // Start shader-based pulse animation only when pulses are enabled
+    if (polarGridSettings.pulsesEnabled) {
       startPulseShaderAnimation({
         pulseCount: polarGridSettings.pulseCount,
         numCircles: 8,
         pulseSpeed: polarGridSettings.pulseSpeed,
         pulseIntensity: 1.0
       });
+    }
 
-      // Also start canvas animation for text effects (shader only handles pulse glow)
-      if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled) {
-        startPulseAnimation(texture);
-      }
-    } else {
-      applyTextureToScreen(texture, screenObject);
-      // Start canvas animation for text effects even without pulses
-      if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled) {
-        startPulseAnimation(texture);
-      }
+    // Start canvas animation for text effects (rotation, scramble)
+    if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled) {
+      startPulseAnimation(texture);
     }
 
     currentImageTexture = texture;
@@ -234,12 +227,30 @@ export function setupPolarGridGUI() {
   // Hide GUI by default
   polarGridGUI.domElement.style.display = "none";
 
+  // FPS counter — shown when GUI is visible
+  const fpsEl = document.createElement("div");
+  fpsEl.style.cssText = "position:fixed;top:10px;right:10px;z-index:99999;background:rgba(0,0,0,0.7);color:#0f0;font:12px monospace;padding:4px 8px;display:none;pointer-events:none;";
+  document.body.appendChild(fpsEl);
+  let fpsFrames = 0, fpsLast = performance.now();
+  function fpsLoop() {
+    fpsFrames++;
+    const now = performance.now();
+    if (now - fpsLast >= 500) {
+      fpsEl.textContent = `${Math.round(fpsFrames / ((now - fpsLast) / 1000))} FPS`;
+      fpsFrames = 0;
+      fpsLast = now;
+    }
+    if (fpsEl.style.display !== "none") requestAnimationFrame(fpsLoop);
+  }
+
   // Toggle GUI with CMD/CTRL + G
   window.addEventListener("keydown", (e) => {
     if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "g") {
       e.preventDefault();
       const isHidden = polarGridGUI.domElement.style.display === "none";
       polarGridGUI.domElement.style.display = isHidden ? "" : "none";
+      fpsEl.style.display = isHidden ? "" : "none";
+      if (isHidden) { fpsFrames = 0; fpsLast = performance.now(); fpsLoop(); }
     }
   });
 
@@ -730,20 +741,7 @@ export function setupPolarGridGUI() {
 
   trailerFolder.close();
 
-  // ============ FLOOR SCALE (find Floor mesh from model) ============
-  import("./model.js").then((model) => {
-    if (!model.fbxMeshes) return;
-    const floorItem = model.fbxMeshes.find(
-      (m) => m.name.toLowerCase().includes("floor")
-    );
-    if (!floorItem) return;
-    const floor = floorItem.mesh;
-    const floorFolder = polarGridGUI.addFolder("Floor");
-    floorFolder.add(floor.scale, "x", 0.5, 1.2, 0.01).name("Scale X").listen();
-    floorFolder.add(floor.scale, "y", 0.5, 1.2, 0.01).name("Scale Y").listen();
-    floorFolder.add(floor.scale, "z", 0.5, 1.2, 0.01).name("Scale Z").listen();
-    floorFolder.close();
-  });
+  // Floor settings removed
 
   // Main GUI panel stays open
 

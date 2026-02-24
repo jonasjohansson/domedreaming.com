@@ -7,6 +7,12 @@ import { hotspots } from "./model.js";
 
 let navMeshQuery = null;
 
+/** Reusable vectors — avoids allocations every frame */
+const _forward = new THREE.Vector3();
+const _right = new THREE.Vector3();
+const _movement = new THREE.Vector3();
+const _tmp = new THREE.Vector3();
+
 // Touch movement state
 export let touchMovement = {
   forward: false,
@@ -27,58 +33,49 @@ export function updateMovement() {
   
   camera.updateMatrixWorld();
 
-  const forward = new THREE.Vector3();
-  forward.setFromMatrixColumn(camera.matrixWorld, 2);
-  forward.multiplyScalar(-1).normalize();
+  _forward.setFromMatrixColumn(camera.matrixWorld, 2).multiplyScalar(-1).normalize();
+  _right.setFromMatrixColumn(camera.matrixWorld, 0).normalize();
 
-  const right = new THREE.Vector3();
-  right.setFromMatrixColumn(camera.matrixWorld, 0);
-  right.normalize();
-
-  const movement = new THREE.Vector3();
+  _movement.set(0, 0, 0);
   const currentMoveSpeed = settings.moveSpeed;
   // Keyboard controls
-  if (keys["w"]) movement.add(forward.clone().multiplyScalar(currentMoveSpeed));
-  if (keys["s"]) movement.add(forward.clone().multiplyScalar(-currentMoveSpeed));
-  if (keys["a"]) movement.add(right.clone().multiplyScalar(-currentMoveSpeed));
-  if (keys["d"]) movement.add(right.clone().multiplyScalar(currentMoveSpeed));
+  if (keys["w"]) _movement.addScaledVector(_forward, currentMoveSpeed);
+  if (keys["s"]) _movement.addScaledVector(_forward, -currentMoveSpeed);
+  if (keys["a"]) _movement.addScaledVector(_right, -currentMoveSpeed);
+  if (keys["d"]) _movement.addScaledVector(_right, currentMoveSpeed);
   // Touch controls - double speed for mobile
   const touchMoveSpeed = currentMoveSpeed * 2;
-  if (touchMovement.forward) movement.add(forward.clone().multiplyScalar(touchMoveSpeed));
-  if (touchMovement.backward) movement.add(forward.clone().multiplyScalar(-touchMoveSpeed));
-  if (touchMovement.left) movement.add(right.clone().multiplyScalar(-touchMoveSpeed));
-  if (touchMovement.right) movement.add(right.clone().multiplyScalar(touchMoveSpeed));
+  if (touchMovement.forward) _movement.addScaledVector(_forward, touchMoveSpeed);
+  if (touchMovement.backward) _movement.addScaledVector(_forward, -touchMoveSpeed);
+  if (touchMovement.left) _movement.addScaledVector(_right, -touchMoveSpeed);
+  if (touchMovement.right) _movement.addScaledVector(_right, touchMoveSpeed);
 
-  if (movement.length() === 0) return;
+  if (_movement.lengthSq() === 0) return;
 
   if (navMeshQuery) {
-    const newPosition = camera.position.clone();
-    newPosition.x += movement.x;
-    newPosition.z += movement.z;
+    const newX = camera.position.x + _movement.x;
+    const newZ = camera.position.z + _movement.z;
 
-    const feetPosition = {
-      x: newPosition.x,
-      y: newPosition.y - CAMERA_HEIGHT,
-      z: newPosition.z,
-    };
+    const feetY = camera.position.y - CAMERA_HEIGHT;
 
-    const result = navMeshQuery.findClosestPoint(feetPosition, {
-      halfExtents: NAVMESH_SEARCH_BOX,
-    });
+    const result = navMeshQuery.findClosestPoint(
+      { x: newX, y: feetY, z: newZ },
+      { halfExtents: NAVMESH_SEARCH_BOX }
+    );
 
     if (result.success) {
       camera.position.set(result.point.x, result.point.y + CAMERA_HEIGHT, result.point.z);
     } else {
       // Try sliding along axes
       const tryX = navMeshQuery.findClosestPoint(
-        { x: newPosition.x, y: camera.position.y - CAMERA_HEIGHT, z: camera.position.z },
+        { x: newX, y: feetY, z: camera.position.z },
         { halfExtents: NAVMESH_SEARCH_BOX }
       );
       if (tryX.success) {
         camera.position.set(tryX.point.x, tryX.point.y + CAMERA_HEIGHT, camera.position.z);
       } else {
         const tryZ = navMeshQuery.findClosestPoint(
-          { x: camera.position.x, y: camera.position.y - CAMERA_HEIGHT, z: newPosition.z },
+          { x: camera.position.x, y: feetY, z: newZ },
           { halfExtents: NAVMESH_SEARCH_BOX }
         );
         if (tryZ.success) {
@@ -87,7 +84,7 @@ export function updateMovement() {
       }
     }
   } else {
-    camera.position.add(movement);
+    camera.position.add(_movement);
   }
 }
 

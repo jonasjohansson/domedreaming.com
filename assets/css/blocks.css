@@ -172,7 +172,9 @@ main > section.page-section:first-of-type .page-content {
   color: #ffffff;
 }
 
-
+main > section.page-section:first-of-type .page-content h1 {
+  line-height: var(--line-height-tight);
+}
 
 main > section.page-section:first-of-type .page-content p {
   line-height: var(--line-height-tight);

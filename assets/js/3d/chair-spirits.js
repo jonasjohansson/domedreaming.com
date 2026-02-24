@@ -28,6 +28,7 @@ import {
   setTextRotationBPM,
   setTextScrambleEnabled,
   setImageCellsEnabled,
+  setGridLinesEnabled,
   setPulsesEnabled,
   polarGridSettings,
 } from "./polar-grid-texture.js";
@@ -54,9 +55,32 @@ let spawning = false;
 let reversing = false;
 let reverseTimer = 0;
 let reverseIndex = 0;
-/** PointLight budget */
-let pointLightCount = 0;
-const MAX_POINT_LIGHTS = 20;
+/** InstancedMesh for all spirits — single draw call instead of 94 */
+let spiritInstancedMesh = null;
+let spiritSharedMat = null;
+const MAX_SPIRITS = 100; // pre-allocate instance slots
+const _instanceMatrix = new THREE.Matrix4();
+const _instancePos = new THREE.Vector3();
+const _instanceColor = new THREE.Color();
+
+function ensureSpiritInstancedMesh() {
+  if (spiritInstancedMesh) return;
+  const geo = new THREE.SphereGeometry(0.04, 8, 6);
+  spiritSharedMat = new THREE.MeshBasicMaterial({
+    color: 0xffffff,
+    transparent: true,
+    opacity: 1.0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
+  spiritInstancedMesh = new THREE.InstancedMesh(geo, spiritSharedMat, MAX_SPIRITS);
+  spiritInstancedMesh.count = 0; // start with zero visible instances
+  spiritInstancedMesh.instanceColor = new THREE.InstancedBufferAttribute(
+    new Float32Array(MAX_SPIRITS * 3), 3
+  );
+  spiritInstancedMesh.frustumCulled = false;
+  spiritsGroup.add(spiritInstancedMesh);
+}
 
 /** Saved light intensities for restore */
 let savedAmbient = null;
@@ -91,31 +115,33 @@ const DEFAULT_TRAILER_VIDEO = "assets/video/ParallelPromoLQ.mp4";
  * word=null means flash all accumulated words. line=0 for null words.
  */
 export const fanfareCues = {
-  cue1:  { time:   236, word: "DOME DREAMING", line: 1, flash:  400 },
-  cue2:  { time:   629, word: "DOME DREAMING", line: 1, flash:  800 },
-  cue3:  { time:  1611, word: "DOME DREAMING", line: 1, flash:  250 },
-  cue4:  { time:  2019, word: "DOME DREAMING", line: 1, flash:  800 },
-  cue5:  { time:  4176, word: "OPEN CALL",     line: 2, flash:  250 },
-  cue6:  { time:  4558, word: "OPEN CALL",     line: 2, flash: 1000 },
-  cue7:  { time:  5746, word: "LIVE NOW",      line: 3, flash:  500 },
-  cue8:  { time:  6318, word: "LIVE NOW",      line: 3, flash:  800 },
-  cue9:  { time:  7094, word: "LIVE NOW",      line: 3, flash: 1500 },
-  cue10: { time: 10720, word: "LIVE NOW",      line: 3, flash:  650 },
-  cue11: { time: 12100, word: "LIVE NOW",      line: 3, flash:  700 },
-  cue12: { time: 13851, word: "APPLY",         line: 4, flash:  500 },
-  cue13: { time: 14760, word: "APPLY!",        line: 4, flash:  900 },
-  cue14: { time: 16635, word: "APPLY!!",       line: 4, flash:  450 },
-  cue15: { time: 17364, word: "APPLY!!!",      line: 4, flash:  850 },
-  cue16: { time: 20429, word: null,            line: 0, flash: 2750 },
-  cue17: { time: 24425, word: null,            line: 0, flash: 3000 },
+  cue1:  { time:   310, word: "DOME",          line: 1, flash:  400 },
+  cue2:  { time:   660, word: "DOME",          line: 1, flash:  800 },
+  cue3:  { time:  1535, word: "DREAMING",      line: 1, flash:  250 },
+  cue4:  { time:  1899, word: "DREAMING",      line: 1, flash:  800 },
+  cue5:  { time:  3820, word: "DOME DREAMING", line: 1, flash:  250 },
+  cue6:  { time:  4161, word: "DOME DREAMING", line: 1, flash: 1000 },
+  cue7:  { time:  5219, word: "OPEN CALL",     line: 2, flash:  500 },
+  cue8:  { time:  5729, word: "OPEN CALL",     line: 2, flash:  800 },
+  cue9:  { time:  6853, word: "OPEN CALL",     line: 2, flash: 1500 },
+  cue10: { time:  9650, word: "LIVE NOW",      line: 3, flash:  800 },
+  cue11: { time: 10816, word: "LIVE NOW",      line: 3, flash: 1000 },
+  cue12: { time: 12440, word: "APPLY",         line: 4, flash:  500 },
+  cue13: { time: 13250, word: "APPLY!",        line: 4, flash:  900 },
+  cue14: { time: 14920, word: "APPLY!!",       line: 4, flash:  450 },
+  cue15: { time: 15570, word: "APPLY!!!",      line: 4, flash:  850 },
+  cue16: { time: 18300, word: null,            line: 0, flash: 2750 },
+  cue17: { time: 21744, word: null,            line: 0, flash:  650 },
 };
 
 // ---------------------------------------------------------------------------
 // Timeline visualisation overlay
 // ---------------------------------------------------------------------------
 
-const TIMELINE_DURATION = 28000; // ms — total timeline length for display
+const TIMELINE_DURATION = 24000; // ms — total timeline length for display
 const WORD_COLORS = {
+  "DOME": "#FF6B6B",
+  "DREAMING": "#4ECDC4",
   "DOME DREAMING": "#FF6B6B",
   "OPEN CALL": "#FFE66D",
   "LIVE NOW": "#A8E6CF",
@@ -146,7 +172,7 @@ function saveCuesToStorage() {
 }
 
 /** Bump this when hardcoded cue defaults change to invalidate stale localStorage */
-const CUES_VERSION = 2;
+const CUES_VERSION = 9;
 
 function loadCuesFromStorage() {
   try {
@@ -186,7 +212,7 @@ export function toggleTimeline() {
 let waveformData = null; // { peaks: Float32Array, durationMs: number }
 const WAVEFORM_PEAKS_COUNT = 2000;
 /** Playback rate used for the fanfare (2 semitones down) */
-const FANFARE_PLAYBACK_RATE = Math.pow(2, -4 / 12); // ~0.794
+const FANFARE_PLAYBACK_RATE = Math.pow(2, -2 / 12); // ~0.891
 
 async function decodeWaveform() {
   if (waveformData) return waveformData;
@@ -248,7 +274,8 @@ function drawWaveform(canvas, data) {
 }
 
 /** Track pixel width — wider than viewport to allow scroll */
-const TRACK_PX_WIDTH = 2400;
+/** Track width — set dynamically to fit the viewport on open */
+let TRACK_PX_WIDTH = 2400;
 
 function openTimeline() {
   if (timelineOverlay) return;
@@ -276,12 +303,11 @@ function openTimeline() {
       }
       #fanfare-timeline .tl-header button:hover { background: #555; }
       #fanfare-timeline .tl-scroll {
-        flex: 1; overflow-x: auto; overflow-y: hidden;
+        flex: 1; overflow: hidden;
         padding: 8px 12px 12px;
       }
       #fanfare-timeline .tl-track {
-        position: relative; height: 100%;
-        width: ${TRACK_PX_WIDTH}px;
+        position: relative; height: 100%; width: 100%;
         background: #1a1a1a; border: 1px solid #333;
       }
       #fanfare-timeline .tl-waveform {
@@ -348,7 +374,8 @@ function openTimeline() {
   const waveformCanvas = el.querySelector("#tl-waveform");
   timelinePlayhead = el.querySelector("#tl-playhead");
 
-  // Size the waveform canvas to match the track
+  // Measure actual track width so everything fits the viewport
+  TRACK_PX_WIDTH = track.clientWidth || window.innerWidth - 24;
   const trackH = track.clientHeight || 260;
   waveformCanvas.width = TRACK_PX_WIDTH;
   waveformCanvas.height = trackH;
@@ -538,14 +565,17 @@ function openTimeline() {
   });
 
   // Play button
-  el.querySelector("#tl-play").addEventListener("click", () => {
+  let playBusy = false; // guard against double-clicks while async start runs
+  el.querySelector("#tl-play").addEventListener("click", async () => {
     if (fanfarePlaying && timelinePaused) {
       resumeFanfare();
     } else if (fanfarePlaying) {
       pauseFanfare();
-    } else if (window.playFanfareWithWords) {
-      window.playFanfareWithWords();
+    } else if (window.playFanfareWithWords && !playBusy) {
+      playBusy = true;
       startTimelinePlayhead();
+      await window.playFanfareWithWords();
+      playBusy = false;
     }
   });
 
@@ -623,6 +653,7 @@ let savedTextScrambleEnabled = null;
 let savedTextContents = null;
 let savedTextStartSectors = null;
 let savedImageCellsEnabled = null;
+let savedGridLinesEnabled = null;
 let savedPulsesEnabled = null;
 let savedPulseSize = null;
 let savedPulseSpeed = null;
@@ -677,6 +708,33 @@ function disposeFanfare() {
     try { n.dispose(); } catch (_) {}
   });
   fanfareNodes = [];
+}
+
+/**
+ * Smoothly fade fanfare audio to silence over `duration` seconds, then dispose.
+ */
+function fadeFanfareOut(duration = 3) {
+  if (!fanfareGain || !fanfareAudio) {
+    disposeFanfare();
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    const startVol = fanfareGain.gain.value;
+    const startTime = performance.now();
+    const durationMs = duration * 1000;
+    function fade() {
+      const t = Math.min((performance.now() - startTime) / durationMs, 1);
+      const eased = 1 - t * t; // ease-in (quick at start, gentle tail)
+      fanfareGain.gain.value = startVol * eased;
+      if (t < 1) {
+        requestAnimationFrame(fade);
+      } else {
+        disposeFanfare();
+        resolve();
+      }
+    }
+    fade();
+  });
 }
 
 function pauseFanfare() {
@@ -740,16 +798,43 @@ let fanfareGain = null;
  * - Heavy convolution reverb (3.5s tail) diffuses transients
  * - Sub-bass synth layer adds weight below the original content
  */
-async function playCinematicFanfare(duration, { startOffset = 0 } = {}) {
+async function playCinematicFanfare(duration, { startOffset = 0, safariAudio = null } = {}) {
   try {
     disposeFanfare();
 
+    // Safari has issues with createMediaElementSource and strict gesture timing
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+    // If a pre-started Safari audio element was passed in, adopt it directly
+    if (isSafari && safariAudio) {
+      fanfareAudio = safariAudio;
+      safariAudio.addEventListener("ended", () => {
+        setTimeout(() => disposeFanfare(), 1000);
+      }, { once: true });
+      console.log("Chair spirits: adopted pre-started fanfare (Safari)");
+      return;
+    }
+
     const audio = new Audio("assets/audio/fanfare_002.mp3");
-    audio.crossOrigin = "anonymous";
+    if (!isSafari) audio.crossOrigin = "anonymous";
     audio.preload = "auto";
-    // 4 semitones down — significantly deeper than original
-    audio.playbackRate = Math.pow(2, -4 / 12); // ~0.794
+    // 2 semitones down — slightly deeper than original
+    audio.playbackRate = Math.pow(2, -2 / 12); // ~0.891
     fanfareAudio = audio;
+
+    // On Safari without pre-started audio, try immediate play
+    if (isSafari) {
+      audio.volume = 1.0;
+      try { await audio.play(); } catch (e) { console.warn("Safari fanfare play failed:", e); }
+      if (startOffset > 0) {
+        audio.currentTime = startOffset * audio.playbackRate;
+      }
+      audio.addEventListener("ended", () => {
+        setTimeout(() => disposeFanfare(), 1000);
+      }, { once: true });
+      console.log("Chair spirits: playing fanfare (Safari direct)");
+      return;
+    }
 
     // Wait for audio to be ready before seeking
     if (startOffset > 0) {
@@ -897,7 +982,7 @@ async function playCinematicFanfare(duration, { startOffset = 0 } = {}) {
         fanfareNodes.push(sub);
 
         audio.addEventListener("playing", () => {
-          try { sub.triggerAttack("F#0"); } catch (_) {} // Root shifted to match -4 semitones
+          try { sub.triggerAttack("Ab0"); } catch (_) {} // Root shifted to match -2 semitones
         }, { once: true });
 
         audio.addEventListener("ended", () => {
@@ -999,32 +1084,25 @@ function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-function createSpirit(targetPos, spawnPos) {
+function createSpirit(targetPos, spawnPos, precomputedWaypoints) {
+  ensureSpiritInstancedMesh();
+
   const hue = 0.12 + (Math.random() - 0.5) * 0.06;
   const color = new THREE.Color().setHSL(hue, 0.9, 0.75);
 
-  const geo = new THREE.SphereGeometry(0.04, 8, 6);
-  const mat = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity: 0.9,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-  });
+  // Assign an instance index
+  const idx = spiritInstancedMesh.count;
+  spiritInstancedMesh.count = idx + 1;
 
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.position.copy(spawnPos);
+  // Set initial position (at spawn)
+  _instanceMatrix.makeTranslation(spawnPos.x, spawnPos.y, spawnPos.z);
+  spiritInstancedMesh.setMatrixAt(idx, _instanceMatrix);
 
-  let light = null;
-  if (pointLightCount < MAX_POINT_LIGHTS) {
-    light = new THREE.PointLight(color, 0.8, 8);
-    mesh.add(light);
-    pointLightCount++;
-  }
+  // Set per-instance color (starts dim — alpha handled via color brightness)
+  _instanceColor.setRGB(color.r * 0.05, color.g * 0.05, color.b * 0.05);
+  spiritInstancedMesh.setColorAt(idx, _instanceColor);
 
-  spiritsGroup.add(mesh);
-
-  const waypoints = computeSpiritPath(spawnPos, targetPos);
+  const waypoints = precomputedWaypoints || computeSpiritPath(spawnPos, targetPos);
   const totalDist = pathLength(waypoints);
   const speed = SPIRIT_SPEED + (Math.random() - 0.5) * SPIRIT_SPEED_JITTER;
 
@@ -1035,14 +1113,9 @@ function createSpirit(targetPos, spawnPos) {
     );
   }
 
-  // Start dim — intensity ramps up over RAMP_DURATION seconds
-  mat.opacity = 0.05;
-  if (light) light.intensity = 0;
-
   return {
-    mesh,
-    material: mat,
-    light,
+    instanceIdx: idx,
+    baseColor: color.clone(),
     targetPos: targetPos.clone(),
     waypoints,
     cumulativeDist,
@@ -1053,7 +1126,6 @@ function createSpirit(targetPos, spawnPos) {
     fadingOut: false,
     fadeProgress: 0,
     removed: false,
-    /** Intensity ramp-up timer (0 → 1 over RAMP_DURATION) */
     rampProgress: 0,
     swayPhaseX: Math.random() * Math.PI * 2,
     swayPhaseZ: Math.random() * Math.PI * 2,
@@ -1091,29 +1163,38 @@ function positionOnPath(spirit) {
   return new THREE.Vector3().lerpVectors(a, b, localT);
 }
 
+/** Reusable vectors for update loop (avoids GC pressure) */
+const _spiritBase = new THREE.Vector3();
+
+function setSpiritInstance(spirit, x, y, z, brightness) {
+  const idx = spirit.instanceIdx;
+  _instanceMatrix.makeTranslation(x, y, z);
+  spiritInstancedMesh.setMatrixAt(idx, _instanceMatrix);
+  // Encode opacity/brightness via instance color intensity
+  const c = spirit.baseColor;
+  _instanceColor.setRGB(c.r * brightness, c.g * brightness, c.b * brightness);
+  spiritInstancedMesh.setColorAt(idx, _instanceColor);
+}
+
 function updateSpiritJourney(spirit, dt) {
   if (spirit.removed) return;
 
-  // Ramp up intensity from zero (avoids hard pop-in of light)
+  // Ramp up intensity from zero (avoids hard pop-in)
   if (spirit.rampProgress < 1) {
     spirit.rampProgress = Math.min(spirit.rampProgress + dt / RAMP_DURATION, 1);
-    const ramp = spirit.rampProgress * spirit.rampProgress; // ease-in quadratic
-    spirit.material.opacity = ramp * 0.9;
-    if (spirit.light) spirit.light.intensity = ramp * 0.8;
   }
+  const ramp = spirit.rampProgress * spirit.rampProgress; // ease-in quadratic
 
   // Fade-out mode
   if (spirit.fadingOut) {
     spirit.fadeProgress += dt / 1.5;
     const fade = 1 - Math.min(spirit.fadeProgress, 1);
-    spirit.material.opacity = fade * 0.85;
-    if (spirit.light) spirit.light.intensity = fade * 0.6;
+    setSpiritInstance(spirit, spirit.targetPos.x, spirit.targetPos.y, spirit.targetPos.z, fade * 0.85);
     if (spirit.fadeProgress >= 1) {
       spirit.removed = true;
-      spiritsGroup.remove(spirit.mesh);
-      spirit.mesh.geometry.dispose();
-      spirit.material.dispose();
-      if (spirit.light) pointLightCount--;
+      // Hide by scaling to zero
+      _instanceMatrix.makeScale(0, 0, 0);
+      spiritInstancedMesh.setMatrixAt(spirit.instanceIdx, _instanceMatrix);
     }
     return;
   }
@@ -1126,7 +1207,7 @@ function updateSpiritJourney(spirit, dt) {
     const bob = Math.sin(time * 1.2 + spirit.swayPhaseX) * 0.008;
     const driftX = Math.sin(time * 0.5 + spirit.swayPhaseX) * 0.005;
     const driftZ = Math.cos(time * 0.4 + spirit.swayPhaseZ) * 0.005;
-    spirit.mesh.position.set(t.x + driftX, t.y + bob, t.z + driftZ);
+    setSpiritInstance(spirit, t.x + driftX, t.y + bob, t.z + driftZ, 0.85);
     return;
   }
 
@@ -1138,13 +1219,12 @@ function updateSpiritJourney(spirit, dt) {
 
   // In the final 40%, blend off navmesh toward exact chair marker
   const DETACH_START = 0.6;
-  let base;
   if (progress > DETACH_START) {
     const blend = (progress - DETACH_START) / (1 - DETACH_START);
     const eased = blend * blend * (3 - 2 * blend); // smoothstep
-    base = new THREE.Vector3().lerpVectors(pathPos, spirit.targetPos, eased);
+    _spiritBase.lerpVectors(pathPos, spirit.targetPos, eased);
   } else {
-    base = pathPos;
+    _spiritBase.copy(pathPos);
   }
 
   const overlay = 1 - progress;
@@ -1161,18 +1241,16 @@ function updateSpiritJourney(spirit, dt) {
   const bob = Math.sin(time * 3 + spirit.swayPhaseX) * 0.02;
   const floatHeight = SPIRIT_FLOAT_HEIGHT * overlay;
 
-  spirit.mesh.position.set(
-    base.x + swayX,
-    base.y + floatHeight + bob,
-    base.z + swayZ
+  setSpiritInstance(spirit,
+    _spiritBase.x + swayX,
+    _spiritBase.y + floatHeight + bob,
+    _spiritBase.z + swayZ,
+    ramp * 0.9
   );
 
   if (progress >= 1) {
     spirit.settled = true;
-    spirit.mesh.position.copy(spirit.targetPos);
-    spirit.mesh.scale.setScalar(1);
-    spirit.material.opacity = 0.85;
-    if (spirit.light) spirit.light.intensity = 0.6;
+    setSpiritInstance(spirit, spirit.targetPos.x, spirit.targetPos.y, spirit.targetPos.z, 0.85);
   }
 }
 
@@ -1186,24 +1264,27 @@ export function startSpiritsSequence() {
     return;
   }
 
-  spirits.forEach((s) => {
-    if (!s.removed) {
-      spiritsGroup.remove(s.mesh);
-      s.mesh.geometry.dispose();
-      s.material.dispose();
-    }
-  });
   spirits = [];
-  pointLightCount = 0;
+  // Reset instanced mesh
+  if (spiritInstancedMesh) {
+    spiritsGroup.remove(spiritInstancedMesh);
+    spiritInstancedMesh.dispose();
+    spiritInstancedMesh = null;
+  }
   spawnIndex = 0;
   spawnTimer = 0;
   spawning = true;
   reversing = false;
 
-  spawnQueue = chairPositions.map((pos, i) => ({
-    targetPos: pos,
-    spawnPos: i % 2 === 0 ? spawnLeft : spawnRight,
-  }));
+  // Pre-compute all navmesh paths up front (avoids per-spawn navmesh queries)
+  spawnQueue = chairPositions.map((pos, i) => {
+    const spawnPos = i % 2 === 0 ? spawnLeft : spawnRight;
+    return {
+      targetPos: pos,
+      spawnPos,
+      waypoints: computeSpiritPath(spawnPos, pos),
+    };
+  });
 
   console.log(
     `Chair spirits: starting sequence for ${spawnQueue.length} chairs`
@@ -1252,11 +1333,10 @@ function spawnLateGuest() {
   // Override speed to be 3x faster — in a hurry!
   lateSpirit.speed = SPIRIT_SPEED * 3;
   // Shine extra bright — this one stands out
-  lateSpirit.material.opacity = 1.0;
-  if (lateSpirit.light) {
-    lateSpirit.light.intensity = 1.6;
-    lateSpirit.light.distance = 12;
-  }
+  lateSpirit.rampProgress = 1; // skip ramp-in, fully bright immediately
+  const c = lateSpirit.baseColor;
+  _instanceColor.setRGB(c.r, c.g, c.b);
+  if (spiritInstancedMesh) spiritInstancedMesh.setColorAt(lateSpirit.instanceIdx, _instanceColor);
 
   spirits.push(lateSpirit);
   console.log("Chair spirits: late guest rushes in!");
@@ -1271,8 +1351,8 @@ export function updateSpirits(dt) {
     const interval = 0.15 + Math.random() * 0.1;
     while (spawnTimer >= interval && spawnIndex < spawnQueue.length) {
       spawnTimer -= interval;
-      const { targetPos, spawnPos } = spawnQueue[spawnIndex];
-      spirits.push(createSpirit(targetPos, spawnPos));
+      const { targetPos, spawnPos, waypoints } = spawnQueue[spawnIndex];
+      spirits.push(createSpirit(targetPos, spawnPos, waypoints));
       spawnIndex++;
     }
     if (spawnIndex >= spawnQueue.length) {
@@ -1295,9 +1375,21 @@ export function updateSpirits(dt) {
     updateSpiritJourney(spirit, clamped);
   }
 
+  // Flag instance buffers for GPU upload (once per frame, not per spirit)
+  if (spiritInstancedMesh && spirits.length > 0) {
+    spiritInstancedMesh.instanceMatrix.needsUpdate = true;
+    if (spiritInstancedMesh.instanceColor) spiritInstancedMesh.instanceColor.needsUpdate = true;
+  }
+
   if (spirits.length > 0 && spirits.every((s) => s.removed)) {
     spirits = [];
     reversing = false;
+    // Clean up instanced mesh
+    if (spiritInstancedMesh) {
+      spiritsGroup.remove(spiritInstancedMesh);
+      spiritInstancedMesh.dispose();
+      spiritInstancedMesh = null;
+    }
   }
 
   // Reactive audience lights (sample video → tint spirits)
@@ -1408,14 +1500,16 @@ function applyDimLevel(t) {
     }
   });
 
-  // Dim spirit lights in sync with GLB lights
+  // Dim spirit brightness in sync with GLB lights
   for (const spirit of spirits) {
     if (spirit.removed || spirit.fadingOut) continue;
-    const dimmedOpacity = 0.85 * (1 - glbT * 0.7);
-    spirit.material.opacity = dimmedOpacity;
-    if (spirit.light) {
-      spirit.light.intensity = 0.6 * (1 - glbT * 0.7);
-    }
+    const brightness = 0.85 * (1 - glbT * 0.7);
+    const c = spirit.baseColor;
+    _instanceColor.setRGB(c.r * brightness, c.g * brightness, c.b * brightness);
+    if (spiritInstancedMesh) spiritInstancedMesh.setColorAt(spirit.instanceIdx, _instanceColor);
+  }
+  if (spiritInstancedMesh && spiritInstancedMesh.instanceColor) {
+    spiritInstancedMesh.instanceColor.needsUpdate = true;
   }
 
   // Dim renderer exposure for deeper overall darkness
@@ -1463,15 +1557,17 @@ function applyRestoreLevel(t) {
   }
 
   // Restore grid lines, generative visuals, and typography brightness
-  const screenMat = getScreenMaterial();
-  if (screenMat && screenMat.uniforms) {
-    if (screenMat.uniforms.uGridFade) {
-      screenMat.uniforms.uGridFade.value = screenT;
-    }
-    if (screenMat.uniforms.uBrightness) {
-      // Brightness restores early so text is readable quickly
-      const brightnessT = Math.min(t / 0.6, 1);
-      screenMat.uniforms.uBrightness.value = brightnessT;
+  // Skip if screenFading is active — applyScreenFade handles these uniforms
+  if (!screenFading) {
+    const screenMat = getScreenMaterial();
+    if (screenMat && screenMat.uniforms) {
+      if (screenMat.uniforms.uGridFade) {
+        screenMat.uniforms.uGridFade.value = screenT;
+      }
+      if (screenMat.uniforms.uBrightness) {
+        const brightnessT = Math.min(t / 0.6, 1);
+        screenMat.uniforms.uBrightness.value = brightnessT;
+      }
     }
   }
 
@@ -1562,219 +1658,28 @@ function applyScreenFade(t) {
 
   const level = screenFadeIn ? t : 1 - t;
 
-  // Fade grid/lines while keeping text, then fade text too for full blackout
   if (screenMat.uniforms) {
-    if (screenMat.uniforms.uGridFade) {
-      // Grid fades first (in the first 60% of the fade)
-      screenMat.uniforms.uGridFade.value = Math.max(0, level / 0.6);
-    }
-    if (screenMat.uniforms.uBrightness) {
-      // Text fades later (last 40% — for full blackout before video swap)
-      screenMat.uniforms.uBrightness.value = Math.min(1, level / 0.4);
+    if (screenFadeIn) {
+      // Fading IN (reverse/restore): grid fades in, brightness stays at 1.0
+      if (screenMat.uniforms.uGridFade) {
+        screenMat.uniforms.uGridFade.value = Math.min(1, t);
+      }
+      if (screenMat.uniforms.uBrightness) {
+        screenMat.uniforms.uBrightness.value = 1.0;
+      }
+    } else {
+      // Fading OUT (going dark before fanfare)
+      if (screenMat.uniforms.uGridFade) {
+        screenMat.uniforms.uGridFade.value = Math.max(0, level / 0.6);
+      }
+      if (screenMat.uniforms.uBrightness) {
+        screenMat.uniforms.uBrightness.value = Math.min(1, level / 0.4);
+      }
     }
   }
 }
 
-// ---------------------------------------------------------------------------
-// Screen light burst — explosion of light particles from dome center
-// ---------------------------------------------------------------------------
-
-let burstParticles = [];
-let burstGroup = null;
-let burstAnimating = false;
-
-/**
- * Create an explosion of light particles from the dome screen center.
- * Particles radiate outward from the dome, creating a "drenched in light" effect,
- * then fade out to reveal the text beneath.
- * @param {number} count — number of particles
- * @param {number} duration — total burst duration in seconds
- * @returns {Promise} resolves when burst is finished
- */
-function screenLightBurst(count = 200, duration = 4) {
-  const screen = getScreen();
-  if (!screen) return Promise.resolve();
-
-  // Get the screen center and measure its size for proper scaling
-  const screenCenter = new THREE.Vector3();
-  screen.getWorldPosition(screenCenter);
-
-  // Compute bounding sphere to know how big the dome screen is
-  if (!screen.geometry.boundingSphere) screen.geometry.computeBoundingSphere();
-  const screenRadius = screen.geometry.boundingSphere?.radius || 3;
-
-  // Get screen normal direction (local Z → world)
-  const screenNormal = new THREE.Vector3(0, 0, 1);
-  screen.localToWorld(screenNormal).sub(screenCenter).normalize();
-
-  // Create a group if needed
-  if (!burstGroup) {
-    burstGroup = new THREE.Group();
-    burstGroup.name = "LightBurst";
-    scene.add(burstGroup);
-  }
-
-  // Clean up any previous particles
-  while (burstGroup.children.length > 0) {
-    const child = burstGroup.children[0];
-    burstGroup.remove(child);
-    child.geometry?.dispose();
-    child.material?.dispose();
-  }
-  burstParticles = [];
-
-  // Build tangent frame for the screen surface
-  const up = new THREE.Vector3(0, 1, 0);
-  const tangentX = new THREE.Vector3().crossVectors(up, screenNormal).normalize();
-  const tangentY = new THREE.Vector3().crossVectors(screenNormal, tangentX).normalize();
-
-  // Scale particle size relative to the dome — much larger than before
-  const particleBaseSize = screenRadius * 0.015;
-  const geo = new THREE.SphereGeometry(particleBaseSize, 8, 6);
-
-  // Central bright flash light
-  const flashLight = new THREE.PointLight(0xfff5e0, 8, screenRadius * 4);
-  flashLight.position.copy(screenCenter).addScaledVector(screenNormal, 0.3);
-  burstGroup.add(flashLight);
-
-  for (let i = 0; i < count; i++) {
-    const hue = 0.08 + Math.random() * 0.1; // warm golden-white
-    const sat = 0.05 + Math.random() * 0.2;
-    const light = 0.9 + Math.random() * 0.1;
-    const color = new THREE.Color().setHSL(hue, sat, light);
-
-    const mat = new THREE.MeshBasicMaterial({
-      color,
-      transparent: true,
-      opacity: 1.0,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-    });
-
-    const mesh = new THREE.Mesh(geo, mat);
-    mesh.position.copy(screenCenter);
-
-    // Push in front of the screen so particles are visible
-    mesh.position.addScaledVector(screenNormal, 0.15);
-
-    burstGroup.add(mesh);
-
-    // Radial direction on the dome surface — scaled to dome size
-    const angle = Math.random() * Math.PI * 2;
-    const speed = (0.5 + Math.random() * 1.5) * screenRadius;
-    const forwardPush = (0.2 + Math.random() * 0.6) * screenRadius * 0.3;
-
-    const dir = new THREE.Vector3()
-      .addScaledVector(tangentX, Math.cos(angle) * speed)
-      .addScaledVector(tangentY, Math.sin(angle) * speed)
-      .addScaledVector(screenNormal, forwardPush);
-
-    burstParticles.push({
-      mesh,
-      material: mat,
-      velocity: dir,
-      life: 0,
-      maxLife: 1.0 + Math.random() * 1.5, // 1–2.5s lifetime
-      delay: Math.random() * 0.5, // Staggered spawn
-      scale: 1.0 + Math.random() * 3.0, // much larger scale range
-    });
-  }
-
-  burstAnimating = true;
-
-  // Flash the screen brightness hard
-  const screenMat = getScreenMaterial();
-  if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
-    screenMat.uniforms.uBrightness.value = 5.0; // Intense white flash
-  }
-
-  return new Promise((resolve) => {
-    const startTime = performance.now();
-    const durationMs = duration * 1000;
-
-    function animateBurst() {
-      const elapsed = performance.now() - startTime;
-      const t = Math.min(elapsed / durationMs, 1);
-
-      // Fade screen flash: 5.0 → 1.0 over 2.5s
-      if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
-        const brightT = Math.min(elapsed / 2500, 1);
-        const eased = brightT * brightT; // ease-in for dramatic hold
-        screenMat.uniforms.uBrightness.value = 5.0 * (1 - eased) + 1.0 * eased;
-      }
-
-      // Bring uGridFade back up so text appears through the light
-      if (screenMat && screenMat.uniforms && screenMat.uniforms.uGridFade) {
-        const gridT = Math.min(Math.max((elapsed - 800) / 2500, 0), 1);
-        screenMat.uniforms.uGridFade.value = gridT;
-      }
-
-      // Fade the central flash light
-      const lightFade = Math.max(0, 1 - elapsed / 2000);
-      flashLight.intensity = 8 * lightFade;
-
-      let allDead = true;
-      const dt = 1 / 60; // approximate frame time
-
-      for (const p of burstParticles) {
-        if (elapsed < p.delay * 1000) {
-          p.mesh.visible = false;
-          allDead = false;
-          continue;
-        }
-
-        p.mesh.visible = true;
-        const particleElapsed = (elapsed - p.delay * 1000) / 1000;
-        p.life = particleElapsed;
-
-        if (p.life < p.maxLife) {
-          allDead = false;
-          const lifeT = p.life / p.maxLife;
-
-          // Move outward, decelerating
-          const moveSpeed = (1 - lifeT * 0.6) * dt;
-          p.mesh.position.addScaledVector(p.velocity, moveSpeed);
-
-          // Scale: rapid grow then slow shrink
-          const growPhase = Math.min(lifeT / 0.15, 1); // grow in first 15%
-          const shrinkPhase = lifeT > 0.15 ? (lifeT - 0.15) / 0.85 : 0;
-          const s = p.scale * growPhase * (1 - shrinkPhase * shrinkPhase);
-          p.mesh.scale.setScalar(Math.max(0.01, s));
-
-          // Fade out — hold bright for a while then rapid fade
-          const fadeStart = 0.4;
-          p.material.opacity = lifeT < fadeStart ? 1.0 : 1 - (lifeT - fadeStart) / (1 - fadeStart);
-        } else {
-          p.mesh.visible = false;
-        }
-      }
-
-      if (t < 1 && !allDead) {
-        requestAnimationFrame(animateBurst);
-      } else {
-        // Clean up
-        while (burstGroup.children.length > 0) {
-          const child = burstGroup.children[0];
-          burstGroup.remove(child);
-          child.material?.dispose();
-        }
-        burstParticles = [];
-        burstAnimating = false;
-        geo.dispose();
-
-        // Ensure screen is at normal brightness with text visible
-        if (screenMat && screenMat.uniforms) {
-          if (screenMat.uniforms.uBrightness) screenMat.uniforms.uBrightness.value = 1.0;
-          if (screenMat.uniforms.uGridFade) screenMat.uniforms.uGridFade.value = 1.0;
-        }
-
-        resolve();
-      }
-    }
-
-    requestAnimationFrame(animateBurst);
-  });
-}
+// (screenLightBurst removed — was dead code, never called)
 
 // ---------------------------------------------------------------------------
 // Video playback on dome from URL
@@ -1934,24 +1839,30 @@ function sampleVideoColor() {
   }
 }
 
+let _lastReactiveUpdate = 0;
+const REACTIVE_INTERVAL = 250; // ms between reactive light updates
+const _reactiveHSL = {};
+const _reactiveColor = new THREE.Color();
+
 function updateReactiveLights() {
   if (!reactiveLightsActive || spirits.length === 0) return;
+
+  const now = performance.now();
+  if (now - _lastReactiveUpdate < REACTIVE_INTERVAL) return;
+  _lastReactiveUpdate = now;
 
   const avgColor = sampleVideoColor();
   if (!avgColor) return;
 
   // Boost saturation slightly for more vivid effect
-  const hsl = {};
-  avgColor.getHSL(hsl);
-  const boosted = new THREE.Color().setHSL(hsl.h, Math.min(hsl.s * 1.4, 1), hsl.l);
+  avgColor.getHSL(_reactiveHSL);
+  _reactiveColor.setHSL(_reactiveHSL.h, Math.min(_reactiveHSL.s * 1.4, 1), _reactiveHSL.l);
 
   for (const spirit of spirits) {
     if (spirit.removed) continue;
-    spirit.material.color.lerp(boosted, 0.15); // smooth blend
-    if (spirit.light) {
-      spirit.light.color.lerp(boosted, 0.15);
-    }
+    spirit.baseColor.lerp(_reactiveColor, 0.15);
   }
+  // Instance colors will be updated in the next updateSpiritJourney cycle
 }
 
 // ---------------------------------------------------------------------------
@@ -2047,8 +1958,12 @@ function flashSpiritLights(duration) {
 
     for (const spirit of spirits) {
       if (spirit.removed || spirit.fadingOut || !spirit.settled) continue;
-      spirit.material.opacity = opacity;
-      if (spirit.light) spirit.light.intensity = lightInt;
+      const c = spirit.baseColor;
+      _instanceColor.setRGB(c.r * opacity, c.g * opacity, c.b * opacity);
+      if (spiritInstancedMesh) spiritInstancedMesh.setColorAt(spirit.instanceIdx, _instanceColor);
+    }
+    if (spiritInstancedMesh && spiritInstancedMesh.instanceColor) {
+      spiritInstancedMesh.instanceColor.needsUpdate = true;
     }
     if (t < 1) requestAnimationFrame(tick);
   }
@@ -2086,6 +2001,13 @@ function flashWordOnDome(word, line = 3, flashDuration = 800) {
 
   const screenMat = getScreenMaterial();
 
+  // Kill previous pulse and force screen dark BEFORE changing text,
+  // so old text never shows through at the new cue's brightness ramp
+  if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+    ++pulseGeneration;
+    screenMat.uniforms.uBrightness.value = 0;
+  }
+
   if (word !== null) {
     // Solo mode: clear all lines, show only this word centered on its line
     for (let i = 1; i <= 5; i++) {
@@ -2103,28 +2025,31 @@ function flashWordOnDome(word, line = 3, flashDuration = 800) {
   }
 
   // Brightness pump: 0 → peak → 0 (fully dark between flashes)
-  // Cancel any previous pulse so they don't fight over uBrightness
+  // Delay start by one frame so the canvas texture has time to redraw with new text
   if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
     const gen = ++pulseGeneration;
-    const startTime = performance.now();
-    function pulse() {
-      if (gen !== pulseGeneration) return; // superseded by a newer pulse
-      const elapsed = performance.now() - startTime;
-      const t = Math.min(elapsed / flashDuration, 1);
-      let brightness;
-      if (t < 0.15) {
-        brightness = (t / 0.15) * 1.2; // quick ramp to 1.2
-      } else if (t < 0.4) {
-        brightness = 1.2 - (t - 0.15) / 0.25 * 0.2; // settle to 1.0
-      } else {
-        brightness = 1.0 * (1 - (t - 0.4) / 0.6);
-        brightness *= brightness; // ease-in for smooth fade to black
+    requestAnimationFrame(() => {
+      if (gen !== pulseGeneration) return;
+      const startTime = performance.now();
+      function pulse() {
+        if (gen !== pulseGeneration) return; // superseded by a newer pulse
+        const elapsed = performance.now() - startTime;
+        const t = Math.min(elapsed / flashDuration, 1);
+        let brightness;
+        if (t < 0.15) {
+          brightness = (t / 0.15) * 1.2; // quick ramp to 1.2
+        } else if (t < 0.4) {
+          brightness = 1.2 - (t - 0.15) / 0.25 * 0.2; // settle to 1.0
+        } else {
+          brightness = 1.0 * (1 - (t - 0.4) / 0.6);
+          brightness *= brightness; // ease-in for smooth fade to black
+        }
+        screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
+        if (t < 1) requestAnimationFrame(pulse);
+        else screenMat.uniforms.uBrightness.value = 0;
       }
-      screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
-      if (t < 1) requestAnimationFrame(pulse);
-      else screenMat.uniforms.uBrightness.value = 0;
-    }
-    pulse();
+      pulse();
+    });
   }
 }
 
@@ -2139,14 +2064,57 @@ let fanfareRunId = 0;
 /** Module-level start time so pause/resume can adjust it */
 let fanfareStartTime = 0;
 
-export async function playFanfareWithWords({ startFromMs = 0 } = {}) {
+export async function playFanfareWithWords({ startFromMs = 0, preStartedAudio = null } = {}) {
+  // Safari gesture handling: if a pre-started (silent) audio element was passed
+  // from runTrailerSequence, adopt it — unmute, seek, set rate. If not, try
+  // creating one fresh (works when called directly from a gesture like timeline play).
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  let safariAudio = null;
+  if (isSafari) {
+    if (preStartedAudio) {
+      // Adopt the pre-started audio — it's already "unlocked" by the gesture
+      preStartedAudio.loop = false;
+      preStartedAudio.volume = 1.0;
+      preStartedAudio.playbackRate = Math.pow(2, -2 / 12);
+      preStartedAudio.currentTime = startFromMs > 0
+        ? (startFromMs / 1000) * preStartedAudio.playbackRate
+        : 0;
+      safariAudio = preStartedAudio;
+      console.log("Chair spirits: adopted pre-started audio for Safari fanfare");
+    } else {
+      // Direct gesture call (e.g. timeline play button) — try fresh audio
+      console.log("Chair spirits: Safari — trying fresh audio from gesture");
+      const audio = new Audio("assets/audio/fanfare_002.mp3");
+      audio.volume = 1.0;
+      try {
+        await audio.play();
+        console.log("Chair spirits: Safari audio.play() succeeded");
+      } catch (e) {
+        console.error("Chair spirits: Safari audio.play() FAILED:", e.name, e.message);
+      }
+      audio.playbackRate = Math.pow(2, -2 / 12);
+      if (startFromMs > 0) {
+        audio.currentTime = (startFromMs / 1000) * audio.playbackRate;
+      }
+      safariAudio = audio;
+    }
+  }
+
   // Stop any existing fanfare (audio + abort previous word loop)
   disposeFanfare();
   const runId = ++fanfareRunId;
   fanfarePlaying = true;
   updatePlayButton();
 
-  // Clear all text lines, ensure grid lines are hidden
+  // Stop any ongoing animations that could overwrite our uniforms
+  screenFading = false;
+  restoring = false;
+  dimming = false;
+
+  // Disable structural grid lines so they can't bleed through during brightness pulses
+  setGridLinesEnabled(false);
+
+  // Clear all text lines, ensure grid lines and brightness are fully dark
   for (let i = 1; i <= 5; i++) {
     setTextContent(i, "");
   }
@@ -2156,8 +2124,19 @@ export async function playFanfareWithWords({ startFromMs = 0 } = {}) {
     if (screenMat.uniforms.uBrightness) screenMat.uniforms.uBrightness.value = 0;
   }
 
-  // Start the fanfare audio (with seek offset in seconds)
-  await playCinematicFanfare(undefined, { startOffset: startFromMs / 1000 });
+  // Start the fanfare audio (Safari: adopt pre-started element; Chrome: full Web Audio chain)
+  await playCinematicFanfare(undefined, { startOffset: startFromMs / 1000, safariAudio });
+  // Re-assert — playCinematicFanfare's internal disposeFanfare() resets this
+  fanfarePlaying = true;
+  updatePlayButton();
+
+  // Re-assert screen darkness after async audio setup — belt-and-suspenders
+  // against anything that might have overwritten uniforms during the await
+  const screenMat2 = getScreenMaterial();
+  if (screenMat2 && screenMat2.uniforms) {
+    if (screenMat2.uniforms.uGridFade) screenMat2.uniforms.uGridFade.value = 0;
+    if (screenMat2.uniforms.uBrightness) screenMat2.uniforms.uBrightness.value = 0;
+  }
 
   // Build word sequence from GUI-editable fanfareCues, sorted by time
   const wordSequence = Object.values(fanfareCues)
@@ -2196,16 +2175,26 @@ export async function playFanfareWithWords({ startFromMs = 0 } = {}) {
       console.log(`Chair spirits: ALL WORDS flash${isFinalHit ? " (FINAL)" : ""}`);
       const screenMat = getScreenMaterial();
       if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+        // Show all words on their final lines (cancel any previous fade-to-black)
+        ++pulseGeneration;
+        for (let i = 1; i <= 5; i++) {
+          centerTextOnLine(i, FINAL_LAYOUT[i] || "");
+        }
+        flashSpiritLights(entry.flash);
+        const gen2 = ++pulseGeneration;
+        const t0 = performance.now();
         if (isFinalHit) {
-          // Final hit: punch to 1.5 then hold at 1.0
-          const pumpStart = performance.now();
+          // Final hit: hard punch to 1.8 then settle to 1.0
           function finalPump() {
-            const t = Math.min((performance.now() - pumpStart) / 600, 1);
+            if (gen2 !== pulseGeneration) return;
+            const t = Math.min((performance.now() - t0) / entry.flash, 1);
             let brightness;
-            if (t < 0.15) {
-              brightness = (t / 0.15) * 1.5;
+            if (t < 0.1) {
+              brightness = (t / 0.1) * 1.8;
+            } else if (t < 0.3) {
+              brightness = 1.8 - (t - 0.1) / 0.2 * 0.8;
             } else {
-              brightness = 1.5 - (t - 0.15) / 0.85 * 0.5;
+              brightness = 1.0;
             }
             screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
             if (t < 1) requestAnimationFrame(finalPump);
@@ -2213,8 +2202,21 @@ export async function playFanfareWithWords({ startFromMs = 0 } = {}) {
           }
           finalPump();
         } else {
-          // Intermediate flash: same pump as individual words
-          flashWordOnDome(null, 0, entry.flash);
+          // Intermediate "all" flash: punch hard then fade to black (like word cues)
+          function holdPulse() {
+            if (gen2 !== pulseGeneration) return;
+            const t = Math.min((performance.now() - t0) / entry.flash, 1);
+            let b;
+            if (t < 0.1) b = (t / 0.1) * 1.5;
+            else if (t < 0.3) b = 1.5 - (t - 0.1) / 0.2 * 0.5;
+            else {
+              b = 1.0 * Math.pow(1 - (t - 0.3) / 0.7, 2); // ease-out to 0
+            }
+            screenMat.uniforms.uBrightness.value = b;
+            if (t < 1) requestAnimationFrame(holdPulse);
+            else screenMat.uniforms.uBrightness.value = 0;
+          }
+          holdPulse();
         }
       }
     } else {
@@ -2227,11 +2229,32 @@ export async function playFanfareWithWords({ startFromMs = 0 } = {}) {
   await new Promise((r) => setTimeout(r, 2000));
   fanfarePlaying = false;
   updatePlayButton();
+  // Grid lines stay hidden — they'll be restored with the rest of the state
+  // when reverseTrailer runs or the next scene loads.
   // Brightness stays at 1.0 — the announcement scramble-in happens seamlessly
 }
 
 export async function runTrailerSequence() {
   console.log("Chair spirits: trailer sequence started");
+
+  // Pre-create fanfare audio IMMEDIATELY within the user gesture window.
+  // Safari requires audio.play() to be called synchronously from a gesture —
+  // by the time the fanfare moment arrives (~20s later), the gesture is gone.
+  // We start it muted now, then unmute + seek when the fanfare begins.
+  let preStartedAudio = null;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  if (isSafari) {
+    const audio = new Audio("assets/audio/fanfare_002.mp3");
+    audio.volume = 0; // silent until fanfare moment
+    audio.loop = true; // keep it alive until we need it
+    try {
+      await audio.play();
+      preStartedAudio = audio;
+      console.log("Chair spirits: pre-started silent audio for Safari gesture unlock");
+    } catch (e) {
+      console.warn("Chair spirits: Safari audio pre-start failed:", e.message);
+    }
+  }
 
   // Fade out page text
   setTrailerMode(true);
@@ -2248,6 +2271,7 @@ export async function runTrailerSequence() {
   savedTextRotationBPM = polarGridSettings.textRotationBPM;
   savedTextScrambleEnabled = polarGridSettings.textScrambleEnabled;
   savedImageCellsEnabled = polarGridSettings.imageCellsEnabled;
+  savedGridLinesEnabled = polarGridSettings.gridLinesEnabled;
   savedPulsesEnabled = polarGridSettings.pulsesEnabled;
   savedPulseSize = polarGridSettings.pulseSize;
   savedPulseSpeed = polarGridSettings.pulseSpeed;
@@ -2371,7 +2395,7 @@ export async function runTrailerSequence() {
 
   // 9. Start fanfare IMMEDIATELY — room is dark, music begins
   console.log("Chair spirits: starting fanfare word sequence");
-  await playFanfareWithWords();
+  await playFanfareWithWords({ preStartedAudio });
 
   console.log("Chair spirits: fanfare word sequence complete");
 
@@ -2386,8 +2410,8 @@ export async function runTrailerSequence() {
 export async function reverseTrailer(duration = 3) {
   console.log("Chair spirits: reversing trailer");
 
-  // Stop fanfare if still playing
-  disposeFanfare();
+  // Fade fanfare music out over the reverse duration (runs in background)
+  fadeFanfareOut(duration);
 
   // Restore start sectors and scramble text back to original content
   if (savedTextStartSectors) {
@@ -2429,7 +2453,10 @@ export async function reverseTrailer(duration = 3) {
     setTextScrambleEnabled(savedTextScrambleEnabled);
   }
 
-  // Restore images in the grid texture
+  // Restore images and grid lines in the grid texture
+  if (savedGridLinesEnabled !== null) {
+    setGridLinesEnabled(savedGridLinesEnabled);
+  }
   if (savedImageCellsEnabled !== null) {
     setImageCellsEnabled(savedImageCellsEnabled);
   }

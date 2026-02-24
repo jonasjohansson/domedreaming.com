@@ -35,8 +35,10 @@ import { initTextShuffle } from "./layout/text-shuffle.js";
 
 let animationFrameId = null;
 let lastTime = 0;
+/** Reusable Vector3 for audio listener direction — avoids GC every frame */
+let _listenerForward = null;
 let lastCameraSaveTime = 0;
-const CAMERA_SAVE_INTERVAL = 2000;
+const CAMERA_SAVE_INTERVAL = 10000; // Save less frequently for performance
 
 async function init() {
   // Yield to browser immediately to allow FCP
@@ -113,6 +115,7 @@ async function loadThreeJS() {
 
   try {
     THREE = await import("three");
+    _listenerForward = new THREE.Vector3();
     const sceneModule = await import("./3d/scene.js");
     const cameraModule = await import("./3d/camera.js");
     const lightingModule = await import("./3d/lighting.js");
@@ -371,6 +374,11 @@ function setupEventListeners() {
     setTimeout(handleResize, 100);
   });
 
+  // Save settings when leaving the page (so the 10s interval doesn't lose state)
+  window.addEventListener("visibilitychange", () => {
+    if (document.hidden && threeJsLoaded) saveSettings(fbxMeshes, glbLights);
+  });
+
   // Initialize touch controls (extracted module)
   initTouchControls();
 
@@ -446,12 +454,10 @@ function animate(currentTime) {
   if (updateScreenLighting) updateScreenLighting(currentTime);
 
   if (updateListenerPosition && THREE && camera) {
-    const forward = new THREE.Vector3(0, 0, -1);
-    forward.applyQuaternion(camera.quaternion);
-
+    _listenerForward.set(0, 0, -1).applyQuaternion(camera.quaternion);
     updateListenerPosition(
       { x: camera.position.x, y: camera.position.y, z: camera.position.z },
-      { x: forward.x, y: forward.y, z: forward.z }
+      { x: _listenerForward.x, y: _listenerForward.y, z: _listenerForward.z }
     );
   }
 

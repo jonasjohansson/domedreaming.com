@@ -61,7 +61,7 @@ export const polarGridSettings = {
   // Dot size (center point and grid intersection dots)
   dotSize: 4,
   // Pulse animation settings
-  pulsesEnabled: true,
+  pulsesEnabled: false,
   pulseCount: 4,
   pulseSpeed: 0.5,
   pulseSize: 12,
@@ -87,6 +87,8 @@ export const polarGridSettings = {
   cellAnimationEnabled: false,
   cellAnimationSpeed: 0.5,
   cellPatternDensity: 0.25, // percentage of cells with patterns
+  // Grid structural lines (circles, radial lines, ticks)
+  gridLinesEnabled: true,
   // Image cells settings
   imageCellsEnabled: true,
   imageCellCount: 12,
@@ -1005,8 +1007,9 @@ export function generatePolarGridTexture(size = 1024, options = {}) {
     }
   }
 
-  // Draw concentric circles (grid lines) - use single color
+  // Draw structural grid (circles, radials, ticks, labels) — skipped when disabled
   const gridColor = polarGridSettings.gridLineColor || "#ffffff";
+  if (polarGridSettings.gridLinesEnabled !== false) {
 
   for (let i = 1; i <= numCircles; i++) {
     const radius = circleStep * i;
@@ -1167,6 +1170,7 @@ export function generatePolarGridTexture(size = 1024, options = {}) {
     }
     ctx.textAlign = "center"; // Reset
   }
+  } // end gridLinesEnabled
 
   // Store base image without text (for animation with rotating text)
   const baseImageWithoutText = ctx.getImageData(0, 0, size, size);
@@ -1197,12 +1201,14 @@ export function generatePolarGridTexture(size = 1024, options = {}) {
     }
   }
 
-  // Draw center point
-  const dotSize = polarGridSettings.dotSize || 4;
-  ctx.fillStyle = labelColor;
-  ctx.beginPath();
-  ctx.arc(centerX, centerY, dotSize, 0, Math.PI * 2);
-  ctx.fill();
+  // Draw center point (part of structural grid)
+  if (polarGridSettings.gridLinesEnabled !== false) {
+    const dotSize = polarGridSettings.dotSize || 4;
+    ctx.fillStyle = labelColor;
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, dotSize, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
   // Create Three.js texture from canvas
   const texture = new THREE.CanvasTexture(canvas);
@@ -1787,6 +1793,18 @@ export function setTextScrambleEnabled(enabled) {
 export function setImageCellsEnabled(enabled) {
   polarGridSettings.imageCellsEnabled = enabled;
   // Force a full texture regeneration so the base image updates
+  if (polarGridSettings.regenerate) {
+    polarGridSettings.regenerate();
+  }
+}
+
+/**
+ * Enable or disable structural grid lines (circles, radials, ticks, labels, center dot).
+ * When disabled, only text and cell patterns are drawn on the texture.
+ * @param {boolean} enabled
+ */
+export function setGridLinesEnabled(enabled) {
+  polarGridSettings.gridLinesEnabled = enabled;
   if (polarGridSettings.regenerate) {
     polarGridSettings.regenerate();
   }

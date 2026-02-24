@@ -7,9 +7,15 @@ let screenObject = null;
 let hemisphereLight = null;
 let secondaryLight = null;
 let lastColorUpdate = 0;
-const COLOR_UPDATE_INTERVAL = 100; // Update color every 100ms
+const COLOR_UPDATE_INTERVAL = 250; // Update color every 250ms (was 100ms)
 let colorSamplingEnabled = true;
 const hsl = { h: 0, s: 0, l: 0 }; // Reusable HSL object for color manipulation
+/** Reusable canvas and context for color sampling — avoids creating new ones each call */
+let _sampleCanvas = null;
+let _sampleCtx = null;
+const _sampledColor = new THREE.Color();
+const _ambientColor = new THREE.Color();
+const _worldPos = new THREE.Vector3();
 
 /**
  * Initialize screen-based lighting system
@@ -43,38 +49,32 @@ export function initScreenLighting(screenObj) {
  */
 function sampleTextureColor(texture) {
   if (!texture || !texture.image) return null;
-  
-  const image = texture.image;
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  
-  // Use smaller size for performance (sample every Nth pixel)
-  const sampleSize = 64;
-  canvas.width = sampleSize;
-  canvas.height = sampleSize;
-  
+
+  // Lazy-init reusable canvas
+  if (!_sampleCanvas) {
+    _sampleCanvas = document.createElement("canvas");
+    _sampleCanvas.width = 32;
+    _sampleCanvas.height = 32;
+    _sampleCtx = _sampleCanvas.getContext("2d", { willReadFrequently: true });
+  }
+
   try {
-    ctx.drawImage(image, 0, 0, sampleSize, sampleSize);
-    const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
+    _sampleCtx.drawImage(texture.image, 0, 0, 32, 32);
+    const imageData = _sampleCtx.getImageData(0, 0, 32, 32);
     const data = imageData.data;
-    
+
     let r = 0, g = 0, b = 0;
-    const pixelCount = sampleSize * sampleSize;
-    
-    // Calculate average color
+    const pixelCount = 32 * 32;
+
     for (let i = 0; i < data.length; i += 4) {
       r += data[i];
       g += data[i + 1];
       b += data[i + 2];
     }
-    
-    r /= pixelCount;
-    g /= pixelCount;
-    b /= pixelCount;
-    
-    return new THREE.Color(r / 255, g / 255, b / 255);
+
+    _sampledColor.setRGB(r / pixelCount / 255, g / pixelCount / 255, b / pixelCount / 255);
+    return _sampledColor;
   } catch (error) {
-    // If texture isn't ready or CORS issue, return null
     return null;
   }
 }
@@ -103,45 +103,36 @@ export function updateScreenLighting(currentTime) {
   }
   
   if (color) {
-    // Boost the color saturation and brightness for more visible effect
-    const boostedColor = color.clone();
-    // Increase saturation
-    boostedColor.getHSL(hsl);
-    hsl.s = Math.min(1.0, hsl.s * 1.5); // Boost saturation by 50%
-    hsl.l = Math.min(1.0, hsl.l * 1.2); // Boost lightness by 20%
-    boostedColor.setHSL(hsl.h, hsl.s, hsl.l);
-    
-    // Update point light color with higher intensity
-    screenLight.color.copy(boostedColor);
-    screenLight.intensity = 3.0; // Much higher intensity for visible effect
-    
-    // Update hemisphere light sky color for ambient color bleeding
+    // Boost saturation and brightness in-place (no clone)
+    color.getHSL(hsl);
+    hsl.s = Math.min(1.0, hsl.s * 1.5);
+    hsl.l = Math.min(1.0, hsl.l * 1.2);
+    color.setHSL(hsl.h, hsl.s, hsl.l);
+
+    screenLight.color.copy(color);
+    screenLight.intensity = 3.0;
+
     if (hemisphereLight) {
-      // Use more of the sampled color (less white blend) for stronger effect
-      const ambientColor = new THREE.Color().lerpColors(new THREE.Color(0xffffff), boostedColor, 0.6);
-      hemisphereLight.color.copy(ambientColor);
-      hemisphereLight.intensity = 1.2; // Increase hemisphere intensity
+      _ambientColor.set(0xffffff).lerp(color, 0.6);
+      hemisphereLight.color.copy(_ambientColor);
+      hemisphereLight.intensity = 1.2;
     }
-    
-    // Update secondary light
+
     if (secondaryLight) {
-      secondaryLight.color.copy(boostedColor);
+      secondaryLight.color.copy(color);
       secondaryLight.intensity = 2.0;
     }
-    
-    // Update screen object position for lights if available
+
     const currentScreenObject = getScreenObject();
     if (currentScreenObject) {
-      const worldPosition = new THREE.Vector3();
-      currentScreenObject.getWorldPosition(worldPosition);
-      screenLight.position.copy(worldPosition);
-      // Offset slightly in front of screen
+      currentScreenObject.getWorldPosition(_worldPos);
+      screenLight.position.copy(_worldPos);
       screenLight.position.z += 0.5;
-      
+
       if (secondaryLight) {
-        secondaryLight.position.copy(worldPosition);
+        secondaryLight.position.copy(_worldPos);
         secondaryLight.position.z += 0.3;
-        secondaryLight.position.y += 0.2; // Slight vertical offset for spread
+        secondaryLight.position.y += 0.2;
       }
     }
   }
