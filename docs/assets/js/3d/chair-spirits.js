@@ -1348,7 +1348,7 @@ export function updateSpirits(dt) {
   // Spawn sequencing
   if (spawning && spawnIndex < spawnQueue.length) {
     spawnTimer += clamped;
-    const interval = 0.15 + Math.random() * 0.1;
+    const interval = 0.07 + Math.random() * 0.05;
     while (spawnTimer >= interval && spawnIndex < spawnQueue.length) {
       spawnTimer -= interval;
       const { targetPos, spawnPos, waypoints } = spawnQueue[spawnIndex];
@@ -2111,16 +2111,14 @@ export async function playFanfareWithWords({ startFromMs = 0, preStartedAudio = 
   restoring = false;
   dimming = false;
 
-  // Disable structural grid lines so they can't bleed through during brightness pulses
-  setGridLinesEnabled(false);
-
-  // Clear all text lines, ensure grid lines and brightness are fully dark
+  // Clear all text lines, ensure brightness starts fully dark
   for (let i = 1; i <= 5; i++) {
     setTextContent(i, "");
   }
   const screenMat = getScreenMaterial();
   if (screenMat && screenMat.uniforms) {
-    if (screenMat.uniforms.uGridFade) screenMat.uniforms.uGridFade.value = 0;
+    // Keep uGridFade at 1 so the grid is visible during flashes
+    if (screenMat.uniforms.uGridFade) screenMat.uniforms.uGridFade.value = 1;
     if (screenMat.uniforms.uBrightness) screenMat.uniforms.uBrightness.value = 0;
   }
 
@@ -2130,11 +2128,11 @@ export async function playFanfareWithWords({ startFromMs = 0, preStartedAudio = 
   fanfarePlaying = true;
   updatePlayButton();
 
-  // Re-assert screen darkness after async audio setup — belt-and-suspenders
+  // Re-assert screen state after async audio setup — belt-and-suspenders
   // against anything that might have overwritten uniforms during the await
   const screenMat2 = getScreenMaterial();
   if (screenMat2 && screenMat2.uniforms) {
-    if (screenMat2.uniforms.uGridFade) screenMat2.uniforms.uGridFade.value = 0;
+    if (screenMat2.uniforms.uGridFade) screenMat2.uniforms.uGridFade.value = 1;
     if (screenMat2.uniforms.uBrightness) screenMat2.uniforms.uBrightness.value = 0;
   }
 
