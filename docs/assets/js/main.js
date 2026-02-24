@@ -382,24 +382,28 @@ function setupEventListeners() {
   // Initialize touch controls (extracted module)
   initTouchControls();
 
-  // "Enter the dome" link handler — enters dome mode and runs the full trailer
+  // "Enter the dome" — enters dome mode and runs the full trailer
   const enterDomeLink = document.getElementById("enter-dome-link");
+  async function enterDomeAndRunTrailer() {
+    if (!startAudio) {
+      await load3DModules();
+    }
+    if (window.runTrailerSequence) {
+      window.runTrailerSequence();
+    }
+  }
   if (enterDomeLink) {
-    enterDomeLink.addEventListener("click", async (e) => {
+    enterDomeLink.addEventListener("click", (e) => {
       e.preventDefault();
-      if (!startAudio) {
-        await load3DModules();
-      }
-      // Enter dome mode first (canvas sizing, overflow, etc.)
-      if (window.enterDomeModeWithAudio) {
-        window.enterDomeModeWithAudio();
-      }
-      // Then run the trailer sequence (dome-mode already set, so setTrailerMode is a no-op)
-      if (window.runTrailerSequence) {
-        window.runTrailerSequence();
-      }
+      enterDomeAndRunTrailer();
     });
   }
+  // Enter key also triggers the dome entry
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !document.body.classList.contains("dome-mode")) {
+      enterDomeAndRunTrailer();
+    }
+  });
 
   // Load 3D scene after idle time (defer for better FCP/LCP)
   const load3DScene = async () => {

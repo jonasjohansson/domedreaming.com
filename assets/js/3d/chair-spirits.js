@@ -2233,6 +2233,7 @@ export async function playFanfareWithWords({ startFromMs = 0, preStartedAudio = 
 }
 
 export async function runTrailerSequence() {
+  if (window._trailerRunning) return;
   window._trailerRunning = true;
   console.log("Chair spirits: trailer sequence started");
 
@@ -2255,17 +2256,15 @@ export async function runTrailerSequence() {
     }
   }
 
-  // Fade out page text
-  setTrailerMode(true);
-
-  // 1. Spirits float in immediately — visible as soon as we enter trailer mode
-  startSpiritsSequence();
-
-  // 2. Start audio if available (ambient soundscape while spirits find seats)
-  //    Re-enable audio system in case it was stopped by a previous run
-  if (window.startAudio) {
-    try { await window.startAudio(); } catch (e) { /* needs gesture */ }
+  // Enter dome mode (canvas sizing, overflow, button state) + start audio
+  if (window.enterDomeModeWithAudio) {
+    await window.enterDomeModeWithAudio();
+  } else {
+    setTrailerMode(true);
   }
+
+  // 1. Spirits float in immediately
+  startSpiritsSequence();
 
   // 3. Save current rotation, text, and image state for later restore
   savedGridRotationSpeed = textureRotationSettings.speed;
