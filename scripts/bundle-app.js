@@ -87,6 +87,18 @@ async function bundle() {
     console.log(`✓ app.bundle.js: ${(appSize / 1024).toFixed(1)}KB (app code only)`);
 
     console.log(`\nTotal: ${((vendorSize + appSize) / 1024).toFixed(1)}KB`);
+
+    // Update service worker cache version so browsers fetch new bundles
+    const swPath = path.join(ROOT_DIR, outputBase, "sw.js");
+    if (fs.existsSync(swPath)) {
+      let sw = fs.readFileSync(swPath, "utf8");
+      const timestamp = Date.now();
+      // Replace any existing timestamp or BUILD_TIMESTAMP placeholder
+      sw = sw.replace(/CACHE_VERSION = "[^"]*"/, `CACHE_VERSION = "${timestamp}"`);
+      fs.writeFileSync(swPath, sw, "utf8");
+      console.log(`✓ sw.js cache version: ${timestamp}`);
+    }
+
     console.log("\n✅ Bundle complete");
   } catch (error) {
     console.error("Bundle failed:", error);
