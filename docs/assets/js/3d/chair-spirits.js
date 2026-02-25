@@ -685,6 +685,7 @@ function disposeFanfare() {
   timelinePaused = false;
   if (fanfareAudio) {
     try { fanfareAudio.pause(); } catch (_) {}
+    try { fanfareAudio.stop(); } catch (_) {}
     try { fanfareAudio.src = ""; } catch (_) {}
     fanfareAudio = null;
   }
@@ -723,8 +724,8 @@ function fadeFanfareOut(duration = 3) {
     const durationMs = duration * 1000;
     function fade() {
       const t = Math.min((performance.now() - startTime) / durationMs, 1);
-      const eased = 1 - t * t; // ease-in (quick at start, gentle tail)
-      fanfareGain.gain.value = startVol * eased;
+      // Linear fade matching the room light restore curve
+      fanfareGain.gain.value = startVol * (1 - t);
       if (t < 1) {
         requestAnimationFrame(fade);
       } else {
@@ -2070,23 +2071,33 @@ let fanfareRunId = 0;
 /** Module-level start time so pause/resume can adjust it */
 let fanfareStartTime = 0;
 
-export async function playFanfareWithWords({ startFromMs = 0, preStartedAudio = null } = {}) {
-  // Safari gesture handling: if a pre-started (silent) audio element was passed
-  // from runTrailerSequence, adopt it — unmute, seek, set rate. If not, try
-  // creating one fresh (works when called directly from a gesture like timeline play).
+export async function playFanfareWithWords({ startFromMs = 0, safariPreloadCtx = null, safariPreloadBuffer = null } = {}) {
+  // Safari gesture handling: if a pre-loaded AudioContext + buffer was passed
+  // from runTrailerSequence, play via AudioBufferSourceNode (no gesture needed —
+  // AudioContext was unlocked during the original tap). If not, try fresh audio
+  // (works when called directly from a gesture like timeline play).
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   let safariAudio = null;
   if (isSafari) {
-    if (preStartedAudio) {
-      // Adopt the pre-started audio — it's already "unlocked" by the gesture
-      preStartedAudio.loop = false;
-      preStartedAudio.volume = 1.0;
-      preStartedAudio.playbackRate = Math.pow(2, -2 / 12);
-      preStartedAudio.currentTime = startFromMs > 0
-        ? (startFromMs / 1000) * preStartedAudio.playbackRate
-        : 0;
-      safariAudio = preStartedAudio;
-      console.log("Chair spirits: adopted pre-started audio for Safari fanfare");
+    if (safariPreloadCtx && safariPreloadBuffer) {
+      // Play fanfare via AudioBufferSourceNode through the pre-unlocked AudioContext
+      const source = safariPreloadCtx.createBufferSource();
+      source.buffer = safariPreloadBuffer;
+      source.playbackRate.value = Math.pow(2, -2 / 12);
+      const gain = safariPreloadCtx.createGain();
+      source.connect(gain);
+      gain.connect(safariPreloadCtx.destination);
+      const offset = startFromMs > 0 ? startFromMs / 1000 : 0;
+      source.start(0, offset);
+      // Wrap as safariAudio for compatibility with playCinematicFanfare/disposeFanfare
+      safariAudio = {
+        pause() { try { source.stop(); } catch (_) {} },
+        set src(_) {},
+        addEventListener: source.addEventListener.bind(source),
+      };
+      // Set module-level fanfareGain so fadeFanfareOut can fade gracefully
+      fanfareGain = gain;
+      console.log("Chair spirits: started fanfare via AudioBufferSourceNode (Safari)");
     } else {
       // Direct gesture call (e.g. timeline play button) — try fresh audio
       console.log("Chair spirits: Safari — trying fresh audio from gesture");
@@ -2243,22 +2254,28 @@ export async function runTrailerSequence() {
   window._trailerRunning = true;
   console.log("Chair spirits: trailer sequence started");
 
-  // Pre-create fanfare audio IMMEDIATELY within the user gesture window.
-  // Safari requires audio.play() to be called synchronously from a gesture —
-  // by the time the fanfare moment arrives (~20s later), the gesture is gone.
-  // We start it muted now, then unmute + seek when the fanfare begins.
-  let preStartedAudio = null;
+  // Safari requires audio to originate from a user gesture. By the time the
+  // fanfare moment arrives (~20s later), the gesture window is long gone.
+  // Solution: unlock an AudioContext NOW (during gesture) and pre-fetch +
+  // decode the fanfare audio into an AudioBuffer. At fanfare time we play it
+  // via AudioBufferSourceNode — no HTMLAudioElement needed, no gesture needed,
+  // and nothing plays audibly during the pre-load phase.
+  let safariPreloadCtx = null;
+  let safariPreloadBuffer = null;
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   if (isSafari) {
-    const audio = new Audio("assets/audio/fanfare_002.mp3");
-    audio.volume = 0; // silent until fanfare moment
-    audio.loop = true; // keep it alive until we need it
     try {
-      await audio.play();
-      preStartedAudio = audio;
-      console.log("Chair spirits: pre-started silent audio for Safari gesture unlock");
+      // Create & unlock AudioContext within the user gesture
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      // Fetch + decode fanfare into an AudioBuffer (completely silent)
+      const response = await fetch("assets/audio/fanfare_002.mp3");
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+      safariPreloadCtx = ctx;
+      safariPreloadBuffer = audioBuffer;
+      console.log("Chair spirits: AudioContext unlocked + fanfare buffer decoded for Safari");
     } catch (e) {
-      console.warn("Chair spirits: Safari audio pre-start failed:", e.message);
+      console.warn("Chair spirits: Safari audio pre-load failed:", e.message);
     }
   }
 
@@ -2412,7 +2429,7 @@ export async function runTrailerSequence() {
 
   // 9. Start fanfare IMMEDIATELY — room is dark, music begins
   console.log("Chair spirits: starting fanfare word sequence");
-  await playFanfareWithWords({ preStartedAudio });
+  await playFanfareWithWords({ safariPreloadCtx, safariPreloadBuffer });
 
   console.log("Chair spirits: fanfare word sequence complete");
 
