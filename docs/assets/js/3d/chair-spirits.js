@@ -142,8 +142,8 @@ export const fanfareCues = {
   cue14: { time: 11850, word: "FULLDOME\nFILMS",         line: 2, flash:  800 },
   cue15: { time: 13379, word: "INSTALLATIONS",            line: 2, flash:  450 },
   cue16: { time: 13849, word: "AV LIVE",                  line: 2, flash:  800 },
-  cue17: { time: 15447, word: "APPLY\nLATEST\n8 MARCH", line: 2, flash:  350 },
-  cue18: { time: 15926, word: "APPLY\nLATEST\n8 MARCH", line: 2, flash: 2900 },
+  cue17: { time: 15447, word: "DEADLINE\n8 MARCH", line: 2, flash:  350 },
+  cue18: { time: 15926, word: "DEADLINE\n8 MARCH", line: 2, flash: 2900 },
   cue19: { time: 19104, word: null,                       line: 2, flash: 4000 },
 };
 
@@ -1894,7 +1894,7 @@ const CENTER_SECTOR = 16.5;
 const FINAL_LAYOUT = {
   1: "DOME",
   2: "DREAMING",
-  3: "APPLY NOW",
+  3: "APPLYNOW",
   4: "",
   5: "",
 };
