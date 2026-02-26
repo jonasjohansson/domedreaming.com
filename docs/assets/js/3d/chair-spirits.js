@@ -131,8 +131,8 @@ export const fanfareCues = {
   cue3:  { time:  2478, word: "DREAMING",                line: 2, flash: 1000 },
   cue4:  { time:  3517, word: "DREAMING",                line: 2, flash:  300 },
   cue5:  { time:  3880, word: "DREAMING",                line: 2, flash:  600 },
-  cue6:  { time:  4556, word: "FULLDOME\nFILM FESTIVAL",  line: 2, flash:  400 },
-  cue7:  { time:  5056, word: "FULLDOME\nFILM FESTIVAL",  line: 2, flash:  800 },
+  cue6:  { time:  4556, word: "FULLDOME\nFILM\nFESTIVAL", line: 2, flash:  400 },
+  cue7:  { time:  5056, word: "FULLDOME\nFILM\nFESTIVAL", line: 2, flash:  800 },
   cue8:  { time:  6365, word: "OPEN CALL\nFOR ARTISTS",  line: 2, flash:  400 },
   cue9:  { time:  6786, word: "OPEN CALL\nFOR ARTISTS",  line: 2, flash:  500 },
   cue10: { time:  8473, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  500 },
@@ -142,8 +142,8 @@ export const fanfareCues = {
   cue14: { time: 11850, word: "FULLDOME\nFILMS",         line: 2, flash:  800 },
   cue15: { time: 13379, word: "INSTALLATIONS",            line: 2, flash:  450 },
   cue16: { time: 13849, word: "AV LIVE",                  line: 2, flash:  800 },
-  cue17: { time: 15447, word: "APPLY\n8TH OF MARCH",    line: 2, flash:  350 },
-  cue18: { time: 15926, word: "APPLY\n8TH OF MARCH",    line: 2, flash: 2900 },
+  cue17: { time: 15447, word: "APPLY\n8 MARCH",    line: 2, flash:  350 },
+  cue18: { time: 15926, word: "APPLY\n8 MARCH",    line: 2, flash: 2900 },
   cue19: { time: 19104, word: null,                       line: 2, flash: 4000 },
 };
 
@@ -162,7 +162,7 @@ const WORD_COLORS = {
   "FULLDOME\nFILMS": "#87CEEB",
   "INSTALLATIONS": "#F0E68C",
   "AV LIVE": "#FFA07A",
-  "APPLY\n8TH OF MARCH": "#FF69B4",
+  "APPLY\n8 MARCH": "#FF69B4",
   null: "#FFFFFF",
 };
 
@@ -1847,15 +1847,21 @@ function flashSpiritLights(duration) {
   const peakExposureBoost = 0.3; // exposure boost on top of dimmed level
   const dimmedExposure = savedExposure ? savedExposure * 0.2 : 0.2;
 
+  // Delay by one frame to match the text brightness pump (which also delays one frame)
+  requestAnimationFrame(() => {
+  const actualStart = performance.now();
   function tick() {
     if (gen !== spiritFlashGen) return;
-    const t = Math.min((performance.now() - start) / duration, 1);
+    const t = Math.min((performance.now() - actualStart) / duration, 1);
+    // Identical easing to the text brightness pulse in flashWordOnDome
     let factor;
-    if (t < 0.1) {
-      factor = t / 0.1; // quick ramp up
+    if (t < 0.15) {
+      factor = (t / 0.15) * 1.2;            // ramp to 1.2 overshoot
+    } else if (t < 0.4) {
+      factor = 1.2 - (t - 0.15) / 0.25 * 0.2; // settle 1.2 → 1.0
     } else {
-      factor = 1 - (t - 0.1) / 0.9;
-      factor *= factor; // ease-out decay
+      factor = 1.0 * (1 - (t - 0.4) / 0.6);
+      factor *= factor;                      // quadratic fade to 0
     }
     spiritFlashMultiplier = 1.0 + (peakMultiplier - 1.0) * factor;
     // Pulse ambient light so spirits illuminate surroundings
@@ -1873,6 +1879,7 @@ function flashSpiritLights(duration) {
     }
   }
   tick();
+  }); // end requestAnimationFrame delay
 }
 
 /** Pulse generation counter — only the latest pulse controls brightness */
@@ -1887,8 +1894,8 @@ const CENTER_SECTOR = 16.5;
 const FINAL_LAYOUT = {
   1: "DOME DREAMING",
   2: "OPEN CALL",
-  3: "FOR DREAMERS",
-  4: "APPLY NOW",
+  3: "APPLY NOW",
+  4: "",
   5: "",
 };
 
@@ -1901,7 +1908,7 @@ function centerTextOnLine(lineIndex, text) {
 }
 
 function flashWordOnDome(word, line = 3, flashDuration = 800) {
-  // Pulse settled spirit lights in sync with the dome flash
+  // Pulse settled spirit lights — same duration as text for perfect sync
   flashSpiritLights(flashDuration);
 
   const screenMat = getScreenMaterial();
@@ -1921,11 +1928,8 @@ function flashWordOnDome(word, line = 3, flashDuration = 800) {
     for (let i = 1; i <= 5; i++) {
       setTextContent(i, "");
     }
-    if (parts.length === 1) {
-      centerTextOnLine(line, word);
-    } else {
-      centerTextOnLine(line, parts[0]);
-      centerTextOnLine(line + 1, parts[1]);
+    for (let p = 0; p < parts.length; p++) {
+      centerTextOnLine(line + p, parts[p]);
     }
   } else {
     // ALL mode: show all words together on their final lines

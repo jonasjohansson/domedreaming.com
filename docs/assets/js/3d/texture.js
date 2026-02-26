@@ -671,6 +671,10 @@ export function setupPolarGridGUI() {
   cameraRotationFolder.add(camera.rotation, "x", -Math.PI, Math.PI, 0.01).name("X").listen();
   cameraRotationFolder.close();
 
+  // FOV
+  cameraFolder.add(camera, "fov", 10, 150, 1).name("FOV").listen()
+    .onChange(() => camera.updateProjectionMatrix());
+
   cameraFolder.close();
 
   // ============ TRAILER GROUP ============
