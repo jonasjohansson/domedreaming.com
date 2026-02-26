@@ -19,9 +19,9 @@ function updateSwVersion(filePath) {
     // Read the service worker file
     let swContent = fs.readFileSync(filePath, "utf8");
 
-    // Replace BUILD_TIMESTAMP with actual timestamp
+    // Replace BUILD_TIMESTAMP or any previous timestamp with actual timestamp
     const timestamp = Date.now();
-    swContent = swContent.replace(/BUILD_TIMESTAMP/g, timestamp);
+    swContent = swContent.replace(/const CACHE_VERSION = "[^"]*"/, `const CACHE_VERSION = "${timestamp}"`);
 
     // Write back to file
     fs.writeFileSync(filePath, swContent, "utf8");
