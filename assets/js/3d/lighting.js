@@ -16,12 +16,6 @@ export const lightingSettings = {
   directLightEnabled: true,
   directIntensity: 1.5,
   directColor: "#ffffff",
-  // Section gradient settings
-  gradientStart: 20,
-  gradientEnd: 80,
-  // Section 1 & 2 gradient stops
-  section1FadeStart: 70, // Where section 1 starts fading to floor color
-  section2FadeEnd: 30, // Where section 2 finishes fading to white
 };
 
 // Tone mapping options
@@ -154,24 +148,3 @@ export function getToneMappingOptions() {
   return Object.keys(TONE_MAPPING_OPTIONS);
 }
 
-// Section gradient controls
-export function setGradientStart(value) {
-  lightingSettings.gradientStart = value;
-  document.documentElement.style.setProperty('--bg-gradient-start', `${value}%`);
-}
-
-export function setGradientEnd(value) {
-  lightingSettings.gradientEnd = value;
-  document.documentElement.style.setProperty('--bg-gradient-end', `${value}%`);
-}
-
-// Section 1 & 2 gradient stops
-export function setSection1FadeStart(value) {
-  lightingSettings.section1FadeStart = value;
-  document.documentElement.style.setProperty('--section1-fade-start', `${value}%`);
-}
-
-export function setSection2FadeEnd(value) {
-  lightingSettings.section2FadeEnd = value;
-  document.documentElement.style.setProperty('--section2-fade-end', `${value}%`);
-}

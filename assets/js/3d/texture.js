@@ -9,7 +9,7 @@ import { generatePolarGridTexture, polarGridSettings, startPulseAnimation, stopP
 import { createPulseShaderMaterial, startPulseShaderAnimation, stopPulseShaderAnimation, updateBaseTexture, updateShaderRotation } from "./pulse-shader.js";
 export { updateShaderRotation };
 import { audioSettings, startAudio, stopAudio, setMasterVolume, setReverbWet, setSpatialSpread, initAudio, setScrambleTrigger } from "./pulse-audio.js";
-import { lightingSettings, setAmbientIntensity, setAmbientColor, setFogEnabled, setFogColor, setFogNear, setFogFar, setToneMapping, setExposure, setDirectLightEnabled, setDirectIntensity, setDirectColor, getToneMappingOptions, setGradientStart, setGradientEnd, setSection1FadeStart, setSection2FadeEnd } from "./lighting.js";
+import { lightingSettings, setAmbientIntensity, setAmbientColor, setFogEnabled, setFogColor, setFogNear, setFogFar, setToneMapping, setExposure, setDirectLightEnabled, setDirectIntensity, setDirectColor, getToneMappingOptions } from "./lighting.js";
 
 // Connect audio ticks to scramble effect
 setScrambleTrigger(triggerScrambleBurst);
@@ -590,16 +590,6 @@ export function setupPolarGridGUI() {
     .name("Far")
     .onChange((v) => setFogFar(v));
   fogFolder.close();
-
-  // Section gradient subfolder
-  const gradientFolder = lightingFolder.addFolder("Section Gradient");
-  gradientFolder.add(lightingSettings, "section1FadeStart", 0, 100, 5)
-    .name("Section 1 Fade %")
-    .onChange((v) => setSection1FadeStart(v));
-  gradientFolder.add(lightingSettings, "section2FadeEnd", 0, 100, 5)
-    .name("Section 2 Fade %")
-    .onChange((v) => setSection2FadeEnd(v));
-  gradientFolder.close();
 
   lightingFolder.close();
 
