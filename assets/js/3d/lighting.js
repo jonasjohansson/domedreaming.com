@@ -5,10 +5,10 @@ import { scene, renderer } from "./scene.js";
 export const lightingSettings = {
   ambientIntensity: 1.0,
   ambientColor: "#ffffff",
-  fogEnabled: false,
+  fogEnabled: true,
   fogColor: "#1a1a1a",
-  fogNear: 20,
-  fogFar: 60,
+  fogNear: 1,
+  fogFar: 20,
   // Renderer/exposure settings
   toneMapping: "Linear",
   exposure: 1.5,
