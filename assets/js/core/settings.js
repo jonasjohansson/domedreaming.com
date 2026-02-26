@@ -336,14 +336,23 @@ export async function loadSettings(forceFromJSON = false) {
 }
 
 /**
- * Default colors
- * Primary (Main Structure): #667380, Secondary (Chairs): #8c5261, Tertiary (Floor): #a68540
+ * Two color palettes, randomly chosen on each page load.
+ * Palette A — cool steel: Primary #667380, Secondary #8c5261, Tertiary #a68540
+ * Palette B — warm earth: Primary #7a736b, Secondary #a68540, Tertiary #996652
  */
-const DEFAULT_COLORS = {
-  primary: { r: 0.4, g: 0.45, b: 0.5 },     // #667380 - Main Structure
-  secondary: { r: 0.55, g: 0.32, b: 0.38 }, // #8c5261 - Chairs
-  tertiary: { r: 0.65, g: 0.52, b: 0.25 },  // #a68540 - Floor
-};
+const PALETTES = [
+  {
+    primary: { r: 0.4, g: 0.45, b: 0.5 },     // #667380 - Main Structure
+    secondary: { r: 0.55, g: 0.32, b: 0.38 }, // #8c5261 - Chairs
+    tertiary: { r: 0.65, g: 0.52, b: 0.25 },  // #a68540 - Floor
+  },
+  {
+    primary: { r: 0.478, g: 0.451, b: 0.420 },  // #7a736b - Main Structure
+    secondary: { r: 0.651, g: 0.522, b: 0.251 }, // #a68540 - Chairs
+    tertiary: { r: 0.600, g: 0.400, b: 0.322 },  // #996652 - Floor
+  },
+];
+const DEFAULT_COLORS = PALETTES[Math.floor(Math.random() * PALETTES.length)];
 
 // Mesh name to color key mapping
 const MESH_COLOR_MAP = {

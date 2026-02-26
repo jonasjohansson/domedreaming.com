@@ -1,37 +1,13 @@
 <script type="module" src="assets/js/app.bundle.js"></script>
 
-<!-- Service Worker Registration -->
+<!-- Unregister any old service workers and clear their caches -->
 <script>
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then((registration) => {
-          console.log("[Service Worker] Registered:", registration.scope);
-
-          // Check for updates on every page load
-          registration.update();
-
-          // Check for updates
-          registration.addEventListener("updatefound", () => {
-            const newWorker = registration.installing;
-            newWorker.addEventListener("statechange", () => {
-              if (newWorker.state === "installed") {
-                if (navigator.serviceWorker.controller) {
-                  // New service worker available, reload to activate it
-                  console.log("[Service Worker] New version available, reloading...");
-                  window.location.reload();
-                } else {
-                  // First time installation
-                  console.log("[Service Worker] Installed");
-                }
-              }
-            });
-          });
-        })
-        .catch((error) => {
-          console.warn("[Service Worker] Registration failed:", error);
-        });
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+      registrations.forEach((r) => r.unregister());
+    });
+    caches.keys().then((names) => {
+      names.forEach((name) => caches.delete(name));
     });
   }
 </script>

@@ -165,11 +165,11 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
  * Call this after colors change to update the screen texture
  */
 export function regeneratePolarGridTexture() {
-  if (!screenObject) return;
+  if (!screenObject) return Promise.resolve();
   // Stop current animations before regenerating
   stopPulseAnimation();
   stopPulseShaderAnimation();
-  loadDefaultScreenTexture();
+  return loadDefaultScreenTexture();
 }
 
 // Store reference to GUI

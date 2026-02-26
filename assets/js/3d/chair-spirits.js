@@ -19,6 +19,7 @@ import { renderer } from "./scene.js";
 import { getNavMeshQuery } from "./navmesh.js";
 import { getMaterial } from "./utils.js";
 import { initAudio, setMasterVolume, stopAudio as stopPulseAudio } from "./pulse-audio.js";
+import { playFanfareSynth, FANFARE_DURATION_MS } from "./fanfare-synth.js";
 import { textureRotationSettings } from "../core/settings.js";
 import {
   scrambleToNewText,
@@ -81,6 +82,13 @@ function ensureSpiritInstancedMesh() {
   spiritsGroup.add(spiritInstancedMesh);
 }
 
+/** PointLights for a select few spirits — illuminate surroundings */
+const SPIRIT_LIGHT_COUNT = 8; // how many spirits get real lights
+const SPIRIT_LIGHT_INTENSITY = 0.6; // settled intensity
+const SPIRIT_LIGHT_DISTANCE = 3; // light range
+const SPIRIT_LIGHT_DECAY = 2; // physical light falloff
+const spiritLights = []; // { light, spiritIdx }
+
 /** Saved light intensities for restore */
 let savedAmbient = null;
 let savedDirect = null;
@@ -113,41 +121,47 @@ const DEFAULT_TRAILER_VIDEO = "assets/video/ParallelPromoLQ.mp4";
  * Each cue: { time (ms), word, line (1-5), flash (ms) }
  * word=null means flash all accumulated words. line=0 for null words.
  */
+/**
+ * Fanfare cues — derived from MIDI tick positions in fanfare-synth.js.
+ * Words with \n are displayed across two lines (split in flashWordOnDome).
+ */
 export const fanfareCues = {
-  cue1:  { time:   310, word: "DOME",          line: 1, flash:  400 },
-  cue2:  { time:   660, word: "DOME",          line: 1, flash:  800 },
-  cue3:  { time:  1535, word: "DREAMING",      line: 1, flash:  250 },
-  cue4:  { time:  1899, word: "DREAMING",      line: 1, flash:  800 },
-  cue5:  { time:  3820, word: "DOME DREAMING", line: 1, flash:  250 },
-  cue6:  { time:  4161, word: "DOME DREAMING", line: 1, flash: 1000 },
-  cue7:  { time:  5219, word: "OPEN CALL",     line: 2, flash:  500 },
-  cue8:  { time:  5729, word: "OPEN CALL",     line: 2, flash:  800 },
-  cue9:  { time:  6853, word: "OPEN CALL",     line: 2, flash: 1500 },
-  cue10: { time:  9650, word: "LIVE NOW",      line: 3, flash:  800 },
-  cue11: { time: 10816, word: "LIVE NOW",      line: 3, flash: 1000 },
-  cue12: { time: 12440, word: "APPLY",         line: 4, flash:  500 },
-  cue13: { time: 13250, word: "APPLY!",        line: 4, flash:  900 },
-  cue14: { time: 14920, word: "APPLY!!",       line: 4, flash:  450 },
-  cue15: { time: 15570, word: "APPLY!!!",      line: 4, flash:  850 },
-  cue16: { time: 18300, word: null,            line: 0, flash: 2750 },
-  cue17: { time: 21744, word: null,            line: 0, flash:  650 },
+  cue1:  { time:   320, word: "DOME",                    line: 2, flash:  800 },
+  cue2:  { time:  1219, word: "DOME",                    line: 2, flash:  800 },
+  cue3:  { time:  2478, word: "DREAMING",                line: 2, flash: 1000 },
+  cue4:  { time:  3517, word: "DREAMING",                line: 2, flash:  300 },
+  cue5:  { time:  3880, word: "DREAMING",                line: 2, flash:  600 },
+  cue6:  { time:  4556, word: "DOME DREAMING",           line: 2, flash:  400 },
+  cue7:  { time:  5056, word: "DOME DREAMING",           line: 2, flash:  800 },
+  cue8:  { time:  6365, word: "OPEN CALL\nFOR ARTISTS",  line: 2, flash:  400 },
+  cue9:  { time:  6786, word: "OPEN CALL\nFOR ARTISTS",  line: 2, flash:  500 },
+  cue10: { time:  8473, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  500 },
+  cue11: { time:  9140, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  950 },
+  cue12: { time: 11290, word: "WORKS IN\nPROGRESS",      line: 2, flash:  450 },
+  cue13: { time: 11850, word: "FULLDOME\nFILMS",         line: 2, flash:  800 },
+  cue14: { time: 13379, word: "INSTALLATIONS",            line: 2, flash:  450 },
+  cue15: { time: 13849, word: "AV LIVE",                  line: 2, flash:  800 },
+  cue16: { time: 15447, word: "APPLY\n8TH OF MARCH", line: 2, flash:  350 },
+  cue17: { time: 15926, word: "APPLY\n8TH OF MARCH", line: 2, flash: 2900 },
+  cue18: { time: 19104, word: null,                       line: 2, flash: 4000 },
 };
 
 // ---------------------------------------------------------------------------
 // Timeline visualisation overlay
 // ---------------------------------------------------------------------------
 
-const TIMELINE_DURATION = 24000; // ms — total timeline length for display
+const TIMELINE_DURATION = 23500; // ms — total timeline length for display
 const WORD_COLORS = {
   "DOME": "#FF6B6B",
   "DREAMING": "#4ECDC4",
   "DOME DREAMING": "#FF6B6B",
-  "OPEN CALL": "#FFE66D",
-  "LIVE NOW": "#A8E6CF",
-  "APPLY": "#DDA0DD",
-  "APPLY!": "#DDA0DD",
-  "APPLY!!": "#DDA0DD",
-  "APPLY!!!": "#DDA0DD",
+  "OPEN CALL\nFOR ARTISTS": "#FFE66D",
+  "SUBMISSIONS\nOPEN": "#A8E6CF",
+  "WORKS IN\nPROGRESS": "#DDA0DD",
+  "FULLDOME\nFILMS": "#87CEEB",
+  "INSTALLATIONS": "#F0E68C",
+  "AV LIVE": "#FFA07A",
+  "APPLY\n8TH OF MARCH": "#FF69B4",
   null: "#FFFFFF",
 };
 
@@ -155,49 +169,12 @@ let timelineOverlay = null;
 let timelinePlayhead = null;
 let timelineAnimId = null;
 let timelineStartTime = null;
+/** Audio element the playhead should sync to (when available) */
+let timelineAudioRef = null;
 /** Pause state for timeline playback */
 let timelinePaused = false;
 let timelinePausedElapsed = 0;
 
-function saveCuesToStorage() {
-  try {
-    const data = {};
-    for (const [key, cue] of Object.entries(fanfareCues)) {
-      data[key] = { time: cue.time, flash: cue.flash, line: cue.line };
-    }
-    localStorage.setItem("fanfareCues", JSON.stringify(data));
-    localStorage.setItem("fanfareCuesVersion", String(CUES_VERSION));
-  } catch (e) {}
-}
-
-/** Bump this when hardcoded cue defaults change to invalidate stale localStorage */
-const CUES_VERSION = 9;
-
-function loadCuesFromStorage() {
-  try {
-    const ver = localStorage.getItem("fanfareCuesVersion");
-    if (ver !== String(CUES_VERSION)) {
-      // Stale or missing — clear old data and use hardcoded defaults
-      localStorage.removeItem("fanfareCues");
-      localStorage.setItem("fanfareCuesVersion", String(CUES_VERSION));
-      return;
-    }
-    const raw = localStorage.getItem("fanfareCues");
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    for (const [key, saved] of Object.entries(data)) {
-      if (fanfareCues[key]) {
-        if (saved.time !== undefined) fanfareCues[key].time = saved.time;
-        if (saved.flash !== undefined) fanfareCues[key].flash = saved.flash;
-        if (saved.line !== undefined) fanfareCues[key].line = saved.line;
-      }
-    }
-    console.log("Loaded fanfare cues from localStorage");
-  } catch (e) {}
-}
-
-// Load saved cues on module init
-loadCuesFromStorage();
 
 export function toggleTimeline() {
   if (timelineOverlay) {
@@ -209,14 +186,14 @@ export function toggleTimeline() {
 
 /** Waveform data cache */
 let waveformData = null; // { peaks: Float32Array, durationMs: number }
-const WAVEFORM_PEAKS_COUNT = 2000;
-/** Playback rate used for the fanfare (2 semitones down) */
-const FANFARE_PLAYBACK_RATE = Math.pow(2, -2 / 12); // ~0.891
+const WAVEFORM_PEAKS_COUNT = 800;
+/** Playback rate used for the fanfare (native 112 BPM) */
+const FANFARE_PLAYBACK_RATE = 1.0;
 
 async function decodeWaveform() {
   if (waveformData) return waveformData;
   try {
-    const resp = await fetch("assets/audio/fanfare_002.mp3");
+    const resp = await fetch("assets/audio/beepbox-song.mp3");
     const buf = await resp.arrayBuffer();
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const decoded = await audioCtx.decodeAudioData(buf);
@@ -285,7 +262,7 @@ function openTimeline() {
     <style>
       #fanfare-timeline {
         position: fixed; bottom: 0; left: 0; right: 0;
-        height: 320px; background: rgba(0,0,0,0.94);
+        height: 640px; background: rgba(0,0,0,0.94);
         z-index: 10000; font-family: monospace; color: #ccc;
         user-select: none; border-top: 1px solid #333;
         display: flex; flex-direction: column;
@@ -323,6 +300,9 @@ function openTimeline() {
       #fanfare-timeline .tl-cue {
         position: absolute;
       }
+      #fanfare-timeline .tl-cue.selected .tl-cue-marker {
+        outline: 2px solid #fff; outline-offset: 1px;
+      }
       #fanfare-timeline .tl-cue-marker {
         width: 7px; background: currentColor; position: absolute; top: 0;
         border-radius: 1px; cursor: ew-resize; left: -2px;
@@ -350,8 +330,11 @@ function openTimeline() {
       }
     </style>
     <div class="tl-header">
-      <span>Fanfare Cue Timeline — drag markers | right-click flash | double-click to seek</span>
+      <span>Click cue to select | drag to move | right-click flash | dbl-click to seek</span>
       <div>
+        <button id="tl-dup" disabled>+ Dup</button>
+        <button id="tl-del" disabled>- Del</button>
+        <button id="tl-audio">Audio Only</button>
         <button id="tl-play">Play</button>
         <button id="tl-copy">Copy</button>
         <button id="tl-reset">Reset</button>
@@ -386,170 +369,234 @@ function openTimeline() {
     }
   });
 
-  // Draw second ticks
-  for (let s = 0; s <= TIMELINE_DURATION / 1000; s++) {
-    const xPx = (s * 1000 / TIMELINE_DURATION) * TRACK_PX_WIDTH;
+  // Draw beat grid (112 BPM)
+  const beatMs = 60000 / 112; // ~535.7ms per beat
+  for (let beat = 0; beat * beatMs <= TIMELINE_DURATION; beat++) {
+    const ms = beat * beatMs;
+    const xPx = (ms / TIMELINE_DURATION) * TRACK_PX_WIDTH;
+    const isBar = beat % 4 === 0;
     const tick = document.createElement("div");
     tick.className = "tl-tick";
     tick.style.left = xPx + "px";
+    tick.style.background = isBar ? "#555" : "#2a2a2a";
     track.appendChild(tick);
-    const label = document.createElement("div");
-    label.className = "tl-tick-label";
-    label.style.left = xPx + "px";
-    label.textContent = s + "s";
-    track.appendChild(label);
+    if (isBar) {
+      const label = document.createElement("div");
+      label.className = "tl-tick-label";
+      label.style.left = xPx + "px";
+      label.textContent = (ms / 1000).toFixed(1) + "s (beat " + beat + ")";
+      track.appendChild(label);
+    }
   }
 
-  // Assign row positions per unique word (for vertical stacking)
-  const wordRows = {};
-  const uniqueWords = [...new Set(Object.values(fanfareCues).map(c => c.word))];
-  uniqueWords.forEach((w, i) => { wordRows[w] = i; });
-  const rowCount = uniqueWords.length;
-  const rowH = Math.min((trackH - 20) / rowCount, 45); // cap row height
+  // --- Cue selection state ---
+  let selectedKey = null;
+  const dupBtn = el.querySelector("#tl-dup");
+  const delBtn = el.querySelector("#tl-del");
 
-  // Draw cues
-  for (const [key, cue] of Object.entries(fanfareCues)) {
-    const row = wordRows[cue.word];
-    const color = WORD_COLORS[cue.word] || "#888";
-    const xPx = (cue.time / TIMELINE_DURATION) * TRACK_PX_WIDTH;
-    const topPx = 16 + row * rowH;
+  function selectCue(key) {
+    selectedKey = key;
+    track.querySelectorAll(".tl-cue").forEach((g) => g.classList.toggle("selected", g.dataset.key === key));
+    dupBtn.disabled = !key;
+    delBtn.disabled = !key;
+  }
 
-    const group = document.createElement("div");
-    group.className = "tl-cue";
-    group.style.left = xPx + "px";
-    group.style.top = topPx + "px";
-    group.style.color = color;
-    group.dataset.key = key;
+  // Helper to renumber cue keys after add/remove
+  function renumberCues() {
+    const sorted = Object.values(fanfareCues).sort((a, b) => a.time - b.time);
+    // Clear all keys
+    for (const k of Object.keys(fanfareCues)) delete fanfareCues[k];
+    sorted.forEach((cue, i) => { fanfareCues[`cue${i + 1}`] = cue; });
+  }
 
-    // Flash duration bar
-    const flash = document.createElement("div");
-    flash.className = "tl-cue-flash";
-    flash.style.height = (rowH - 2) + "px";
-    flash.style.left = "0";
+  // --- Render all cues (called on open and after add/remove) ---
+  function renderCues() {
+    // Remove existing cue elements
+    track.querySelectorAll(".tl-cue").forEach((g) => g.remove());
 
-    // Resize handle on right edge of flash bar
-    const flashHandle = document.createElement("div");
-    flashHandle.className = "tl-cue-flash-handle";
-    flashHandle.style.height = (rowH - 2) + "px";
-    flash.appendChild(flashHandle);
+    const wordRows = {};
+    const uniqueWords = [...new Set(Object.values(fanfareCues).map(c => c.word))];
+    uniqueWords.forEach((w, i) => { wordRows[w] = i; });
+    const rowCount = uniqueWords.length;
+    const rowH = Math.min((trackH - 20) / rowCount, 80);
 
-    // Marker line
-    const marker = document.createElement("div");
-    marker.className = "tl-cue-marker";
-    marker.style.height = (rowH - 2) + "px";
+    for (const [key, cue] of Object.entries(fanfareCues)) {
+      const row = wordRows[cue.word];
+      const color = WORD_COLORS[cue.word] || "#888";
+      const xPx = (cue.time / TIMELINE_DURATION) * TRACK_PX_WIDTH;
+      const topPx = 16 + row * rowH;
 
-    // Label
-    const label = document.createElement("div");
-    label.className = "tl-cue-label";
-    label.style.top = "-1px";
-    label.style.left = "8px";
-    label.style.color = color;
-    label.textContent = cue.word || "ALL";
+      const group = document.createElement("div");
+      group.className = "tl-cue" + (key === selectedKey ? " selected" : "");
+      group.style.left = xPx + "px";
+      group.style.top = topPx + "px";
+      group.style.color = color;
+      group.dataset.key = key;
 
-    // Time + flash info
-    const timeLabel = document.createElement("div");
-    timeLabel.className = "tl-cue-time";
-    timeLabel.style.bottom = "-12px";
-    timeLabel.style.left = "0";
-    const updateTimeLabel = () => {
-      timeLabel.textContent = (cue.time / 1000).toFixed(2) + "s / " + cue.flash + "ms";
-    };
-    updateTimeLabel();
+      const flash = document.createElement("div");
+      flash.className = "tl-cue-flash";
+      flash.style.height = (rowH - 2) + "px";
+      flash.style.left = "0";
 
-    group.appendChild(flash);
-    group.appendChild(marker);
-    group.appendChild(label);
-    group.appendChild(timeLabel);
-    track.appendChild(group);
+      const flashHandle = document.createElement("div");
+      flashHandle.className = "tl-cue-flash-handle";
+      flashHandle.style.height = (rowH - 2) + "px";
+      flash.appendChild(flashHandle);
 
-    // Recalc flash width in px (fixed-width track, no % needed)
-    const updateFlashWidth = () => {
-      flash.style.width = (cue.flash / TIMELINE_DURATION * TRACK_PX_WIDTH) + "px";
-    };
-    updateFlashWidth();
+      const marker = document.createElement("div");
+      marker.className = "tl-cue-marker";
+      marker.style.height = (rowH - 2) + "px";
 
-    // Update group position from cue time
-    const updateGroupPos = () => {
-      group.style.left = (cue.time / TIMELINE_DURATION * TRACK_PX_WIDTH) + "px";
-    };
+      const label = document.createElement("div");
+      label.className = "tl-cue-label";
+      label.style.top = "-1px";
+      label.style.left = "8px";
+      label.style.color = color;
+      label.textContent = cue.word ? cue.word.replace(/\n/g, " / ") : "ALL";
 
-    // Drag marker to reposition cue time
-    let dragging = false;
-    // Drag flash handle to resize flash duration
-    let resizing = false;
+      const timeLabel = document.createElement("div");
+      timeLabel.className = "tl-cue-time";
+      timeLabel.style.bottom = "-12px";
+      timeLabel.style.left = "0";
+      const updateTimeLabel = () => {
+        timeLabel.textContent = (cue.time / 1000).toFixed(2) + "s / " + cue.flash + "ms";
+      };
+      updateTimeLabel();
 
-    flashHandle.addEventListener("mousedown", (e) => {
-      resizing = true;
-      e.preventDefault();
-      e.stopPropagation();
-    });
-    marker.addEventListener("mousedown", (e) => {
-      dragging = true;
-      e.preventDefault();
-      e.stopPropagation();
-    });
-    group.addEventListener("contextmenu", (e) => {
-      e.preventDefault();
-      // Remove any existing inline editor
-      const old = track.querySelector(".tl-inline-edit");
-      if (old) old.remove();
-      // Create inline input at the cue position
-      const input = document.createElement("input");
-      input.className = "tl-inline-edit";
-      input.type = "number";
-      input.value = cue.flash;
-      input.min = 50;
-      input.step = 50;
-      input.style.cssText = `
-        position: absolute; top: ${topPx - 18}px;
-        left: ${group.style.left};
-        width: 60px; background: #222; color: #fff; border: 1px solid #666;
-        font: 11px monospace; padding: 2px 4px; z-index: 20; outline: none;
-      `;
-      track.appendChild(input);
-      input.focus();
-      input.select();
-      const commit = () => {
-        const v = parseInt(input.value);
-        if (!isNaN(v) && v >= 50) {
-          cue.flash = v;
+      group.appendChild(flash);
+      group.appendChild(marker);
+      group.appendChild(label);
+      group.appendChild(timeLabel);
+      track.appendChild(group);
+
+      const updateFlashWidth = () => {
+        flash.style.width = (cue.flash / TIMELINE_DURATION * TRACK_PX_WIDTH) + "px";
+      };
+      updateFlashWidth();
+
+      const updateGroupPos = () => {
+        group.style.left = (cue.time / TIMELINE_DURATION * TRACK_PX_WIDTH) + "px";
+      };
+
+      let dragging = false;
+      let resizing = false;
+
+      flashHandle.addEventListener("mousedown", (e) => {
+        resizing = true;
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      marker.addEventListener("mousedown", (e) => {
+        dragging = true;
+        selectCue(key);
+        e.preventDefault();
+        e.stopPropagation();
+      });
+      // Click anywhere on the cue group to select it
+      group.addEventListener("click", (e) => {
+        selectCue(key);
+        e.stopPropagation();
+      });
+      group.addEventListener("contextmenu", (e) => {
+        e.preventDefault();
+        selectCue(key);
+        const old = track.querySelector(".tl-inline-edit");
+        if (old) old.remove();
+        const input = document.createElement("input");
+        input.className = "tl-inline-edit";
+        input.type = "number";
+        input.value = cue.flash;
+        input.min = 50;
+        input.step = 50;
+        input.style.cssText = `
+          position: absolute; top: ${topPx - 18}px;
+          left: ${group.style.left};
+          width: 60px; background: #222; color: #fff; border: 1px solid #666;
+          font: 11px monospace; padding: 2px 4px; z-index: 20; outline: none;
+        `;
+        track.appendChild(input);
+        input.focus();
+        input.select();
+        const commit = () => {
+          const v = parseInt(input.value);
+          if (!isNaN(v) && v >= 50) {
+            cue.flash = v;
+            updateFlashWidth();
+            updateTimeLabel();
+
+          }
+          input.remove();
+        };
+        input.addEventListener("keydown", (ev) => {
+          if (ev.key === "Enter") commit();
+          if (ev.key === "Escape") input.remove();
+        });
+        input.addEventListener("blur", commit);
+      });
+      window.addEventListener("mousemove", (e) => {
+        if (resizing) {
+          const groupLeft = group.getBoundingClientRect().left;
+          const dx = e.clientX - groupLeft;
+          const newFlash = Math.max(50, Math.round((dx / TRACK_PX_WIDTH) * TIMELINE_DURATION / 50) * 50);
+          cue.flash = newFlash;
           updateFlashWidth();
           updateTimeLabel();
-          saveCuesToStorage();
+        } else if (dragging) {
+          const rect = track.getBoundingClientRect();
+          const x = Math.max(0, Math.min(e.clientX - rect.left, TRACK_PX_WIDTH));
+          const newTime = Math.round((x / TRACK_PX_WIDTH) * TIMELINE_DURATION);
+          cue.time = newTime;
+          updateGroupPos();
+          updateTimeLabel();
         }
-        input.remove();
-      };
-      input.addEventListener("keydown", (ev) => {
-        if (ev.key === "Enter") commit();
-        if (ev.key === "Escape") input.remove();
       });
-      input.addEventListener("blur", commit);
-    });
-    window.addEventListener("mousemove", (e) => {
-      if (resizing) {
-        const groupLeft = group.getBoundingClientRect().left;
-        const dx = e.clientX - groupLeft;
-        const newFlash = Math.max(50, Math.round((dx / TRACK_PX_WIDTH) * TIMELINE_DURATION / 50) * 50);
-        cue.flash = newFlash;
-        updateFlashWidth();
-        updateTimeLabel();
-      } else if (dragging) {
-        const rect = track.getBoundingClientRect();
-        const x = Math.max(0, Math.min(e.clientX - rect.left, TRACK_PX_WIDTH));
-        const newTime = Math.round((x / TRACK_PX_WIDTH) * TIMELINE_DURATION);
-        cue.time = newTime;
-        updateGroupPos();
-        updateTimeLabel();
-      }
-    });
-    window.addEventListener("mouseup", () => {
-      if (dragging || resizing) {
-        dragging = false;
-        resizing = false;
-        saveCuesToStorage();
-      }
-    });
+      window.addEventListener("mouseup", () => {
+        if (dragging || resizing) {
+          dragging = false;
+          resizing = false;
+        }
+      });
+    }
   }
+  renderCues();
+
+  // Duplicate selected cue
+  dupBtn.addEventListener("click", () => {
+    if (!selectedKey || !fanfareCues[selectedKey]) return;
+    const src = fanfareCues[selectedKey];
+    const newCue = { time: src.time + 500, word: src.word, line: src.line, flash: src.flash };
+    // Add with a temp key, then renumber
+    fanfareCues["cue_new"] = newCue;
+    renumberCues();
+    // Find the new key for the duplicated cue
+    const newKey = Object.entries(fanfareCues).find(([, c]) => c === newCue)?.[0];
+    selectedKey = newKey || null;
+    renderCues();
+  });
+
+  // Delete selected cue
+  delBtn.addEventListener("click", () => {
+    if (!selectedKey || !fanfareCues[selectedKey]) return;
+    delete fanfareCues[selectedKey];
+    renumberCues();
+    selectedKey = null;
+    renderCues();
+  });
+
+  // Single-click: position playhead + show time (no playback)
+  track.addEventListener("click", (e) => {
+    if (e.target.closest(".tl-cue")) return; // don't interfere with cue interactions
+    const rect = track.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const ms = Math.round((x / TRACK_PX_WIDTH) * TIMELINE_DURATION);
+    // Show a brief tooltip with the time
+    console.log(`Timeline: ${(ms / 1000).toFixed(2)}s (beat ${(ms / (60000 / 112)).toFixed(1)})`);
+    // Move playhead to clicked position (static, no animation)
+    if (timelineAnimId) cancelAnimationFrame(timelineAnimId);
+    timelineAnimId = null;
+    timelinePlayhead.style.display = "block";
+    timelinePlayhead.style.left = x + "px";
+  });
 
   // Double-click on track to seek and play from that position
   track.addEventListener("dblclick", (e) => {
@@ -557,15 +604,62 @@ function openTimeline() {
     const x = e.clientX - rect.left;
     const seekMs = Math.round((x / TRACK_PX_WIDTH) * TIMELINE_DURATION);
     console.log(`Timeline: seek to ${(seekMs / 1000).toFixed(2)}s`);
+    // Stop audio-only if running
+    if (audioOnlyEl) {
+      audioOnlyEl.pause();
+      audioOnlyEl.src = "";
+      audioOnlyEl = null;
+      el.querySelector("#tl-audio").textContent = "Audio Only";
+    }
     if (window.playFanfareWithWords) {
       window.playFanfareWithWords({ startFromMs: seekMs });
       startTimelinePlayhead(seekMs);
     }
   });
 
-  // Play button
+  // Audio Only button — plays just the MP3 with playhead, no word cues
+  let audioOnlyEl = null;
+  el.querySelector("#tl-audio").addEventListener("click", async () => {
+    const btn = el.querySelector("#tl-audio");
+    if (audioOnlyEl) {
+      // Stop audio-only playback
+      audioOnlyEl.pause();
+      audioOnlyEl.src = "";
+      audioOnlyEl = null;
+      timelineAudioRef = null;
+      btn.textContent = "Audio Only";
+      if (timelineAnimId) cancelAnimationFrame(timelineAnimId);
+      timelinePlayhead.style.display = "none";
+      return;
+    }
+    // Dispose any active fanfare first
+    disposeFanfare();
+    btn.textContent = "Stop Audio";
+    const audio = new Audio("assets/audio/beepbox-song.mp3");
+    audio.playbackRate = 1.0;
+    audioOnlyEl = audio;
+    timelineAudioRef = audio;
+    audio.addEventListener("ended", () => {
+      audioOnlyEl = null;
+      timelineAudioRef = null;
+      btn.textContent = "Audio Only";
+      timelinePlayhead.style.display = "none";
+    }, { once: true });
+    // Start playhead tracking immediately (it will sync once audio starts)
+    startTimelinePlayhead();
+    await audio.play();
+  });
+
+  // Play button — plays with word cues
   let playBusy = false; // guard against double-clicks while async start runs
   el.querySelector("#tl-play").addEventListener("click", async () => {
+    // Stop audio-only if running
+    if (audioOnlyEl) {
+      audioOnlyEl.pause();
+      audioOnlyEl.src = "";
+      audioOnlyEl = null;
+      el.querySelector("#tl-audio").textContent = "Audio Only";
+    }
     if (fanfarePlaying && timelinePaused) {
       resumeFanfare();
     } else if (fanfarePlaying) {
@@ -573,15 +667,15 @@ function openTimeline() {
     } else if (window.playFanfareWithWords && !playBusy) {
       playBusy = true;
       startTimelinePlayhead();
-      await window.playFanfareWithWords();
-      playBusy = false;
+      // Don't await — playFanfareWithWords runs for the full duration
+      window.playFanfareWithWords().then(() => { playBusy = false; });
     }
   });
 
   // Copy button — copies current cue timings to clipboard
   el.querySelector("#tl-copy").addEventListener("click", () => {
     const lines = Object.entries(fanfareCues).map(([key, cue]) => {
-      const w = cue.word === null ? "null" : `"${cue.word}"`;
+      const w = cue.word === null ? "null" : `"${cue.word.replace(/\n/g, "\\n")}"`;
       return `  ${key}: { time: ${String(cue.time).padStart(5)}, word: ${w.padStart(12)}, line: ${cue.line}, flash: ${String(cue.flash).padStart(4)} },`;
     });
     const text = lines.join("\n");
@@ -593,9 +687,8 @@ function openTimeline() {
     console.log("Fanfare cues:\n" + text);
   });
 
-  // Reset button — restore hardcoded defaults
+  // Reset button — reload to restore hardcoded defaults
   el.querySelector("#tl-reset").addEventListener("click", () => {
-    localStorage.removeItem("fanfareCues");
     location.reload();
   });
 
@@ -613,7 +706,20 @@ function startTimelinePlayhead(offsetMs = 0) {
   const scrollContainer = timelineOverlay ? timelineOverlay.querySelector("#tl-scroll") : null;
 
   function tick() {
-    const elapsed = performance.now() - timelineStartTime;
+    // Prefer syncing to actual audio.currentTime when available
+    let elapsed;
+    const audioEl = timelineAudioRef
+      || (fanfareSynthHandle && fanfareSynthHandle.audio)
+      || null;
+    if (audioEl && !audioEl.paused && audioEl.currentTime > 0) {
+      // audio.currentTime is in seconds at native playback speed
+      elapsed = audioEl.currentTime * 1000;
+      // Keep timelineStartTime in sync so pause/resume works
+      timelineStartTime = performance.now() - elapsed;
+    } else {
+      elapsed = performance.now() - timelineStartTime;
+    }
+
     const xPx = Math.min((elapsed / TIMELINE_DURATION) * TRACK_PX_WIDTH, TRACK_PX_WIDTH);
     timelinePlayhead.style.left = xPx + "px";
 
@@ -662,88 +768,41 @@ let savedPulseSpeed = null;
 // Built entirely with Tone.js: sub-bass, brass chords, timpani, crescendo
 // ---------------------------------------------------------------------------
 
-let fanfareAudio = null; // HTMLAudioElement for fanfare
-let fanfareNodes = []; // Tone nodes for any effects
+let fanfareSynthHandle = null; // handle returned by playFanfareSynth
 let fanfarePlaying = false; // true while fanfare word sequence is active
-
-async function ensureTone() {
-  let T = window.Tone;
-  if (!T) {
-    await initAudio();
-    T = window.Tone;
-  }
-  if (!T) return null;
-  if (T.context.state !== "running") await T.start();
-  return T;
-}
-
-/** Raw Web Audio nodes for cleanup */
-let fanfareRawNodes = [];
 
 function disposeFanfare() {
   fanfarePlaying = false;
   timelinePaused = false;
-  if (fanfareAudio) {
-    try { fanfareAudio.pause(); } catch (_) {}
-    try { fanfareAudio.stop(); } catch (_) {}
-    try { fanfareAudio.src = ""; } catch (_) {}
-    fanfareAudio = null;
+  timelineAudioRef = null;
+  if (fanfareSynthHandle) {
+    try { fanfareSynthHandle.stop(); } catch (_) {}
+    fanfareSynthHandle = null;
   }
-  fanfareGain = null;
-  // Stop Tone.js Transport (used by synth fanfare scheduling)
-  try {
-    const T = window.Tone;
-    if (T && T.Transport) {
-      T.Transport.stop();
-      T.Transport.cancel();
-    }
-  } catch (_) {}
-  // Disconnect raw Web Audio nodes
-  fanfareRawNodes.forEach((n) => {
-    try { n.disconnect(); } catch (_) {}
-  });
-  fanfareRawNodes = [];
-  // Dispose Tone.js nodes
-  fanfareNodes.forEach((n) => {
-    try { n.dispose(); } catch (_) {}
-  });
-  fanfareNodes = [];
 }
 
 /**
  * Smoothly fade fanfare audio to silence over `duration` seconds, then dispose.
  */
 function fadeFanfareOut(duration = 3) {
-  if (!fanfareGain || !fanfareAudio) {
+  if (!fanfareSynthHandle || fanfareSynthHandle.disposed) {
     disposeFanfare();
     return Promise.resolve();
   }
-  return new Promise((resolve) => {
-    const startVol = fanfareGain.gain.value;
-    const startTime = performance.now();
-    const durationMs = duration * 1000;
-    function fade() {
-      const t = Math.min((performance.now() - startTime) / durationMs, 1);
-      // Linear fade matching the room light restore curve
-      fanfareGain.gain.value = startVol * (1 - t);
-      if (t < 1) {
-        requestAnimationFrame(fade);
-      } else {
-        disposeFanfare();
-        resolve();
-      }
-    }
-    fade();
+  return fanfareSynthHandle.fadeOut(duration).then(() => {
+    fanfareSynthHandle = null;
+    fanfarePlaying = false;
   });
 }
 
 function pauseFanfare() {
   if (!fanfarePlaying || timelinePaused) return;
   timelinePaused = true;
-  // Pause the audio
-  if (fanfareAudio && !fanfareAudio.paused) fanfareAudio.pause();
-  // Freeze the playhead
-  if (timelineStartTime !== null) {
+  // Pause audio and read its actual position
+  if (fanfareSynthHandle && fanfareSynthHandle.audio && !fanfareSynthHandle.audio.paused) {
+    timelinePausedElapsed = fanfareSynthHandle.audio.currentTime * 1000;
+    fanfareSynthHandle.audio.pause();
+  } else if (timelineStartTime !== null) {
     timelinePausedElapsed = performance.now() - timelineStartTime;
   }
   if (timelineAnimId) {
@@ -757,8 +816,10 @@ function resumeFanfare() {
   if (!timelinePaused) return;
   timelinePaused = false;
   // Resume audio
-  if (fanfareAudio && fanfareAudio.paused) fanfareAudio.play().catch(() => {});
-  // Adjust both timeline and word-loop start times so they resume from the paused position
+  if (fanfareSynthHandle && fanfareSynthHandle.audio && fanfareSynthHandle.audio.paused) {
+    fanfareSynthHandle.audio.play().catch(() => {});
+  }
+  // Adjust start times based on paused position (from audio.currentTime)
   const now = performance.now();
   timelineStartTime = now - timelinePausedElapsed;
   fanfareStartTime = now - timelinePausedElapsed;
@@ -779,232 +840,32 @@ function updatePlayButton() {
   }
 }
 
-/** Raw Web Audio gain node for fanfare volume control */
-let fanfareGain = null;
-
 /**
- * Play cinematic fanfare MP3 with heavy real-time audio processing to avoid
- * content ID fingerprinting while preserving the cinematic feel.
- *
- * Processing chain (all via Web Audio API):
- *   source → gain → pitch-shift chorus → mid-scoop EQ → waveshaper saturation
- *   → bandpass notch → hall reverb (wet/dry) → destination
- *
- * - 4 semitones down (playbackRate) — deeper, more cinematic
- * - Chorus via 3 detuned delay lines (smears spectral fingerprint)
- * - Mid-frequency scoop removes the most recognisable timbre region
- * - Soft-clip waveshaper adds harmonics that weren't in the original
- * - Narrow notch at 1.8kHz removes a key fingerprint band
- * - Heavy convolution reverb (3.5s tail) diffuses transients
- * - Sub-bass synth layer adds weight below the original content
+ * Start the MIDI-synced fanfare via fanfare-synth.js module.
+ * The module handles Web Audio processing, sub-bass, and MIDI-timed cues.
  */
-async function playCinematicFanfare(duration, { startOffset = 0, safariAudio = null } = {}) {
+async function startFanfareSynth({ startFromMs = 0 } = {}) {
   try {
     disposeFanfare();
 
-    // Safari has issues with createMediaElementSource and strict gesture timing
-    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-
-    // If a pre-started Safari audio element was passed in, adopt it directly
-    if (isSafari && safariAudio) {
-      fanfareAudio = safariAudio;
-      safariAudio.addEventListener("ended", () => {
-        setTimeout(() => disposeFanfare(), 1000);
-      }, { once: true });
-      console.log("Chair spirits: adopted pre-started fanfare (Safari)");
-      return;
+    // Ensure Tone.js is loaded (fanfare-synth.js needs it)
+    let T = window.Tone;
+    if (!T) {
+      await initAudio();
+      T = window.Tone;
     }
 
-    const audio = new Audio("assets/audio/fanfare_002.mp3");
-    if (!isSafari) audio.crossOrigin = "anonymous";
-    audio.preload = "auto";
-    // 2 semitones down — slightly deeper than original
-    audio.playbackRate = Math.pow(2, -2 / 12); // ~0.891
-    fanfareAudio = audio;
+    fanfareSynthHandle = await playFanfareSynth({ startFromMs });
+    console.log("Chair spirits: fanfare synth started");
 
-    // On Safari without pre-started audio, try immediate play
-    if (isSafari) {
-      audio.volume = 1.0;
-      try { await audio.play(); } catch (e) { console.warn("Safari fanfare play failed:", e); }
-      if (startOffset > 0) {
-        audio.currentTime = startOffset * audio.playbackRate;
-      }
-      audio.addEventListener("ended", () => {
-        setTimeout(() => disposeFanfare(), 1000);
-      }, { once: true });
-      console.log("Chair spirits: playing fanfare (Safari direct)");
-      return;
+    // Audio init may reset screen uniforms — force dark until first cue
+    const sm = getScreenMaterial();
+    if (sm && sm.uniforms) {
+      if (sm.uniforms.uGridFade) sm.uniforms.uGridFade.value = 0;
+      if (sm.uniforms.uBrightness) sm.uniforms.uBrightness.value = 0;
     }
-
-    // Wait for audio to be ready before seeking
-    if (startOffset > 0) {
-      await new Promise((resolve) => {
-        const doSeek = () => {
-          audio.currentTime = startOffset * audio.playbackRate;
-          resolve();
-        };
-        if (audio.readyState >= 1) doSeek();
-        else audio.addEventListener("loadedmetadata", doSeek, { once: true });
-      });
-    }
-
-    const T = await ensureTone();
-    if (T) {
-      const rawCtx = T.context.rawContext || T.context._context || T.context;
-      const mediaSource = rawCtx.createMediaElementSource(audio);
-
-      // 1. Master gain
-      const gain = rawCtx.createGain();
-      gain.gain.value = 1.0;
-      fanfareGain = gain;
-
-      // 2. Chorus — 3 detuned delay lines that smear the spectral fingerprint
-      const chorusDry = rawCtx.createGain();
-      chorusDry.gain.value = 0.55;
-      const chorusWet = rawCtx.createGain();
-      chorusWet.gain.value = 0.45;
-      const chorusMerge = rawCtx.createGain();
-      chorusMerge.gain.value = 1.0;
-
-      const chorusDelays = [];
-      const chorusLFOs = [];
-      for (let i = 0; i < 3; i++) {
-        const delay = rawCtx.createDelay(0.05);
-        delay.delayTime.value = 0.012 + i * 0.008; // 12ms, 20ms, 28ms
-        const lfoGain = rawCtx.createGain();
-        lfoGain.gain.value = 0.003; // ±3ms modulation depth
-        const lfo = rawCtx.createOscillator();
-        lfo.frequency.value = 0.6 + i * 0.4; // 0.6, 1.0, 1.4 Hz
-        lfo.type = "sine";
-        lfo.connect(lfoGain);
-        lfoGain.connect(delay.delayTime);
-        lfo.start();
-        delay.connect(chorusWet);
-        chorusDelays.push(delay);
-        chorusLFOs.push(lfo, lfoGain);
-      }
-
-      // 3. EQ — scoop mids (most recognisable timbre region)
-      const lowBoost = rawCtx.createBiquadFilter();
-      lowBoost.type = "lowshelf";
-      lowBoost.frequency.value = 250;
-      lowBoost.gain.value = 5; // +5dB low boost
-
-      const midScoop = rawCtx.createBiquadFilter();
-      midScoop.type = "peaking";
-      midScoop.frequency.value = 1200;
-      midScoop.Q.value = 1.0;
-      midScoop.gain.value = -6; // -6dB mid scoop
-
-      const highCut = rawCtx.createBiquadFilter();
-      highCut.type = "highshelf";
-      highCut.frequency.value = 5000;
-      highCut.gain.value = -5; // -5dB high cut
-
-      // 4. Narrow notch filter — removes a key fingerprint frequency band
-      const notch = rawCtx.createBiquadFilter();
-      notch.type = "notch";
-      notch.frequency.value = 1800;
-      notch.Q.value = 6;
-
-      // 5. Waveshaper — soft-clip saturation adds new harmonics
-      const waveshaper = rawCtx.createWaveShaper();
-      const curveLen = 4096;
-      const curve = new Float32Array(curveLen);
-      for (let i = 0; i < curveLen; i++) {
-        const x = (i / (curveLen - 1)) * 2 - 1;
-        // Soft clipping with subtle asymmetry (adds even harmonics)
-        curve[i] = Math.tanh(x * 1.8) * 0.9 + x * 0.1;
-      }
-      waveshaper.curve = curve;
-      waveshaper.oversample = "2x";
-
-      // 6. Convolution reverb — long tail diffuses transients
-      const convolver = rawCtx.createConvolver();
-      const irLength = rawCtx.sampleRate * 3.5; // 3.5s tail
-      const irBuffer = rawCtx.createBuffer(2, irLength, rawCtx.sampleRate);
-      for (let ch = 0; ch < 2; ch++) {
-        const data = irBuffer.getChannelData(ch);
-        for (let i = 0; i < irLength; i++) {
-          // Stereo decorrelation + exponential decay
-          const noise = Math.random() * 2 - 1;
-          const earlyBoost = i < rawCtx.sampleRate * 0.08 ? 1.5 : 1.0;
-          data[i] = noise * earlyBoost * Math.pow(1 - i / irLength, 2.0);
-        }
-      }
-      convolver.buffer = irBuffer;
-
-      const dryGain = rawCtx.createGain();
-      dryGain.gain.value = 0.55;
-      const wetGain = rawCtx.createGain();
-      wetGain.gain.value = 0.45;
-
-      // Chain: source → gain → chorus(dry+wet) → EQ → waveshaper → notch → reverb → dest
-      mediaSource.connect(gain);
-
-      // Chorus split
-      gain.connect(chorusDry);
-      chorusDelays.forEach((d) => gain.connect(d));
-      chorusDry.connect(chorusMerge);
-      chorusWet.connect(chorusMerge);
-
-      // EQ + saturation + notch
-      chorusMerge.connect(lowBoost);
-      lowBoost.connect(midScoop);
-      midScoop.connect(highCut);
-      highCut.connect(waveshaper);
-      waveshaper.connect(notch);
-
-      // Reverb wet/dry split
-      notch.connect(dryGain);
-      notch.connect(convolver);
-      convolver.connect(wetGain);
-      dryGain.connect(rawCtx.destination);
-      wetGain.connect(rawCtx.destination);
-
-      // Track all nodes for cleanup
-      fanfareRawNodes = [
-        mediaSource, gain, chorusDry, chorusWet, chorusMerge,
-        ...chorusDelays, ...chorusLFOs,
-        lowBoost, midScoop, highCut, notch, waveshaper,
-        convolver, dryGain, wetGain,
-      ];
-
-      // Sub-bass synth layer via Tone.js
-      try {
-        const subFilter = new T.Filter({ frequency: 100, type: "lowpass", rolloff: -24 }).toDestination();
-        fanfareNodes.push(subFilter);
-        const sub = new T.Synth({
-          oscillator: { type: "sine" },
-          envelope: { attack: 2, decay: 1, sustain: 0.6, release: 3 },
-          volume: -12,
-        }).connect(subFilter);
-        fanfareNodes.push(sub);
-
-        audio.addEventListener("playing", () => {
-          try { sub.triggerAttack("Ab0"); } catch (_) {} // Root shifted to match -2 semitones
-        }, { once: true });
-
-        audio.addEventListener("ended", () => {
-          try { sub.triggerRelease(); } catch (_) {}
-          setTimeout(() => disposeFanfare(), 3000);
-        }, { once: true });
-      } catch (_) {
-        audio.addEventListener("ended", () => {
-          setTimeout(() => disposeFanfare(), 1000);
-        }, { once: true });
-      }
-    } else {
-      audio.volume = 1.0;
-      audio.addEventListener("ended", () => {
-        setTimeout(() => disposeFanfare(), 1000);
-      }, { once: true });
-    }
-
-    await audio.play();
-    console.log("Chair spirits: playing heavily processed fanfare");
   } catch (e) {
-    console.warn("Chair spirits: fanfare playback failed", e);
+    console.warn("Chair spirits: fanfare synth failed", e);
   }
 }
 
@@ -1136,6 +997,8 @@ function createSpirit(targetPos, spawnPos, precomputedWaypoints) {
     swayFreqZ: 2 + Math.random() * 2,
     swayAmpX: 0.08 + Math.random() * 0.08,
     swayAmpZ: 0.08 + Math.random() * 0.08,
+    settleTime: 0, // timestamp when spirit settled (for arrival glow)
+    light: null, // PointLight reference (only for select spirits)
   };
 }
 
@@ -1193,11 +1056,21 @@ function updateSpiritJourney(spirit, dt) {
     spirit.fadeProgress += dt / 1.5;
     const fade = 1 - Math.min(spirit.fadeProgress, 1);
     setSpiritInstance(spirit, spirit.targetPos.x, spirit.targetPos.y, spirit.targetPos.z, fade * 0.85);
+    // Fade PointLight intensity in sync
+    if (spirit.light) {
+      spirit.light.intensity = SPIRIT_LIGHT_INTENSITY * fade;
+    }
     if (spirit.fadeProgress >= 1) {
       spirit.removed = true;
       // Hide by scaling to zero
       _instanceMatrix.makeScale(0, 0, 0);
       spiritInstancedMesh.setMatrixAt(spirit.instanceIdx, _instanceMatrix);
+      // Remove PointLight from scene
+      if (spirit.light) {
+        spiritsGroup.remove(spirit.light);
+        spirit.light.dispose();
+        spirit.light = null;
+      }
     }
     return;
   }
@@ -1210,7 +1083,18 @@ function updateSpiritJourney(spirit, dt) {
     const bob = Math.sin(time * 1.2 + spirit.swayPhaseX) * 0.008;
     const driftX = Math.sin(time * 0.5 + spirit.swayPhaseX) * 0.005;
     const driftZ = Math.cos(time * 0.4 + spirit.swayPhaseZ) * 0.005;
+    // Base 0.85 brightness — no arrival glow for regular spirits
     setSpiritInstance(spirit, t.x + driftX, t.y + bob, t.z + driftZ, 0.85);
+    // PointLight: ramp intensity as spirit settles, pulse gently with music cues
+    if (spirit.light) {
+      const settleRamp = spirit.settleTime > 0
+        ? Math.min((performance.now() - spirit.settleTime) / 1500, 1)
+        : 1;
+      // Gentler multiplier for PointLights (sqrt dampens the 1–10 range to 1–3.2)
+      const lightFlash = Math.sqrt(spiritFlashMultiplier);
+      spirit.light.intensity = SPIRIT_LIGHT_INTENSITY * settleRamp * lightFlash;
+      spirit.light.position.set(t.x + driftX, t.y + bob, t.z + driftZ);
+    }
     return;
   }
 
@@ -1244,15 +1128,18 @@ function updateSpiritJourney(spirit, dt) {
   const bob = Math.sin(time * 3 + spirit.swayPhaseX) * 0.02;
   const floatHeight = SPIRIT_FLOAT_HEIGHT * overlay;
 
-  setSpiritInstance(spirit,
-    _spiritBase.x + swayX,
-    _spiritBase.y + floatHeight + bob,
-    _spiritBase.z + swayZ,
-    ramp * 0.9
-  );
+  const sx = _spiritBase.x + swayX;
+  const sy = _spiritBase.y + floatHeight + bob;
+  const sz = _spiritBase.z + swayZ;
+  setSpiritInstance(spirit, sx, sy, sz, ramp * 0.9);
+  // PointLight follows spirit during journey (intensity stays at 0)
+  if (spirit.light) {
+    spirit.light.position.set(sx, sy, sz);
+  }
 
   if (progress >= 1) {
     spirit.settled = true;
+    spirit.settleTime = performance.now();
     setSpiritInstance(spirit, spirit.targetPos.x, spirit.targetPos.y, spirit.targetPos.z, 0.85);
   }
 }
@@ -1359,6 +1246,19 @@ export function updateSpirits(dt) {
       const { targetPos, spawnPos, waypoints } = spawnQueue[spawnIndex];
       const spirit = createSpirit(targetPos, spawnPos, waypoints);
       if (!spirit) { spawning = false; break; }
+      // Assign PointLight to evenly spaced spirits
+      if (spiritLights.length < SPIRIT_LIGHT_COUNT) {
+        const step = Math.floor(spawnQueue.length / SPIRIT_LIGHT_COUNT);
+        if (step <= 1 || spawnIndex % step === 0) {
+          const light = new THREE.PointLight(
+            spirit.baseColor, 0, SPIRIT_LIGHT_DISTANCE, SPIRIT_LIGHT_DECAY
+          );
+          light.position.copy(spawnPos);
+          spiritsGroup.add(light);
+          spirit.light = light;
+          spiritLights.push({ light, spiritIdx: spirits.length });
+        }
+      }
       spirits.push(spirit);
       spawnIndex++;
     }
@@ -1397,6 +1297,12 @@ export function updateSpirits(dt) {
       spiritInstancedMesh.dispose();
       spiritInstancedMesh = null;
     }
+    // Clean up any remaining PointLights
+    for (const sl of spiritLights) {
+      spiritsGroup.remove(sl.light);
+      sl.light.dispose();
+    }
+    spiritLights.length = 0;
   }
 
   // Reactive audience lights (sample video → tint spirits)
@@ -1507,18 +1413,6 @@ function applyDimLevel(t) {
     }
   });
 
-  // Dim spirit brightness in sync with GLB lights
-  for (const spirit of spirits) {
-    if (spirit.removed || spirit.fadingOut) continue;
-    const brightness = 0.85 * (1 - glbT * 0.7);
-    const c = spirit.baseColor;
-    _instanceColor.setRGB(c.r * brightness, c.g * brightness, c.b * brightness);
-    if (spiritInstancedMesh) spiritInstancedMesh.setColorAt(spirit.instanceIdx, _instanceColor);
-  }
-  if (spiritInstancedMesh && spiritInstancedMesh.instanceColor) {
-    spiritInstancedMesh.instanceColor.needsUpdate = true;
-  }
-
   // Dim renderer exposure for deeper overall darkness
   if (savedExposure !== null) {
     renderer.toneMappingExposure = savedExposure * (1 - exposureT * 0.8);
@@ -1602,7 +1496,7 @@ export function dimRoomLights(duration = 3, { playFanfare = true } = {}) {
   restoring = false;
 
   if (playFanfare) {
-    playCinematicFanfare(duration);
+    startFanfareSynth();
   }
   console.log(`Chair spirits: dimming lights over ${duration}s`);
 }
@@ -1940,39 +1834,41 @@ function setTrailerMode(on) {
 // Spirit light flash — pulse settled spirits in sync with fanfare cues
 // ---------------------------------------------------------------------------
 let spiritFlashGen = 0;
+/** Brightness multiplier applied on top of base brightness in updateSpiritJourney */
+let spiritFlashMultiplier = 1.0;
 
 function flashSpiritLights(duration) {
   const gen = ++spiritFlashGen;
   const start = performance.now();
-  // Dimmed baseline values (matching dimRoomLights at full dim)
-  const baseOpacity = 0.255; // 0.85 * 0.3
-  const baseLightInt = 0.18; // 0.6 * 0.3
-  const peakOpacity = 0.95;
-  const peakLightInt = 1.2;
+  const peakMultiplier = 10; // how much brighter spirits get at peak
+  const peakAmbient = savedAmbient ? savedAmbient * 0.4 : 0.3; // ambient light pulse
+  const peakExposureBoost = 0.3; // exposure boost on top of dimmed level
+  const dimmedExposure = savedExposure ? savedExposure * 0.2 : 0.2;
 
   function tick() {
     if (gen !== spiritFlashGen) return;
     const t = Math.min((performance.now() - start) / duration, 1);
     let factor;
-    if (t < 0.15) {
-      factor = t / 0.15;
+    if (t < 0.1) {
+      factor = t / 0.1; // quick ramp up
     } else {
-      factor = 1 - (t - 0.15) / 0.85;
-      factor *= factor; // ease-out
+      factor = 1 - (t - 0.1) / 0.9;
+      factor *= factor; // ease-out decay
     }
-    const opacity = baseOpacity + (peakOpacity - baseOpacity) * factor;
-    const lightInt = baseLightInt + (peakLightInt - baseLightInt) * factor;
-
-    for (const spirit of spirits) {
-      if (spirit.removed || spirit.fadingOut || !spirit.settled) continue;
-      const c = spirit.baseColor;
-      _instanceColor.setRGB(c.r * opacity, c.g * opacity, c.b * opacity);
-      if (spiritInstancedMesh) spiritInstancedMesh.setColorAt(spirit.instanceIdx, _instanceColor);
+    spiritFlashMultiplier = 1.0 + (peakMultiplier - 1.0) * factor;
+    // Pulse ambient light so spirits illuminate surroundings
+    setAmbientIntensity(peakAmbient * factor);
+    // Pulse exposure for extra bloom
+    if (renderer) {
+      renderer.toneMappingExposure = dimmedExposure + peakExposureBoost * factor;
     }
-    if (spiritInstancedMesh && spiritInstancedMesh.instanceColor) {
-      spiritInstancedMesh.instanceColor.needsUpdate = true;
+    if (t >= 1) {
+      spiritFlashMultiplier = 1.0;
+      setAmbientIntensity(0);
+      if (renderer) renderer.toneMappingExposure = dimmedExposure;
+    } else {
+      requestAnimationFrame(tick);
     }
-    if (t < 1) requestAnimationFrame(tick);
   }
   tick();
 }
@@ -1989,8 +1885,8 @@ const CENTER_SECTOR = 16.5;
 const FINAL_LAYOUT = {
   1: "DOME DREAMING",
   2: "OPEN CALL",
-  3: "LIVE NOW",
-  4: "APPLY!!!",
+  3: "FOR DREAMERS",
+  4: "APPLY NOW",
   5: "",
 };
 
@@ -2010,19 +1906,24 @@ function flashWordOnDome(word, line = 3, flashDuration = 800) {
 
   // Kill previous pulse and force screen dark BEFORE changing text,
   // so old text never shows through at the new cue's brightness ramp
-  if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
+  if (screenMat && screenMat.uniforms) {
     ++pulseGeneration;
-    screenMat.uniforms.uBrightness.value = 0;
+    if (screenMat.uniforms.uBrightness) screenMat.uniforms.uBrightness.value = 0;
+    if (screenMat.uniforms.uGridFade) screenMat.uniforms.uGridFade.value = 1;
   }
 
   if (word !== null) {
-    // Solo mode: clear all lines, show only this word centered on its line
+    // Solo mode: clear all lines, show word(s) centered
+    // Words with \n are split across two consecutive lines
+    const parts = word.split("\n");
     for (let i = 1; i <= 5; i++) {
-      if (i === line) {
-        centerTextOnLine(i, word);
-      } else {
-        setTextContent(i, "");
-      }
+      setTextContent(i, "");
+    }
+    if (parts.length === 1) {
+      centerTextOnLine(line, word);
+    } else {
+      centerTextOnLine(line, parts[0]);
+      centerTextOnLine(line + 1, parts[1]);
     }
   } else {
     // ALL mode: show all words together on their final lines
@@ -2061,8 +1962,7 @@ function flashWordOnDome(word, line = 3, flashDuration = 800) {
 }
 
 /**
- * Play the fanfare with words synced to its musical peaks.
- * The fanfare is pitched down 2 semitones (playbackRate ~0.891) so it's ~24s.
+ * Play the fanfare with words synced to MIDI-timed cues from fanfare-synth.js.
  * Words appear on different text lines for visual variety.
  * No scramble effect — clean text with brightness pumps.
  */
@@ -2071,52 +1971,7 @@ let fanfareRunId = 0;
 /** Module-level start time so pause/resume can adjust it */
 let fanfareStartTime = 0;
 
-export async function playFanfareWithWords({ startFromMs = 0, safariPreloadCtx = null, safariPreloadBuffer = null } = {}) {
-  // Safari gesture handling: if a pre-loaded AudioContext + buffer was passed
-  // from runTrailerSequence, play via AudioBufferSourceNode (no gesture needed —
-  // AudioContext was unlocked during the original tap). If not, try fresh audio
-  // (works when called directly from a gesture like timeline play).
-  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  let safariAudio = null;
-  if (isSafari) {
-    if (safariPreloadCtx && safariPreloadBuffer) {
-      // Play fanfare via AudioBufferSourceNode through the pre-unlocked AudioContext
-      const source = safariPreloadCtx.createBufferSource();
-      source.buffer = safariPreloadBuffer;
-      source.playbackRate.value = Math.pow(2, -2 / 12);
-      const gain = safariPreloadCtx.createGain();
-      source.connect(gain);
-      gain.connect(safariPreloadCtx.destination);
-      const offset = startFromMs > 0 ? startFromMs / 1000 : 0;
-      source.start(0, offset);
-      // Wrap as safariAudio for compatibility with playCinematicFanfare/disposeFanfare
-      safariAudio = {
-        pause() { try { source.stop(); } catch (_) {} },
-        set src(_) {},
-        addEventListener: source.addEventListener.bind(source),
-      };
-      // Set module-level fanfareGain so fadeFanfareOut can fade gracefully
-      fanfareGain = gain;
-      console.log("Chair spirits: started fanfare via AudioBufferSourceNode (Safari)");
-    } else {
-      // Direct gesture call (e.g. timeline play button) — try fresh audio
-      console.log("Chair spirits: Safari — trying fresh audio from gesture");
-      const audio = new Audio("assets/audio/fanfare_002.mp3");
-      audio.volume = 1.0;
-      try {
-        await audio.play();
-        console.log("Chair spirits: Safari audio.play() succeeded");
-      } catch (e) {
-        console.error("Chair spirits: Safari audio.play() FAILED:", e.name, e.message);
-      }
-      audio.playbackRate = Math.pow(2, -2 / 12);
-      if (startFromMs > 0) {
-        audio.currentTime = (startFromMs / 1000) * audio.playbackRate;
-      }
-      safariAudio = audio;
-    }
-  }
-
+export async function playFanfareWithWords({ startFromMs = 0 } = {}) {
   // Stop any existing fanfare (audio + abort previous word loop)
   disposeFanfare();
   const runId = ++fanfareRunId;
@@ -2128,37 +1983,36 @@ export async function playFanfareWithWords({ startFromMs = 0, safariPreloadCtx =
   restoring = false;
   dimming = false;
 
-  // Clear all text lines, ensure brightness starts fully dark
+  // Clear all text lines, ensure screen starts fully dark
   for (let i = 1; i <= 5; i++) {
     setTextContent(i, "");
   }
   const screenMat = getScreenMaterial();
   if (screenMat && screenMat.uniforms) {
-    // Keep uGridFade at 1 so the grid is visible during flashes
-    if (screenMat.uniforms.uGridFade) screenMat.uniforms.uGridFade.value = 1;
+    if (screenMat.uniforms.uGridFade) screenMat.uniforms.uGridFade.value = 0;
     if (screenMat.uniforms.uBrightness) screenMat.uniforms.uBrightness.value = 0;
   }
-
-  // Start the fanfare audio (Safari: adopt pre-started element; Chrome: full Web Audio chain)
-  await playCinematicFanfare(undefined, { startOffset: startFromMs / 1000, safariAudio });
-  // Re-assert — playCinematicFanfare's internal disposeFanfare() resets this
+  // Start the fanfare synth (MP3 + Web Audio processing + MIDI-timed cues)
+  // startFanfareSynth re-asserts gridFade=0, brightness=0 at the end
+  await startFanfareSynth({ startFromMs });
   fanfarePlaying = true;
   updatePlayButton();
-
-  // Re-assert screen state after async audio setup — belt-and-suspenders
-  // against anything that might have overwritten uniforms during the await
-  const screenMat2 = getScreenMaterial();
-  if (screenMat2 && screenMat2.uniforms) {
-    if (screenMat2.uniforms.uGridFade) screenMat2.uniforms.uGridFade.value = 1;
-    if (screenMat2.uniforms.uBrightness) screenMat2.uniforms.uBrightness.value = 0;
-  }
 
   // Build word sequence from GUI-editable fanfareCues, sorted by time
   const wordSequence = Object.values(fanfareCues)
     .slice()
     .sort((a, b) => a.time - b.time);
 
-  fanfareStartTime = performance.now() - startFromMs;
+  // Helper: get current playback position in ms, synced to audio.currentTime
+  const audioEl = fanfareSynthHandle && fanfareSynthHandle.audio;
+  function getElapsedMs() {
+    if (audioEl && audioEl.currentTime > 0) {
+      return audioEl.currentTime * 1000;
+    }
+    return performance.now() - fanfareStartTime;
+  }
+
+  fanfareStartTime = performance.now() - (audioEl ? audioEl.currentTime * 1000 : startFromMs);
 
   for (const entry of wordSequence) {
     // Abort if a newer run started
@@ -2168,19 +2022,18 @@ export async function playFanfareWithWords({ startFromMs = 0, safariPreloadCtx =
     if (entry.time < startFromMs) continue;
 
     // Wait until cue time, respecting pause
-    let remaining = entry.time - (performance.now() - fanfareStartTime);
+    let remaining = entry.time - getElapsedMs();
     while (remaining > 0) {
       if (runId !== fanfareRunId) return;
       if (timelinePaused) {
         // Spin-wait while paused (check every 100ms)
         await new Promise((r) => setTimeout(r, 100));
-        // Recalculate remaining — fanfareStartTime is adjusted on resume
-        remaining = entry.time - (performance.now() - fanfareStartTime);
+        remaining = entry.time - getElapsedMs();
         continue;
       }
       const sleepMs = Math.min(remaining, 50);
       await new Promise((r) => setTimeout(r, sleepMs));
-      remaining = entry.time - (performance.now() - fanfareStartTime);
+      remaining = entry.time - getElapsedMs();
     }
     if (runId !== fanfareRunId) return;
 
@@ -2199,7 +2052,7 @@ export async function playFanfareWithWords({ startFromMs = 0, safariPreloadCtx =
         const gen2 = ++pulseGeneration;
         const t0 = performance.now();
         if (isFinalHit) {
-          // Final hit: hard punch to 1.8 then settle to 1.0
+          // Final hit: hard punch to 1.8 then fade to black like the others
           function finalPump() {
             if (gen2 !== pulseGeneration) return;
             const t = Math.min((performance.now() - t0) / entry.flash, 1);
@@ -2209,11 +2062,11 @@ export async function playFanfareWithWords({ startFromMs = 0, safariPreloadCtx =
             } else if (t < 0.3) {
               brightness = 1.8 - (t - 0.1) / 0.2 * 0.8;
             } else {
-              brightness = 1.0;
+              brightness = 1.0 * Math.pow(1 - (t - 0.3) / 0.7, 2);
             }
             screenMat.uniforms.uBrightness.value = Math.max(0, brightness);
             if (t < 1) requestAnimationFrame(finalPump);
-            else screenMat.uniforms.uBrightness.value = 1.0;
+            else screenMat.uniforms.uBrightness.value = 0;
           }
           finalPump();
         } else {
@@ -2254,26 +2107,18 @@ export async function runTrailerSequence() {
   window._trailerRunning = true;
   console.log("Chair spirits: trailer sequence started");
 
-  // Safari requires audio to originate from a user gesture. By the time the
-  // fanfare moment arrives (~20s later), the gesture window is long gone.
-  // Solution: unlock an AudioContext NOW (during gesture) and pre-fetch +
-  // decode the fanfare audio into an AudioBuffer. At fanfare time we play it
-  // via AudioBufferSourceNode — no HTMLAudioElement needed, no gesture needed,
-  // and nothing plays audibly during the pre-load phase.
-  let safariPreloadCtx = null;
-  let safariPreloadBuffer = null;
+  // Safari requires audio to originate from a user gesture. Unlock an
+  // AudioContext NOW (during gesture) so Tone.js can use it later when
+  // the fanfare starts. Also pre-fetch the MP3 to avoid load delays.
   const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
   if (isSafari) {
     try {
-      // Create & unlock AudioContext within the user gesture
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      // Fetch + decode fanfare into an AudioBuffer (completely silent)
-      const response = await fetch("assets/audio/fanfare_002.mp3");
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
-      safariPreloadCtx = ctx;
-      safariPreloadBuffer = audioBuffer;
-      console.log("Chair spirits: AudioContext unlocked + fanfare buffer decoded for Safari");
+      // Pre-fetch the fanfare MP3 into browser cache
+      await fetch("assets/audio/beepbox-song.mp3");
+      // Ensure Tone.js is loaded and shares this unlocked context
+      await initAudio();
+      console.log("Chair spirits: AudioContext unlocked for Safari");
     } catch (e) {
       console.warn("Chair spirits: Safari audio pre-load failed:", e.message);
     }
@@ -2425,11 +2270,19 @@ export async function runTrailerSequence() {
   });
 
   // Screen is now fully dark — safe to regenerate texture without images
-  setImageCellsEnabled(false);
+  // Await the async regeneration so the new material exists before we touch its uniforms
+  await setImageCellsEnabled(false);
+  // Regeneration creates a new ShaderMaterial with default uniforms (gridFade=1, brightness=1)
+  // Force them to 0 so the screen stays dark until the first cue
+  const postRegenMat = getScreenMaterial();
+  if (postRegenMat && postRegenMat.uniforms) {
+    if (postRegenMat.uniforms.uGridFade) postRegenMat.uniforms.uGridFade.value = 0;
+    if (postRegenMat.uniforms.uBrightness) postRegenMat.uniforms.uBrightness.value = 0;
+  }
 
   // 9. Start fanfare IMMEDIATELY — room is dark, music begins
   console.log("Chair spirits: starting fanfare word sequence");
-  await playFanfareWithWords({ safariPreloadCtx, safariPreloadBuffer });
+  await playFanfareWithWords();
 
   console.log("Chair spirits: fanfare word sequence complete");
 
@@ -2440,6 +2293,86 @@ export async function runTrailerSequence() {
   // Reverse everything
   await reverseTrailer(4);
 }
+
+/**
+ * Dev shortcut: skip straight to the fanfare portion.
+ * Instantly dims lights, darkens screen, and starts the fanfare word sequence.
+ * Call via console: skipToFanfare()
+ */
+export async function skipToFanfare() {
+  if (window._trailerRunning) {
+    console.log("Trailer already running — disposing and restarting at fanfare");
+    disposeFanfare();
+  }
+  window._trailerRunning = true;
+
+  // Ensure Tone.js is loaded
+  await initAudio();
+
+  // Enter dome mode
+  if (window.enterDomeModeWithAudio) {
+    await window.enterDomeModeWithAudio();
+  } else {
+    setTrailerMode(true);
+  }
+
+  // Save state for restore
+  savedGridRotationSpeed = textureRotationSettings.speed;
+  savedTextRotationEnabled = polarGridSettings.textRotationEnabled;
+  savedTextRotationBPM = polarGridSettings.textRotationBPM;
+  savedTextScrambleEnabled = polarGridSettings.textScrambleEnabled;
+  savedImageCellsEnabled = polarGridSettings.imageCellsEnabled;
+  savedGridLinesEnabled = polarGridSettings.gridLinesEnabled;
+  savedPulsesEnabled = polarGridSettings.pulsesEnabled;
+  savedPulseSize = polarGridSettings.pulseSize;
+  savedPulseSpeed = polarGridSettings.pulseSpeed;
+  savedTextContents = {};
+  savedTextStartSectors = {};
+  for (let i = 1; i <= 5; i++) {
+    savedTextContents[i] = polarGridSettings[`text${i}Content`];
+    savedTextStartSectors[i] = polarGridSettings[`text${i}StartSector`];
+  }
+
+  // Instantly set everything to "dimmed" state
+  stopPulseAudio();
+  setMasterVolume(0);
+  textureRotationSettings.speed = 0;
+  setTextRotationEnabled(false);
+  polarGridSettings.pulseSize = 0;
+  polarGridSettings.pulseSpeed = 0;
+  setImageCellsEnabled(false);
+
+  // Dim room lights instantly
+  saveCurrentLightValues();
+  setAmbientIntensity(lightingSettings.ambientIntensity * 0.1);
+  setDirectIntensity(lightingSettings.directIntensity * 0.1);
+
+  // Darken screen
+  const screenMat = getScreenMaterial();
+  if (screenMat && screenMat.uniforms) {
+    if (screenMat.uniforms.uGridFade) screenMat.uniforms.uGridFade.value = 0;
+    if (screenMat.uniforms.uBrightness) screenMat.uniforms.uBrightness.value = 0;
+  }
+
+  // Start fanfare immediately
+  console.log("skipToFanfare: starting fanfare word sequence");
+  await playFanfareWithWords();
+  console.log("skipToFanfare: fanfare complete");
+
+  await new Promise((r) => setTimeout(r, 2500));
+  await reverseTrailer(4);
+}
+
+// Expose on window + hotkeys (F = skip to fanfare, T = toggle timeline)
+window.skipToFanfare = skipToFanfare;
+document.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+  if (e.key === "f" || e.key === "F") {
+    skipToFanfare();
+  } else if (e.key === "t" || e.key === "T") {
+    toggleTimeline();
+  }
+});
 
 export async function reverseTrailer(duration = 3) {
   console.log("Chair spirits: reversing trailer");

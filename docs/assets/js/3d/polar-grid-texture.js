@@ -106,6 +106,27 @@ export const polarGridSettings = {
 let lastAnimFrame = 0;
 const FRAME_INTERVAL = 33; // ~30fps for better performance
 
+// Pre-rendered glow sprite for pulse rendering (avoids createRadialGradient per frame)
+let glowSprite = null;
+const GLOW_SPRITE_SIZE = 128; // px — drawn once, then scaled via drawImage
+
+function getGlowSprite() {
+  if (glowSprite) return glowSprite;
+  const c = document.createElement("canvas");
+  c.width = GLOW_SPRITE_SIZE;
+  c.height = GLOW_SPRITE_SIZE;
+  const g = c.getContext("2d");
+  const half = GLOW_SPRITE_SIZE / 2;
+  const grad = g.createRadialGradient(half, half, 0, half, half, half);
+  grad.addColorStop(0, "rgba(255, 255, 255, 1)");
+  grad.addColorStop(0.5, "rgba(255, 255, 255, 0.45)");
+  grad.addColorStop(1, "rgba(255, 255, 255, 0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, GLOW_SPRITE_SIZE, GLOW_SPRITE_SIZE);
+  glowSprite = c;
+  return glowSprite;
+}
+
 /**
  * Draw a single line of text along a circular arc with flip options
  * flipX: reverses the text order (reads backwards)
@@ -1440,17 +1461,14 @@ function drawPulses(ctx, params, pulseSize, pulseGlow) {
     // Glow intensity also increases with ticks
     const glowIntensity = 0.9 + pulseTickIntensity * 0.1;
 
-    // Draw glow effect - white, enhanced during ticks for the active pulse
+    // Draw glow effect — cached sprite scaled via drawImage (no per-frame gradient)
     if (useGlow) {
-      const glowSize = size * (3 + pulseTickIntensity * 2); // Glow grows more during ticks
-      const gradient = ctx.createRadialGradient(x, y, 0, x, y, glowSize);
-      gradient.addColorStop(0, `rgba(255, 255, 255, ${glowIntensity})`);
-      gradient.addColorStop(0.5, `rgba(255, 255, 255, ${0.4 + pulseTickIntensity * 0.3})`);
-      gradient.addColorStop(1, `rgba(255, 255, 255, 0)`);
-      ctx.fillStyle = gradient;
-      ctx.beginPath();
-      ctx.arc(x, y, glowSize, 0, Math.PI * 2);
-      ctx.fill();
+      const glowSize = size * (3 + pulseTickIntensity * 2);
+      const sprite = getGlowSprite();
+      const drawSize = glowSize * 2;
+      ctx.globalAlpha = glowIntensity;
+      ctx.drawImage(sprite, x - glowSize, y - glowSize, drawSize, drawSize);
+      ctx.globalAlpha = 1;
     }
 
     // Draw solid pulse center - white
@@ -1794,8 +1812,9 @@ export function setImageCellsEnabled(enabled) {
   polarGridSettings.imageCellsEnabled = enabled;
   // Force a full texture regeneration so the base image updates
   if (polarGridSettings.regenerate) {
-    polarGridSettings.regenerate();
+    return polarGridSettings.regenerate();
   }
+  return Promise.resolve();
 }
 
 /**
