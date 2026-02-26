@@ -57,7 +57,7 @@ export const polarGridSettings = {
   lineWidth: 2,
   tickWidth: 4,
   // Antialiasing
-  antialias: true,
+  antialias: false,
   // Dot size (center point and grid intersection dots)
   dotSize: 4,
   // Pulse animation settings
