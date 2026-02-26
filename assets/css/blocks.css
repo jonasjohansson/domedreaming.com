@@ -372,7 +372,6 @@ p.small,
 .small {
   font-size: calc(var(--font-size-base) * 0.65) !important;
   line-height: var(--line-height-normal);
-  letter-spacing: 1px;
 }
 
 .page-content p.xsmall,
