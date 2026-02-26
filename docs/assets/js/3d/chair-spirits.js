@@ -131,19 +131,20 @@ export const fanfareCues = {
   cue3:  { time:  2478, word: "DREAMING",                line: 2, flash: 1000 },
   cue4:  { time:  3517, word: "DREAMING",                line: 2, flash:  300 },
   cue5:  { time:  3880, word: "DREAMING",                line: 2, flash:  600 },
-  cue6:  { time:  4556, word: "DOME DREAMING",           line: 2, flash:  400 },
-  cue7:  { time:  5056, word: "DOME DREAMING",           line: 2, flash:  800 },
+  cue6:  { time:  4556, word: "FULLDOME\nFILM FESTIVAL",  line: 2, flash:  400 },
+  cue7:  { time:  5056, word: "FULLDOME\nFILM FESTIVAL",  line: 2, flash:  800 },
   cue8:  { time:  6365, word: "OPEN CALL\nFOR ARTISTS",  line: 2, flash:  400 },
   cue9:  { time:  6786, word: "OPEN CALL\nFOR ARTISTS",  line: 2, flash:  500 },
   cue10: { time:  8473, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  500 },
-  cue11: { time:  9140, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  950 },
-  cue12: { time: 11290, word: "WORKS IN\nPROGRESS",      line: 2, flash:  450 },
-  cue13: { time: 11850, word: "FULLDOME\nFILMS",         line: 2, flash:  800 },
-  cue14: { time: 13379, word: "INSTALLATIONS",            line: 2, flash:  450 },
-  cue15: { time: 13849, word: "AV LIVE",                  line: 2, flash:  800 },
-  cue16: { time: 15447, word: "APPLY\n8TH OF MARCH", line: 2, flash:  350 },
-  cue17: { time: 15926, word: "APPLY\n8TH OF MARCH", line: 2, flash: 2900 },
-  cue18: { time: 19104, word: null,                       line: 2, flash: 4000 },
+  cue11: { time:  9140, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  400 },
+  cue12: { time:  9787, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  950 },
+  cue13: { time: 11290, word: "WORKS IN\nPROGRESS",      line: 2, flash:  450 },
+  cue14: { time: 11850, word: "FULLDOME\nFILMS",         line: 2, flash:  800 },
+  cue15: { time: 13379, word: "INSTALLATIONS",            line: 2, flash:  450 },
+  cue16: { time: 13849, word: "AV LIVE",                  line: 2, flash:  800 },
+  cue17: { time: 15447, word: "APPLY\n8TH OF MARCH",    line: 2, flash:  350 },
+  cue18: { time: 15926, word: "APPLY\n8TH OF MARCH",    line: 2, flash: 2900 },
+  cue19: { time: 19104, word: null,                       line: 2, flash: 4000 },
 };
 
 // ---------------------------------------------------------------------------
@@ -193,7 +194,7 @@ const FANFARE_PLAYBACK_RATE = 1.0;
 async function decodeWaveform() {
   if (waveformData) return waveformData;
   try {
-    const resp = await fetch("assets/audio/beepbox-song.mp3");
+    const resp = await fetch("assets/audio/fanfare.mp3");
     const buf = await resp.arrayBuffer();
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const decoded = await audioCtx.decodeAudioData(buf);
@@ -635,7 +636,7 @@ function openTimeline() {
     // Dispose any active fanfare first
     disposeFanfare();
     btn.textContent = "Stop Audio";
-    const audio = new Audio("assets/audio/beepbox-song.mp3");
+    const audio = new Audio("assets/audio/fanfare.mp3");
     audio.playbackRate = 1.0;
     audioOnlyEl = audio;
     timelineAudioRef = audio;
@@ -856,6 +857,7 @@ async function startFanfareSynth({ startFromMs = 0 } = {}) {
     }
 
     fanfareSynthHandle = await playFanfareSynth({ startFromMs });
+    window._fanfareHandle = fanfareSynthHandle;
     console.log("Chair spirits: fanfare synth started");
 
     // Audio init may reset screen uniforms — force dark until first cue
@@ -2115,7 +2117,7 @@ export async function runTrailerSequence() {
     try {
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
       // Pre-fetch the fanfare MP3 into browser cache
-      await fetch("assets/audio/beepbox-song.mp3");
+      await fetch("assets/audio/fanfare.mp3");
       // Ensure Tone.js is loaded and shares this unlocked context
       await initAudio();
       console.log("Chair spirits: AudioContext unlocked for Safari");

@@ -23,7 +23,38 @@ const TICKS_PER_BEAT = 96;
 const TICK_MS = 60000 / (MIDI_BPM * TICKS_PER_BEAT); // ~5.5804
 
 /** Audio file path */
-const FANFARE_MP3 = "assets/audio/beepbox-song.mp3";
+const FANFARE_MP3 = "assets/audio/fanfare.mp3";
+
+// ---------------------------------------------------------------------------
+// Live-tweakable settings (exposed to GUI, persist across plays)
+// ---------------------------------------------------------------------------
+
+export const fanfareSettings = {
+  // Playback
+  playbackRate: 1.0,
+  volume: 1.0,
+  // Chorus
+  chorusMix: 0.45,    // wet amount (0 = dry, 1 = full chorus)
+  chorusDepth: 0.003, // LFO modulation depth
+  chorusRate: 0.6,    // base LFO rate
+  // EQ
+  lowBoost: 5,        // dB shelf boost below 250 Hz
+  lowFreq: 250,       // low shelf frequency
+  midGain: -1,        // dB peaking at midFreq
+  midFreq: 1200,      // mid EQ center frequency
+  midQ: 1.0,          // mid EQ bandwidth
+  highGain: -1,       // dB shelf above highFreq
+  highFreq: 5000,     // high shelf frequency
+  // Saturation
+  drive: 1.8,         // waveshaper drive amount
+  // Reverb
+  reverbMix: 0.45,    // wet amount (0 = dry, 1 = full reverb)
+  reverbDecay: 2.0,   // decay power curve
+  reverbLength: 3.5,  // IR length in seconds
+  // Sub bass
+  subVolume: -12,     // dB
+  subNote: "Bb0",     // root note
+};
 
 // ---------------------------------------------------------------------------
 // Cue map — MIDI tick positions aligned to words
@@ -120,7 +151,7 @@ export async function playFanfareSynth({ startFromMs = 0, onCue = null } = {}) {
   const audio = new Audio(FANFARE_MP3);
   audio.crossOrigin = "anonymous";
   audio.preload = "auto";
-  audio.playbackRate = PLAYBACK_RATE;
+  audio.playbackRate = fanfareSettings.playbackRate;
 
   // Seek if starting mid-stream
   if (startFromMs > 0) {
@@ -137,81 +168,91 @@ export async function playFanfareSynth({ startFromMs = 0, onCue = null } = {}) {
   // --- Web Audio processing chain ---
   const mediaSource = rawCtx.createMediaElementSource(audio);
 
+  const s = fanfareSettings;
+
   // 1. Master gain
   const gain = rawCtx.createGain();
-  gain.gain.value = 1.0;
+  gain.gain.value = s.volume;
 
   // 2. Chorus — 3 detuned delay lines for width
   const chorusDry = rawCtx.createGain();
-  chorusDry.gain.value = 0.55;
+  chorusDry.gain.value = 1 - s.chorusMix;
   const chorusWet = rawCtx.createGain();
-  chorusWet.gain.value = 0.45;
+  chorusWet.gain.value = s.chorusMix;
   const chorusMerge = rawCtx.createGain();
 
   const chorusDelays = [];
   const chorusLFOs = [];
+  const chorusLfoGains = [];
   for (let i = 0; i < 3; i++) {
     const delay = rawCtx.createDelay(0.05);
     delay.delayTime.value = 0.012 + i * 0.008;
     const lfoGain = rawCtx.createGain();
-    lfoGain.gain.value = 0.003;
+    lfoGain.gain.value = s.chorusDepth;
     const lfo = rawCtx.createOscillator();
-    lfo.frequency.value = 0.6 + i * 0.4;
+    lfo.frequency.value = s.chorusRate + i * 0.4;
     lfo.type = "sine";
     lfo.connect(lfoGain);
     lfoGain.connect(delay.delayTime);
     lfo.start();
     delay.connect(chorusWet);
     chorusDelays.push(delay);
-    chorusLFOs.push(lfo, lfoGain);
+    chorusLFOs.push(lfo);
+    chorusLfoGains.push(lfoGain);
   }
 
   // 3. EQ — warm bottom, clear top
   const lowBoost = rawCtx.createBiquadFilter();
   lowBoost.type = "lowshelf";
-  lowBoost.frequency.value = 250;
-  lowBoost.gain.value = 5;
+  lowBoost.frequency.value = s.lowFreq;
+  lowBoost.gain.value = s.lowBoost;
 
   const midScoop = rawCtx.createBiquadFilter();
   midScoop.type = "peaking";
-  midScoop.frequency.value = 1200;
-  midScoop.Q.value = 1.0;
-  midScoop.gain.value = -1;
+  midScoop.frequency.value = s.midFreq;
+  midScoop.Q.value = s.midQ;
+  midScoop.gain.value = s.midGain;
 
   const highCut = rawCtx.createBiquadFilter();
   highCut.type = "highshelf";
-  highCut.frequency.value = 5000;
-  highCut.gain.value = -1;
+  highCut.frequency.value = s.highFreq;
+  highCut.gain.value = s.highGain;
 
   // 4. Soft-clip saturation
   const waveshaper = rawCtx.createWaveShaper();
-  const curveLen = 4096;
-  const curve = new Float32Array(curveLen);
-  for (let i = 0; i < curveLen; i++) {
-    const x = (i / (curveLen - 1)) * 2 - 1;
-    curve[i] = Math.tanh(x * 1.8) * 0.9 + x * 0.1;
+  function buildSatCurve(drive) {
+    const len = 4096;
+    const c = new Float32Array(len);
+    for (let i = 0; i < len; i++) {
+      const x = (i / (len - 1)) * 2 - 1;
+      c[i] = Math.tanh(x * drive) * 0.9 + x * 0.1;
+    }
+    return c;
   }
-  waveshaper.curve = curve;
+  waveshaper.curve = buildSatCurve(s.drive);
   waveshaper.oversample = "2x";
 
   // 5. Convolution reverb (synthesized hall IR)
   const convolver = rawCtx.createConvolver();
-  const irLength = rawCtx.sampleRate * 3.5;
-  const irBuffer = rawCtx.createBuffer(2, irLength, rawCtx.sampleRate);
-  for (let ch = 0; ch < 2; ch++) {
-    const data = irBuffer.getChannelData(ch);
-    for (let i = 0; i < irLength; i++) {
-      const noise = Math.random() * 2 - 1;
-      const earlyBoost = i < rawCtx.sampleRate * 0.08 ? 1.5 : 1.0;
-      data[i] = noise * earlyBoost * Math.pow(1 - i / irLength, 2.0);
+  function buildIR(length, decay) {
+    const irLen = Math.floor(rawCtx.sampleRate * length);
+    const buf = rawCtx.createBuffer(2, irLen, rawCtx.sampleRate);
+    for (let ch = 0; ch < 2; ch++) {
+      const data = buf.getChannelData(ch);
+      for (let i = 0; i < irLen; i++) {
+        const noise = Math.random() * 2 - 1;
+        const earlyBoost = i < rawCtx.sampleRate * 0.08 ? 1.5 : 1.0;
+        data[i] = noise * earlyBoost * Math.pow(1 - i / irLen, decay);
+      }
     }
+    return buf;
   }
-  convolver.buffer = irBuffer;
+  convolver.buffer = buildIR(s.reverbLength, s.reverbDecay);
 
   const dryGain = rawCtx.createGain();
-  dryGain.gain.value = 0.55;
+  dryGain.gain.value = 1 - s.reverbMix;
   const wetGain = rawCtx.createGain();
-  wetGain.gain.value = 0.45;
+  wetGain.gain.value = s.reverbMix;
 
   // Wire it all up
   mediaSource.connect(gain);
@@ -231,7 +272,7 @@ export async function playFanfareSynth({ startFromMs = 0, onCue = null } = {}) {
 
   const rawNodes = [
     mediaSource, gain, chorusDry, chorusWet, chorusMerge,
-    ...chorusDelays, ...chorusLFOs,
+    ...chorusDelays, ...chorusLFOs, ...chorusLfoGains,
     lowBoost, midScoop, highCut, waveshaper,
     convolver, dryGain, wetGain,
   ];
@@ -245,7 +286,7 @@ export async function playFanfareSynth({ startFromMs = 0, onCue = null } = {}) {
     subSynth = new T.Synth({
       oscillator: { type: "sine" },
       envelope: { attack: 2, decay: 1, sustain: 0.6, release: 3 },
-      volume: -12,
+      volume: s.subVolume,
     }).connect(subFilter);
     toneNodes.push(subSynth);
   } catch (_) {}
@@ -301,7 +342,7 @@ export async function playFanfareSynth({ startFromMs = 0, onCue = null } = {}) {
 
   // --- Start playback ---
   audio.addEventListener("playing", () => {
-    if (subSynth) try { subSynth.triggerAttack("Bb0"); } catch (_) {}
+    if (subSynth) try { subSynth.triggerAttack(s.subNote); } catch (_) {}
     pollCues();
   }, { once: true });
 
@@ -343,5 +384,11 @@ export async function playFanfareSynth({ startFromMs = 0, onCue = null } = {}) {
     audio,
     durationMs: FANFARE_DURATION_MS,
     get disposed() { return disposed; },
+    /** Live audio nodes for real-time GUI tweaking */
+    nodes: {
+      gain, chorusDry, chorusWet, chorusLFOs, chorusLfoGains,
+      lowBoost, midScoop, highCut, waveshaper, convolver,
+      dryGain, wetGain, subSynth, buildSatCurve, buildIR,
+    },
   };
 }

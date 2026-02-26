@@ -739,11 +739,88 @@ export function setupPolarGridGUI() {
     cuesFolder.close();
   });
 
+  // Fanfare Sound folder — live tweaking of audio processing chain
+  import("./fanfare-synth.js").then((mod) => {
+    if (!mod.fanfareSettings) return;
+    const fs = mod.fanfareSettings;
+    const soundFolder = trailerFolder.addFolder("Fanfare Sound");
+
+    // Playback
+    soundFolder.add(fs, "playbackRate", 0.5, 1.5, 0.05).name("Speed");
+    soundFolder.add(fs, "volume", 0, 2, 0.05).name("Volume");
+
+    // Chorus
+    const chorusF = soundFolder.addFolder("Chorus");
+    chorusF.add(fs, "chorusMix", 0, 1, 0.05).name("Mix");
+    chorusF.add(fs, "chorusDepth", 0, 0.02, 0.001).name("Depth");
+    chorusF.add(fs, "chorusRate", 0.1, 3, 0.1).name("Rate");
+    chorusF.close();
+
+    // EQ
+    const eqF = soundFolder.addFolder("EQ");
+    eqF.add(fs, "lowBoost", -10, 20, 0.5).name("Low Boost dB");
+    eqF.add(fs, "lowFreq", 60, 500, 10).name("Low Freq");
+    eqF.add(fs, "midGain", -12, 12, 0.5).name("Mid Gain dB");
+    eqF.add(fs, "midFreq", 200, 5000, 50).name("Mid Freq");
+    eqF.add(fs, "midQ", 0.1, 10, 0.1).name("Mid Q");
+    eqF.add(fs, "highGain", -12, 12, 0.5).name("High Gain dB");
+    eqF.add(fs, "highFreq", 1000, 15000, 100).name("High Freq");
+    eqF.close();
+
+    // Saturation
+    soundFolder.add(fs, "drive", 0.5, 6, 0.1).name("Saturation");
+
+    // Reverb
+    const reverbF = soundFolder.addFolder("Reverb");
+    reverbF.add(fs, "reverbMix", 0, 1, 0.05).name("Mix");
+    reverbF.add(fs, "reverbDecay", 0.5, 5, 0.1).name("Decay");
+    reverbF.add(fs, "reverbLength", 0.5, 8, 0.5).name("Length (s)");
+    reverbF.close();
+
+    // Sub bass
+    const subF = soundFolder.addFolder("Sub Bass");
+    subF.add(fs, "subVolume", -30, 0, 1).name("Volume dB");
+    subF.add(fs, "subNote", ["C0","D0","Eb0","F0","G0","Ab0","Bb0","C1","D1"]).name("Note");
+    subF.close();
+
+    // Live-apply: poll settings changes onto active fanfare nodes
+    let applyId = null;
+    function applyLive() {
+      const handle = window._fanfareHandle;
+      if (handle && !handle.disposed && handle.nodes) {
+        const n = handle.nodes;
+        // Playback rate + volume
+        if (handle.audio) handle.audio.playbackRate = fs.playbackRate;
+        n.gain.gain.value = fs.volume;
+        // Chorus
+        n.chorusDry.gain.value = 1 - fs.chorusMix;
+        n.chorusWet.gain.value = fs.chorusMix;
+        n.chorusLFOs.forEach((lfo, i) => { lfo.frequency.value = fs.chorusRate + i * 0.4; });
+        n.chorusLfoGains.forEach((g) => { g.gain.value = fs.chorusDepth; });
+        // EQ
+        n.lowBoost.frequency.value = fs.lowFreq;
+        n.lowBoost.gain.value = fs.lowBoost;
+        n.midScoop.frequency.value = fs.midFreq;
+        n.midScoop.Q.value = fs.midQ;
+        n.midScoop.gain.value = fs.midGain;
+        n.highCut.frequency.value = fs.highFreq;
+        n.highCut.gain.value = fs.highGain;
+        // Saturation
+        n.waveshaper.curve = n.buildSatCurve(fs.drive);
+        // Reverb mix (IR rebuild is expensive, only on next play)
+        n.dryGain.gain.value = 1 - fs.reverbMix;
+        n.wetGain.gain.value = fs.reverbMix;
+        // Sub bass volume
+        if (n.subSynth) n.subSynth.volume.value = fs.subVolume;
+      }
+      applyId = requestAnimationFrame(applyLive);
+    }
+    applyLive();
+
+    soundFolder.close();
+  });
+
   trailerFolder.close();
-
-  // Floor settings removed
-
-  // Main GUI panel stays open
 
   // Store regenerate function for external use
   polarGridSettings.regenerate = regeneratePolarGridTexture;
