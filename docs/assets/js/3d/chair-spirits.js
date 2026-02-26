@@ -2381,14 +2381,12 @@ export async function skipToFanfare() {
   await reverseTrailer(4);
 }
 
-// Expose on window + hotkeys (F = skip to fanfare, T = toggle timeline)
+// Expose on window + hotkeys (F = skip to fanfare)
 window.skipToFanfare = skipToFanfare;
 document.addEventListener("keydown", (e) => {
   if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
   if (e.key === "f" || e.key === "F") {
     skipToFanfare();
-  } else if (e.key === "t" || e.key === "T") {
-    toggleTimeline();
   }
 });
 
