@@ -53,9 +53,9 @@ export const polarGridSettings = {
   // Grid line color
   gridLineColor: "#ffffff",
   // Rim and line settings
-  rimOffset: 0.02,
+  rimOffset: 0,
   lineWidth: 2,
-  tickWidth: 1,
+  tickWidth: 4,
   // Antialiasing
   antialias: true,
   // Dot size (center point and grid intersection dots)
