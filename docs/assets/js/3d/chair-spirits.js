@@ -1892,10 +1892,10 @@ const CENTER_SECTOR = 16.5;
 
 /** Final composition layout — used by the ALL (null) cue */
 const FINAL_LAYOUT = {
-  1: "DOME DREAMING",
-  2: "APPLY NOW",
-  3: "GOOD LUCK",
-  4: "HAVE FUN",
+  1: "DOME",
+  2: "DREAMING",
+  3: "APPLY NOW",
+  4: "",
   5: "",
 };
 
