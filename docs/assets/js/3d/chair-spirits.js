@@ -1894,8 +1894,8 @@ const CENTER_SECTOR = 16.5;
 const FINAL_LAYOUT = {
   1: "DOME",
   2: "DREAMING",
-  3: "APPLY\nNOW",
-  4: "",
+  3: "APPLY",
+  4: "NOW",
   5: "",
 };
 
