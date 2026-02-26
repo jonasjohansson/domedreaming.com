@@ -133,17 +133,17 @@ export const fanfareCues = {
   cue5:  { time:  3880, word: "DREAMING",                line: 2, flash:  600 },
   cue6:  { time:  4556, word: "FULLDOME\nFILM\nFESTIVAL", line: 2, flash:  400 },
   cue7:  { time:  5056, word: "FULLDOME\nFILM\nFESTIVAL", line: 2, flash:  800 },
-  cue8:  { time:  6365, word: "OPEN CALL\nFOR ARTISTS",  line: 2, flash:  400 },
-  cue9:  { time:  6786, word: "OPEN CALL\nFOR ARTISTS",  line: 2, flash:  500 },
-  cue10: { time:  8473, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  500 },
-  cue11: { time:  9140, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  400 },
-  cue12: { time:  9787, word: "SUBMISSIONS\nOPEN",       line: 2, flash:  950 },
+  cue8:  { time:  6365, word: "OPEN\nCALL",               line: 2, flash:  400 },
+  cue9:  { time:  6786, word: "OPEN\nCALL",               line: 2, flash:  500 },
+  cue10: { time:  8473, word: "SUBMIT\nYOUR\nWORK",      line: 2, flash:  500 },
+  cue11: { time:  9140, word: "SUBMIT\nYOUR\nWORK",      line: 2, flash:  400 },
+  cue12: { time:  9787, word: "SUBMIT\nYOUR\nWORK",      line: 2, flash:  950 },
   cue13: { time: 11290, word: "WORKS IN\nPROGRESS",      line: 2, flash:  450 },
   cue14: { time: 11850, word: "FULLDOME\nFILMS",         line: 2, flash:  800 },
   cue15: { time: 13379, word: "INSTALLATIONS",            line: 2, flash:  450 },
   cue16: { time: 13849, word: "AV LIVE",                  line: 2, flash:  800 },
-  cue17: { time: 15447, word: "APPLY\n8 MARCH",    line: 2, flash:  350 },
-  cue18: { time: 15926, word: "APPLY\n8 MARCH",    line: 2, flash: 2900 },
+  cue17: { time: 15447, word: "APPLY\nLATEST\n8 MARCH", line: 2, flash:  350 },
+  cue18: { time: 15926, word: "APPLY\nLATEST\n8 MARCH", line: 2, flash: 2900 },
   cue19: { time: 19104, word: null,                       line: 2, flash: 4000 },
 };
 
@@ -1893,9 +1893,9 @@ const CENTER_SECTOR = 16.5;
 /** Final composition layout — used by the ALL (null) cue */
 const FINAL_LAYOUT = {
   1: "DOME DREAMING",
-  2: "OPEN CALL",
-  3: "APPLY NOW",
-  4: "",
+  2: "APPLY NOW",
+  3: "GOOD LUCK",
+  4: "HAVE FUN",
   5: "",
 };
 
