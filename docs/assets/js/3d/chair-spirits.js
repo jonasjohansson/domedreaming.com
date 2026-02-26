@@ -1892,18 +1892,34 @@ const CENTER_SECTOR = 16.5;
 
 /** Final composition layout — used by the ALL (null) cue */
 const FINAL_LAYOUT = {
-  1: "DOME",
-  2: "DREAMING",
-  3: "APPLY",
-  4: "NOW",
-  5: "",
+  1: { text: "DOME" },
+  2: { text: "DREAMING" },
+  3: { text: "APPLY" },
+  4: { text: "NOW", alignTo: 3 },
+  5: { text: "" },
 };
 
-function centerTextOnLine(lineIndex, text) {
+function centerTextOnLine(lineIndex, text, startSector) {
   setTextContent(lineIndex, text);
   if (text.length > 0) {
-    const sector = Math.round(CENTER_SECTOR + text.length / 2);
+    const sector = startSector != null ? startSector : Math.round(CENTER_SECTOR + text.length / 2);
     setTextStartSector(lineIndex, sector % NUM_SECTORS);
+  }
+}
+
+function applyFinalLayout() {
+  const sectors = {};
+  for (let i = 1; i <= 5; i++) {
+    const entry = FINAL_LAYOUT[i];
+    const text = entry.text || "";
+    const sector = Math.round(CENTER_SECTOR + text.length / 2);
+    sectors[i] = sector;
+  }
+  for (let i = 1; i <= 5; i++) {
+    const entry = FINAL_LAYOUT[i];
+    const text = entry.text || "";
+    const align = entry.alignTo ? sectors[entry.alignTo] : undefined;
+    centerTextOnLine(i, text, align);
   }
 }
 
@@ -1933,9 +1949,7 @@ function flashWordOnDome(word, line = 3, flashDuration = 800) {
     }
   } else {
     // ALL mode: show all words together on their final lines
-    for (let i = 1; i <= 5; i++) {
-      centerTextOnLine(i, FINAL_LAYOUT[i] || "");
-    }
+    applyFinalLayout();
   }
 
   // Brightness pump: 0 → peak → 0 (fully dark between flashes)
@@ -2051,9 +2065,7 @@ export async function playFanfareWithWords({ startFromMs = 0 } = {}) {
       if (screenMat && screenMat.uniforms && screenMat.uniforms.uBrightness) {
         // Show all words on their final lines (cancel any previous fade-to-black)
         ++pulseGeneration;
-        for (let i = 1; i <= 5; i++) {
-          centerTextOnLine(i, FINAL_LAYOUT[i] || "");
-        }
+        applyFinalLayout();
         flashSpiritLights(entry.flash);
         const gen2 = ++pulseGeneration;
         const t0 = performance.now();
