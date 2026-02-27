@@ -27,6 +27,7 @@ import {
   setTextStartSector,
   setTextRotationEnabled,
   setTextRotationBPM,
+  setTextRotationOffset,
   setTextScrambleEnabled,
   setImageCellsEnabled,
   setGridLinesEnabled,
@@ -1892,10 +1893,10 @@ const CENTER_SECTOR = 16.5;
 
 /** Final composition layout — used by the ALL (null) cue */
 const FINAL_LAYOUT = {
-  1: { text: "DOME" },
-  2: { text: "DREAMING" },
-  3: { text: "APPLY" },
-  4: { text: "NOW", alignTo: 3 },
+  1: { text: "" },
+  2: { text: "DOME DREAMING" },
+  3: { text: "OPEN CALL" },
+  4: { text: "APPLY NOW" },
   5: { text: "" },
 };
 
@@ -2149,23 +2150,7 @@ export async function runTrailerSequence() {
     setTrailerMode(true);
   }
 
-  // Wait for chair positions to load (model may still be loading on slow connections)
-  if (chairPositions.length === 0) {
-    console.log("Chair spirits: waiting for chair markers to load...");
-    await new Promise((resolve) => {
-      const check = setInterval(() => {
-        if (chairPositions.length > 0) {
-          clearInterval(check);
-          resolve();
-        }
-      }, 200);
-    });
-  }
-
-  // 1. Spirits float in immediately
-  startSpiritsSequence();
-
-  // 3. Save current rotation, text, and image state for later restore
+  // Save current text, rotation, and image state BEFORE overwriting
   savedGridRotationSpeed = textureRotationSettings.speed;
   savedTextRotationEnabled = polarGridSettings.textRotationEnabled;
   savedTextRotationBPM = polarGridSettings.textRotationBPM;
@@ -2181,6 +2166,39 @@ export async function runTrailerSequence() {
     savedTextContents[i] = polarGridSettings[`text${i}Content`];
     savedTextStartSectors[i] = polarGridSettings[`text${i}StartSector`];
   }
+
+  // Scramble typography to welcome message on the dome (centered)
+  // Reset text cell-step offset so text lands at the specified start sectors
+  setTextRotationOffset(0);
+  // Center calculation: visual center ≈ sector 17 (with flipX), startSector = 17 + textLength/2
+  setTextStartSector(1, 21); // "WELCOME" (7 chars)
+  setTextStartSector(2, 20); // "PLEASE" (6 chars)
+  setTextStartSector(3, 19); // "TAKE" (4 chars)
+  setTextStartSector(4, 20); // "A SEAT" (6 chars)
+  setTextStartSector(5, 17); // "" (empty)
+  scrambleToNewText({
+    1: "WELCOME",
+    2: "PLEASE",
+    3: "TAKE",
+    4: "A SEAT",
+    5: ""
+  }, 400);
+
+  // Wait for chair positions to load (model may still be loading on slow connections)
+  if (chairPositions.length === 0) {
+    console.log("Chair spirits: waiting for chair markers to load...");
+    await new Promise((resolve) => {
+      const check = setInterval(() => {
+        if (chairPositions.length > 0) {
+          clearInterval(check);
+          resolve();
+        }
+      }, 200);
+    });
+  }
+
+  // 1. Spirits float in immediately
+  startSpiritsSequence();
 
   // Make sure any previous fanfare is cleaned up
   disposeFanfare();

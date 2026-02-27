@@ -44,9 +44,13 @@ export const polarGridSettings = {
   text5FlipX: true,
   text5FlipY: true,
   text5FontSize: 100,
-  text5StartSector: 27,
-  text5Content: "",
+  text5StartSector: 24,
+  text5Content: "JOIN OPEN CALL",
   text5CellMode: true,
+  // Text pulse animation (color sweep across all text lines)
+  textPulseEnabled: true,
+  textPulseSpeed: 8, // characters per second (travels across all lines)
+  textPulseColor: null, // null = auto-pick from chairsColor
   // Label flip options
   labelsFlipX: false,
   labelsFlipY: true,
@@ -205,7 +209,7 @@ function drawTextOnArc(ctx, text, centerX, centerY, radius, startAngle, fontSize
  * @param {boolean} flipX - Reverse text direction
  * @param {boolean} flipY - Flip characters upside down
  */
-function drawTextInCells(ctx, text, centerX, centerY, circleStep, row, startSector, numSectors, fontSizePercent, color, flipX, flipY) {
+function drawTextInCells(ctx, text, centerX, centerY, circleStep, row, startSector, numSectors, fontSizePercent, color, flipX, flipY, charColors) {
   const chars = text.split('');
   const numChars = chars.length;
 
@@ -273,8 +277,8 @@ function drawTextInCells(ctx, text, centerX, centerY, circleStep, row, startSect
       ctx.strokeText(char, 0, 0);
     }
 
-    // Draw fill
-    ctx.fillStyle = color;
+    // Draw fill — use per-character color if provided
+    ctx.fillStyle = (charColors && charColors[i]) ? charColors[i] : color;
     ctx.shadowBlur = 0; // Remove shadow for fill to avoid double shadow
     ctx.fillText(char, 0, 0);
 
@@ -1380,7 +1384,7 @@ function updateScrambleStates(currentTime) {
 /**
  * Draw rotating text on the canvas with optional scramble effect
  */
-function drawRotatingText(ctx, params, rotationOffset, scrambledTexts) {
+function drawRotatingText(ctx, params, rotationOffset, scrambledTexts, pulseColorsMap) {
   const { centerX, centerY, circleStep, numCircles, numRadialLines, curvedTexts, labelColor, fontSize } = params;
 
   if (!curvedTexts) return;
@@ -1403,8 +1407,11 @@ function drawRotatingText(ctx, params, rotationOffset, scrambledTexts) {
     // Apply rotation offset to start sector
     const rotatedStartSector = (startSector + rotationOffset + numRadialLines) % numRadialLines;
 
+    // Per-character pulse colors for this line
+    const lineCharColors = pulseColorsMap ? pulseColorsMap[index + 1] : undefined;
+
     if (cellMode) {
-      drawTextInCells(ctx, text, centerX, centerY, circleStep, row, rotatedStartSector, numRadialLines, textFontSize, color, flipX, flipY);
+      drawTextInCells(ctx, text, centerX, centerY, circleStep, row, rotatedStartSector, numRadialLines, textFontSize, color, flipX, flipY, lineCharColors);
     } else {
       const radius = params.maxRadius * (row / numCircles);
       const angleRad = (rotatedStartSector * (360 / numRadialLines) - 90) * Math.PI / 180;
@@ -1557,9 +1564,10 @@ export function startPulseAnimation(texture) {
     const cellAnimEnabled = polarGridSettings.cellAnimationEnabled;
     const textRotEnabled = polarGridSettings.textRotationEnabled;
     const textScrambleEnabled = polarGridSettings.textScrambleEnabled;
+    const textPulseEnabled = polarGridSettings.textPulseEnabled;
 
     // Keep animating if any animation feature is enabled
-    if (!pulsesEnabled && !cellAnimEnabled && !textRotEnabled && !textScrambleEnabled) {
+    if (!pulsesEnabled && !cellAnimEnabled && !textRotEnabled && !textScrambleEnabled && !textPulseEnabled) {
       // Restore base image and stop
       ctx.putImageData(baseImageData, 0, 0);
       texture.needsUpdate = true;
@@ -1599,8 +1607,8 @@ export function startPulseAnimation(texture) {
       }
     }
 
-    // Restore base image WITHOUT text if text needs redrawing (rotation or scramble)
-    const needsTextRedraw = textRotEnabled || textScrambleEnabled;
+    // Restore base image WITHOUT text if text needs redrawing (rotation, scramble, or pulse)
+    const needsTextRedraw = textRotEnabled || textScrambleEnabled || textPulseEnabled;
     const needsFullRedraw = needsTextRedraw || cellAnimEnabled;
 
     if (needsFullRedraw) {
@@ -1634,10 +1642,34 @@ export function startPulseAnimation(texture) {
       }
     }
 
-    // Draw text with optional rotation and scramble effect
+    // Draw text with optional rotation, scramble, and pulse effect
     if (needsTextRedraw && params.curvedTexts) {
       const scrambledTexts = textScrambleEnabled ? updateScrambleStates(currentTime) : null;
-      drawRotatingText(ctx, params, textRotationOffset, scrambledTexts);
+
+      // Compute per-character pulse colors for Text 5 only (OPEN CALL line)
+      let pulseColorsMap = null;
+      if (textPulseEnabled) {
+        const speed = polarGridSettings.textPulseSpeed;
+        const timeSec = currentTime * 0.001;
+        const content = polarGridSettings.text5Content || "";
+
+        if (content.length > 0) {
+          const mainCol = polarGridSettings.mainColor || { r: 0.4, g: 0.45, b: 0.5 };
+          const pulseHex = polarGridSettings.textPulseColor || rgbToHex(mainCol);
+          const textLen = content.length;
+          const pulsePos = (timeSec * speed) % textLen;
+
+          const colors = [];
+          for (let i = 0; i < textLen; i++) {
+            const dist = Math.min(Math.abs(i - pulsePos), textLen - Math.abs(i - pulsePos));
+            const t = Math.exp(-(dist * dist) / 4);
+            colors.push(t > 0.01 ? pulseHex : null);
+          }
+          pulseColorsMap = { 5: colors };
+        }
+      }
+
+      drawRotatingText(ctx, params, textRotationOffset, scrambledTexts, pulseColorsMap);
     }
 
     // Update and draw pulses
