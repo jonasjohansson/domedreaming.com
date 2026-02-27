@@ -5,7 +5,7 @@ import { scene, renderer } from "./scene.js";
 export const lightingSettings = {
   ambientIntensity: 1.0,
   ambientColor: "#ffffff",
-  fogEnabled: true,
+  fogEnabled: false,
   fogColor: "#1a1a1a",
   fogNear: 1,
   fogFar: 20,
