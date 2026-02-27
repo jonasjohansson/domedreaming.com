@@ -1892,11 +1892,12 @@ const CENTER_SECTOR = 16.5;
 
 /** Final composition layout — used by the ALL (null) cue */
 const FINAL_LAYOUT = {
-  1: { text: "" },
-  2: { text: "DOME" },
-  3: { text: "DREAMING" },
-  4: { text: "OPEN CALL" },
+  1: { text: "APPLY TO THE" },
+  2: { text: "DOME DREAMING" },
+  3: { text: "OPEN CALL" },
+  4: { text: "" },
   5: { text: "" },
+  6: { text: "" },
 };
 
 function centerTextOnLine(lineIndex, text, startSector) {
@@ -1909,13 +1910,13 @@ function centerTextOnLine(lineIndex, text, startSector) {
 
 function applyFinalLayout() {
   const sectors = {};
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     const entry = FINAL_LAYOUT[i];
     const text = entry.text || "";
     const sector = Math.round(CENTER_SECTOR + text.length / 2);
     sectors[i] = sector;
   }
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     const entry = FINAL_LAYOUT[i];
     const text = entry.text || "";
     const align = entry.alignTo ? sectors[entry.alignTo] : undefined;
@@ -1941,7 +1942,7 @@ function flashWordOnDome(word, line = 3, flashDuration = 800) {
     // Solo mode: clear all lines, show word(s) centered
     // Words with \n are split across two consecutive lines
     const parts = word.split("\n");
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 6; i++) {
       setTextContent(i, "");
     }
     for (let p = 0; p < parts.length; p++) {
@@ -2004,7 +2005,7 @@ export async function playFanfareWithWords({ startFromMs = 0 } = {}) {
   dimming = false;
 
   // Clear all text lines, ensure screen starts fully dark
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     setTextContent(i, "");
   }
   const screenMat = getScreenMaterial();
@@ -2161,7 +2162,7 @@ export async function runTrailerSequence() {
   savedPulseSpeed = polarGridSettings.pulseSpeed;
   savedTextContents = {};
   savedTextStartSectors = {};
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     savedTextContents[i] = polarGridSettings[`text${i}Content`];
     savedTextStartSectors[i] = polarGridSettings[`text${i}StartSector`];
   }
@@ -2348,7 +2349,7 @@ export async function skipToFanfare() {
   savedPulseSpeed = polarGridSettings.pulseSpeed;
   savedTextContents = {};
   savedTextStartSectors = {};
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     savedTextContents[i] = polarGridSettings[`text${i}Content`];
     savedTextStartSectors[i] = polarGridSettings[`text${i}StartSector`];
   }
@@ -2400,7 +2401,7 @@ export async function reverseTrailer(duration = 3) {
 
   // Restore start sectors and scramble text back to original content
   if (savedTextStartSectors) {
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 6; i++) {
       setTextStartSector(i, savedTextStartSectors[i]);
     }
   }

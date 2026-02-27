@@ -45,8 +45,16 @@ export const polarGridSettings = {
   text5FlipY: true,
   text5FontSize: 100,
   text5StartSector: 24,
-  text5Content: "JOIN OPEN CALL",
+  text5Content: "OPEN CALL",
   text5CellMode: true,
+  // Text 6 settings (duplicate on row 2, smaller font)
+  text6Row: 2,
+  text6FlipX: true,
+  text6FlipY: true,
+  text6FontSize: 70,
+  text6StartSector: 24,
+  text6Content: "OPEN CALL",
+  text6CellMode: true,
   // Text pulse animation (color sweep across all text lines)
   textPulseEnabled: true,
   textPulseSpeed: 8, // characters per second (travels across all lines)
@@ -1282,6 +1290,7 @@ const scrambleState = {
   text3: { chars: [] },
   text4: { chars: [] },
   text5: { chars: [] },
+  text6: { chars: [] },
 };
 
 // ASCII characters for scramble effect
@@ -1339,7 +1348,7 @@ function updateScrambleStates(currentTime) {
     pendingScrambleCount--;
 
     // Pick a random text line and character to scramble
-    const textKeys = ['text1', 'text2', 'text3', 'text4', 'text5'];
+    const textKeys = ['text1', 'text2', 'text3', 'text4', 'text5', 'text6'];
     const randomKey = textKeys[Math.floor(Math.random() * textKeys.length)];
     const state = scrambleState[randomKey];
     const content = polarGridSettings[`${randomKey}Content`];
@@ -1366,7 +1375,7 @@ function updateScrambleStates(currentTime) {
   }
 
   // Build result text for each line
-  ['text1', 'text2', 'text3', 'text4', 'text5'].forEach((key) => {
+  ['text1', 'text2', 'text3', 'text4', 'text5', 'text6'].forEach((key) => {
     const state = scrambleState[key];
     const content = polarGridSettings[`${key}Content`];
 
@@ -1551,6 +1560,7 @@ export function startPulseAnimation(texture) {
 
   let lastTime = performance.now();
   let globalAnimTime = 0;
+  let pulseAnimTime = 0;
 
   function animate(currentTime) {
     // Throttle animation to 30fps for better performance
@@ -1578,6 +1588,7 @@ export function startPulseAnimation(texture) {
     const deltaTime = currentTime - lastTime;
     lastTime = currentTime;
     globalAnimTime += deltaTime * 0.001 * polarGridSettings.cellAnimationSpeed;
+    pulseAnimTime += deltaTime * 0.001;
 
     // Update text rotation offset
     if (textRotEnabled) {
@@ -1646,26 +1657,43 @@ export function startPulseAnimation(texture) {
     if (needsTextRedraw && params.curvedTexts) {
       const scrambledTexts = textScrambleEnabled ? updateScrambleStates(currentTime) : null;
 
-      // Compute per-character pulse colors for Text 5 only (OPEN CALL line)
+      // Compute per-character pulse colors for Text 5 & 6 (OPEN CALL lines)
       let pulseColorsMap = null;
       if (textPulseEnabled) {
         const speed = polarGridSettings.textPulseSpeed;
-        const timeSec = currentTime * 0.001;
+        const timeSec = pulseAnimTime;
         const content = polarGridSettings.text5Content || "";
 
         if (content.length > 0) {
           const mainCol = polarGridSettings.mainColor || { r: 0.4, g: 0.45, b: 0.5 };
-          const pulseHex = polarGridSettings.textPulseColor || rgbToHex(mainCol);
+          const white = { r: 1, g: 1, b: 1 };
+          const pulseCol = polarGridSettings.textPulseColor
+            ? null // use hex directly if set
+            : mainCol;
           const textLen = content.length;
-          const pulsePos = (timeSec * speed) % textLen;
+          const pulsePos = ((timeSec * speed) % textLen + textLen) % textLen;
 
           const colors = [];
           for (let i = 0; i < textLen; i++) {
             const dist = Math.min(Math.abs(i - pulsePos), textLen - Math.abs(i - pulsePos));
-            const t = Math.exp(-(dist * dist) / 4);
-            colors.push(t > 0.01 ? pulseHex : null);
+            // Smooth gaussian falloff over ~2 characters
+            const t = Math.exp(-(dist * dist) / 2);
+            if (t > 0.01) {
+              // Interpolate from white toward pulse color
+              if (pulseCol) {
+                const c = lerpColor(white, pulseCol, t);
+                const r = Math.round(c.r * 255).toString(16).padStart(2, '0');
+                const g = Math.round(c.g * 255).toString(16).padStart(2, '0');
+                const b = Math.round(c.b * 255).toString(16).padStart(2, '0');
+                colors.push(`#${r}${g}${b}`);
+              } else {
+                colors.push(polarGridSettings.textPulseColor);
+              }
+            } else {
+              colors.push(null); // default white
+            }
           }
-          pulseColorsMap = { 5: colors };
+          pulseColorsMap = { 5: colors, 6: colors };
         }
       }
 

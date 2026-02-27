@@ -126,6 +126,16 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
           flipY: polarGridSettings.text5FlipY,
           cellMode: polarGridSettings.text5CellMode,
         },
+        {
+          text: polarGridSettings.text6Content,
+          row: polarGridSettings.text6Row,
+          startSector: polarGridSettings.text6StartSector,
+          textFontSize: polarGridSettings.text6FontSize,
+          color: "#ffffff",
+          flipX: polarGridSettings.text6FlipX,
+          flipY: polarGridSettings.text6FlipY,
+          cellMode: polarGridSettings.text6CellMode,
+        },
       ],
     });
 
@@ -146,8 +156,8 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
       });
     }
 
-    // Start canvas animation for text effects (rotation, scramble)
-    if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled) {
+    // Start canvas animation for text effects (rotation, scramble, pulse)
+    if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled || polarGridSettings.textPulseEnabled) {
       startPulseAnimation(texture);
     }
 
