@@ -21,6 +21,7 @@ import { getMaterial } from "./utils.js";
 import { initAudio, setMasterVolume, stopAudio as stopPulseAudio } from "./pulse-audio.js";
 import { playFanfareSynth, FANFARE_DURATION_MS } from "./fanfare-synth.js";
 import { textureRotationSettings } from "../core/settings.js";
+import { getCurrentImageTexture } from "./texture.js";
 import {
   scrambleToNewText,
   setTextContent,
@@ -2170,17 +2171,21 @@ export async function runTrailerSequence() {
   // Scramble typography to welcome message on the dome (centered)
   // Reset text cell-step offset so text lands at the specified start sectors
   setTextRotationOffset(0);
+  // Compensate for current grid rotation so text appears at the visual center
+  const tex = getCurrentImageTexture();
+  const gridAngle = tex ? tex.rotation : 0;
+  const sectorShift = Math.round(-gridAngle * 36 / (2 * Math.PI)) % 36;
   // Center calculation: visual center ≈ sector 17 (with flipX), startSector = 17 + textLength/2
-  setTextStartSector(1, 21); // "WELCOME" (7 chars)
-  setTextStartSector(2, 20); // "PLEASE" (6 chars)
-  setTextStartSector(3, 19); // "TAKE" (4 chars)
-  setTextStartSector(4, 20); // "A SEAT" (6 chars)
-  setTextStartSector(5, 17); // "" (empty)
+  setTextStartSector(1, (20 + sectorShift + 36) % 36); // "PLEASE" (6 chars)
+  setTextStartSector(2, (19 + sectorShift + 36) % 36); // "TAKE" (4 chars)
+  setTextStartSector(3, (20 + sectorShift + 36) % 36); // "A SEAT" (6 chars)
+  setTextStartSector(4, (17 + sectorShift + 36) % 36); // "" (empty)
+  setTextStartSector(5, (17 + sectorShift + 36) % 36); // "" (empty)
   scrambleToNewText({
-    1: "WELCOME",
-    2: "PLEASE",
-    3: "TAKE",
-    4: "A SEAT",
+    1: "PLEASE",
+    2: "TAKE",
+    3: "A SEAT",
+    4: "",
     5: ""
   }, 400);
 
