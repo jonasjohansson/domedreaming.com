@@ -21,14 +21,12 @@ import { getMaterial } from "./utils.js";
 import { initAudio, setMasterVolume, stopAudio as stopPulseAudio } from "./pulse-audio.js";
 import { playFanfareSynth, FANFARE_DURATION_MS } from "./fanfare-synth.js";
 import { textureRotationSettings } from "../core/settings.js";
-import { getCurrentImageTexture } from "./texture.js";
 import {
   scrambleToNewText,
   setTextContent,
   setTextStartSector,
   setTextRotationEnabled,
   setTextRotationBPM,
-  setTextRotationOffset,
   setTextScrambleEnabled,
   setImageCellsEnabled,
   setGridLinesEnabled,
@@ -133,13 +131,13 @@ export const fanfareCues = {
   cue3:  { time:  2478, word: "DREAMING",                line: 2, flash: 1000 },
   cue4:  { time:  3517, word: "DREAMING",                line: 2, flash:  300 },
   cue5:  { time:  3880, word: "DREAMING",                line: 2, flash:  600 },
-  cue6:  { time:  4556, word: "FULLDOME\nFILM\nFESTIVAL", line: 2, flash:  400 },
-  cue7:  { time:  5056, word: "FULLDOME\nFILM\nFESTIVAL", line: 2, flash:  800 },
+  cue6:  { time:  4556, word: "FULLDOME\nFILM\nFESTIVAL", line: 1, flash:  400 },
+  cue7:  { time:  5056, word: "FULLDOME\nFILM\nFESTIVAL", line: 1, flash:  800 },
   cue8:  { time:  6365, word: "OPEN\nCALL",               line: 2, flash:  400 },
   cue9:  { time:  6786, word: "OPEN\nCALL",               line: 2, flash:  500 },
-  cue10: { time:  8473, word: "SUBMIT\nYOUR\nWORK",      line: 2, flash:  500 },
-  cue11: { time:  9140, word: "SUBMIT\nYOUR\nWORK",      line: 2, flash:  400 },
-  cue12: { time:  9787, word: "SUBMIT\nYOUR\nWORK",      line: 2, flash:  950 },
+  cue10: { time:  8473, word: "SUBMIT\nYOUR\nWORK",      line: 1, flash:  500 },
+  cue11: { time:  9140, word: "SUBMIT\nYOUR\nWORK",      line: 1, flash:  400 },
+  cue12: { time:  9787, word: "SUBMIT\nYOUR\nWORK",      line: 1, flash:  950 },
   cue13: { time: 11290, word: "WORKS IN\nPROGRESS",      line: 2, flash:  450 },
   cue14: { time: 11850, word: "FULLDOME\nFILMS",         line: 2, flash:  800 },
   cue15: { time: 13379, word: "INSTALLATIONS",            line: 2, flash:  450 },
@@ -1894,7 +1892,7 @@ const CENTER_SECTOR = 16.5;
 
 /** Final composition layout — used by the ALL (null) cue */
 const FINAL_LAYOUT = {
-  1: { text: "APPLY" },
+  1: { text: "" },
   2: { text: "DOME" },
   3: { text: "DREAMING" },
   4: { text: "OPEN CALL" },
@@ -2168,26 +2166,7 @@ export async function runTrailerSequence() {
     savedTextStartSectors[i] = polarGridSettings[`text${i}StartSector`];
   }
 
-  // Scramble typography to welcome message on the dome (centered)
-  // Reset text cell-step offset so text lands at the specified start sectors
-  setTextRotationOffset(0);
-  // Compensate for current grid rotation so text appears at the visual center
-  const tex = getCurrentImageTexture();
-  const gridAngle = tex ? tex.rotation : 0;
-  const sectorShift = Math.round(-gridAngle * 36 / (2 * Math.PI)) % 36;
-  // Center calculation: visual center ≈ sector 17 (with flipX), startSector = 17 + textLength/2
-  setTextStartSector(1, (20 + sectorShift + 36) % 36); // "PLEASE" (6 chars)
-  setTextStartSector(2, (19 + sectorShift + 36) % 36); // "TAKE" (4 chars)
-  setTextStartSector(3, (20 + sectorShift + 36) % 36); // "A SEAT" (6 chars)
-  setTextStartSector(4, (17 + sectorShift + 36) % 36); // "" (empty)
-  setTextStartSector(5, (17 + sectorShift + 36) % 36); // "" (empty)
-  scrambleToNewText({
-    1: "PLEASE",
-    2: "TAKE",
-    3: "A SEAT",
-    4: "",
-    5: ""
-  }, 400);
+
 
   // Wait for chair positions to load (model may still be loading on slow connections)
   if (chairPositions.length === 0) {
