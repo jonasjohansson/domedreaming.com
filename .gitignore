@@ -3,3 +3,9 @@ node_modules/
 .vite/
 .11ty-vite/
 _site/
+docs/
+
+# Large source files (keep on shared drive)
+*.blend
+*.blend1
+*.ai

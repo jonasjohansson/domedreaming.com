@@ -114,7 +114,7 @@ const SPIRIT_SPEED_JITTER = 0.2;
 const RAMP_DURATION = 2.5;
 
 /** Default trailer video (used by dimAndPlayFilm legacy path) */
-const DEFAULT_TRAILER_VIDEO = "assets/video/ParallelPromoLQ.mp4";
+const DEFAULT_TRAILER_VIDEO = null;
 
 /**
  * Fanfare word cue settings — editable via GUI.
@@ -1776,8 +1776,12 @@ let filmPlaying = false;
 
 export async function dimAndPlayFilm(videoUrl) {
   if (filmPlaying) return;
-  filmPlaying = true;
   const url = videoUrl || DEFAULT_TRAILER_VIDEO;
+  if (!url) {
+    console.warn("Chair spirits: no video URL provided, skipping film");
+    return;
+  }
+  filmPlaying = true;
   console.log("Chair spirits: dim + play film");
 
   setTrailerMode(true);
