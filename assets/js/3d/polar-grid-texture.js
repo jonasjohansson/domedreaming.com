@@ -56,7 +56,7 @@ export const polarGridSettings = {
   text6Content: "OPEN CALL",
   text6CellMode: true,
   // Text pulse animation (color sweep across all text lines)
-  textPulseEnabled: true,
+  textPulseEnabled: false,
   textPulseSpeed: 8, // characters per second (travels across all lines)
   textPulseColor: null, // null = auto-pick from chairsColor
   // Label flip options
@@ -84,7 +84,7 @@ export const polarGridSettings = {
   textStepRotation: true, // Step by one cell width in sync with BPM
   textRotationBPM: 30, // BPM for step rotation
   // Text scramble effect
-  textScrambleEnabled: true,
+  textScrambleEnabled: false,
   textScrambleChance: 0.08, // Higher chance per frame for more random scrambling
   textScrambleDuration: 200, // Shorter duration for snappier effect
   // Text styling for contrast
@@ -888,7 +888,7 @@ export function generatePolarGridTexture(size = 1024, options = {}) {
   // Get context with antialiasing option
   const ctx = canvas.getContext("2d", {
     alpha: false,
-    willReadFrequently: false,
+    willReadFrequently: true,
   });
 
   // Enable high-quality rendering

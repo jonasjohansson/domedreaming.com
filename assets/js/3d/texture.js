@@ -63,8 +63,8 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     const chairsColor = colors.Chairs || { r: 0.55, g: 0.32, b: 0.38 };
     const floorColor = colors.Floor || { r: 0.65, g: 0.52, b: 0.25 };
 
-    // Lower resolution for better performance (2048 for all devices)
-    const textureSize = 2048;
+    // Lower resolution for better performance (1024 for all devices)
+    const textureSize = 1024;
 
     const texture = generatePolarGridTexture(textureSize, {
       backgroundColor: "#000000",
@@ -146,18 +146,20 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     const shaderMaterial = createPulseShaderMaterial(texture);
     screenObject.material = shaderMaterial;
 
-    // Start shader-based pulse animation only when pulses are enabled
-    if (polarGridSettings.pulsesEnabled) {
-      startPulseShaderAnimation({
-        pulseCount: polarGridSettings.pulseCount,
-        numCircles: 8,
-        pulseSpeed: polarGridSettings.pulseSpeed,
-        pulseIntensity: 1.0
-      });
-    }
+    // Always start shader animation (lightweight GPU-based uniform updates)
+    startPulseShaderAnimation({
+      pulseCount: polarGridSettings.pulsesEnabled ? polarGridSettings.pulseCount : 0,
+      numCircles: 8,
+      pulseSpeed: polarGridSettings.pulseSpeed,
+      pulseIntensity: 1.0,
+      textPulseEnabled: true,
+      textPulseSpeed: 0.25,
+      textPulseColor: mainColor
+    });
 
-    // Start canvas animation for text effects (rotation, scramble, pulse)
-    if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled || polarGridSettings.textPulseEnabled) {
+    // Start canvas animation only for features that require canvas redraw
+    // (text rotation, scramble). Text pulse is now handled by the GPU shader.
+    if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled) {
       startPulseAnimation(texture);
     }
 
@@ -446,12 +448,8 @@ export function setupPolarGridGUI() {
   const pulseFolder = animationFolder.addFolder("Pulses");
   pulseFolder.add(polarGridSettings, "pulsesEnabled")
     .name("Enable")
-    .onChange((enabled) => {
-      if (enabled && currentImageTexture) {
-        startPulseAnimation(currentImageTexture);
-      } else {
-        stopPulseAnimation();
-      }
+    .onChange(() => {
+      regeneratePolarGridTexture();
     });
   pulseFolder.add(polarGridSettings, "pulseCount", 1, 20, 1)
     .name("Count")

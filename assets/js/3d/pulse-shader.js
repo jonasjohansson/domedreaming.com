@@ -34,6 +34,10 @@ uniform float uTickIntensity;  // 0-1, for pulse pulsation on ticks
 uniform int uActivePulse;  // Which pulse reacts to tick (-1 = none)
 uniform float uBrightness;  // 0-1, overall output brightness (for cinematic fade)
 uniform float uGridFade;    // 0-1, fades grid lines while preserving bright text
+uniform int uTextPulseEnabled;  // 1 = GPU text pulse on, 0 = off
+uniform float uTextPulsePosition;  // 0-1, angular position of the sweep
+uniform vec3 uTextPulseColor;  // accent color for the text pulse
+uniform float uTextPulseWidth;  // gaussian width of the pulse
 
 varying vec2 vUv;
 
@@ -90,6 +94,23 @@ void main() {
   // Blend pulse glow with base (pulses fade with grid)
   vec3 finalColor = baseColor.rgb + vec3(pulseGlow * uPulseIntensity * uGridFade);
 
+  // GPU text pulse - angular color sweep across bright text pixels
+  if (uTextPulseEnabled > 0) {
+    vec2 centered = flippedUv - vec2(0.5);
+    float pixelAngle = atan(centered.y, centered.x);
+    float normAngle = (pixelAngle + 3.14159265) / (2.0 * 3.14159265);
+
+    float angDist = abs(normAngle - uTextPulsePosition);
+    angDist = min(angDist, 1.0 - angDist);
+
+    float pulseFactor = exp(-angDist * angDist / (2.0 * uTextPulseWidth * uTextPulseWidth));
+
+    float lum = dot(finalColor, vec3(0.299, 0.587, 0.114));
+    float textMask = smoothstep(0.3, 0.5, lum);
+
+    finalColor = mix(finalColor, uTextPulseColor * lum * 2.0, pulseFactor * textMask * 0.8);
+  }
+
   // Selective fade: dim grid lines/images while preserving bright text.
   // Text pixels are typically brighter than grid lines.
   // uGridFade = 1.0 means everything visible, 0.0 means only bright text remains.
@@ -126,7 +147,11 @@ export function createPulseUniforms(baseTexture) {
     uTickIntensity: { value: 0 },  // Tick pulsation intensity
     uActivePulse: { value: -1 },  // Which pulse is pulsating
     uBrightness: { value: 1.0 },  // Overall output brightness (1 = full, 0 = black)
-    uGridFade: { value: 1.0 }  // Grid/lines fade (1 = all visible, 0 = only text)
+    uGridFade: { value: 1.0 },  // Grid/lines fade (1 = all visible, 0 = only text)
+    uTextPulseEnabled: { value: 0 },
+    uTextPulsePosition: { value: 0.0 },
+    uTextPulseColor: { value: new THREE.Vector3(0.4, 0.45, 0.5) },
+    uTextPulseWidth: { value: 0.04 }
   };
 
   return pulseUniforms;
@@ -228,7 +253,10 @@ export function startPulseShaderAnimation(settings = {}) {
     pulseCount = 4,
     numCircles = 8,
     pulseSpeed = 0.5,
-    pulseIntensity = 1.0
+    pulseIntensity = 1.0,
+    textPulseEnabled = false,
+    textPulseSpeed = 0.25,
+    textPulseColor = null
   } = settings;
 
   // Initialize pulses
@@ -236,6 +264,12 @@ export function startPulseShaderAnimation(settings = {}) {
 
   if (pulseUniforms) {
     pulseUniforms.uPulseIntensity.value = pulseIntensity;
+
+    // Configure text pulse
+    pulseUniforms.uTextPulseEnabled.value = textPulseEnabled ? 1 : 0;
+    if (textPulseColor) {
+      pulseUniforms.uTextPulseColor.value.set(textPulseColor.r, textPulseColor.g, textPulseColor.b);
+    }
   }
 
   let lastTime = performance.now();
@@ -253,6 +287,11 @@ export function startPulseShaderAnimation(settings = {}) {
       // Update tick pulsation uniforms
       pulseUniforms.uTickIntensity.value = getTickIntensity();
       pulseUniforms.uActivePulse.value = getActivePulseIndex();
+
+      // Advance text pulse position
+      if (pulseUniforms.uTextPulseEnabled.value > 0) {
+        pulseUniforms.uTextPulsePosition.value = (currentTime * 0.001 * textPulseSpeed) % 1.0;
+      }
     }
 
     // Update audio (ticks and spatial positioning)
