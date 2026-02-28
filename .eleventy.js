@@ -42,6 +42,7 @@ module.exports = function (eleventyConfig) {
   // Note: For production builds, images are optimized via scripts/copy-used-images.js
   // For dev mode, we copy all images directly
   eleventyConfig.addPassthroughCopy({
+    "assets/audio": "assets/audio",
     "assets/fonts": "assets/fonts",
     "assets/favicon": "assets/favicon",
     "assets/models": "assets/models",

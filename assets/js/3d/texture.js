@@ -5,7 +5,7 @@ import { screenSettings, textureRotationSettings, randomizeColors, dofSettings }
 import { isMobile } from "../core/utils.js";
 import { getBokehPass } from "./postprocessing.js";
 import { camera } from "./scene.js";
-import { generatePolarGridTexture, polarGridSettings, startPulseAnimation, stopPulseAnimation, reinitializePulses, preloadCellImages, triggerScrambleBurst } from "./polar-grid-texture.js";
+import { generatePolarGridTexture, polarGridSettings, startPulseAnimation, stopPulseAnimation, setCurrentTexture, reinitializePulses, preloadCellImages, triggerScrambleBurst } from "./polar-grid-texture.js";
 import { createPulseShaderMaterial, startPulseShaderAnimation, stopPulseShaderAnimation, updateBaseTexture, updateShaderRotation } from "./pulse-shader.js";
 export { updateShaderRotation };
 import { audioSettings, startAudio, stopAudio, setMasterVolume, setReverbWet, setSpatialSpread, initAudio, setScrambleTrigger } from "./pulse-audio.js";
@@ -156,6 +156,9 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
       textPulseSpeed: 0.25,
       textPulseColor: mainColor
     });
+
+    // Always register the texture so one-shot redraws (e.g. fanfare cues) work
+    setCurrentTexture(texture);
 
     // Start canvas animation only for features that require canvas redraw
     // (text rotation, scramble). Pulses and text pulse are handled by the GPU shader.

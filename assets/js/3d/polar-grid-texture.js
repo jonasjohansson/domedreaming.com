@@ -1542,6 +1542,14 @@ function getPulseRects(params, pulseSize) {
 }
 
 /**
+ * Set the current texture reference (for one-shot redraws without starting the animation loop).
+ */
+export function setCurrentTexture(texture) {
+  if (!texture || !texture._polarGridCanvas) return;
+  currentTexture = texture;
+}
+
+/**
  * Start pulse animation
  */
 export function startPulseAnimation(texture) {
