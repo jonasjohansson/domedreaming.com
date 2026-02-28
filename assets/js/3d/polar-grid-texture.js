@@ -1755,6 +1755,34 @@ export function reinitializePulses() {
 // ============ TEXT CONTROL API (for trailer sequence) ============
 
 /**
+ * One-shot redraw of all text onto the canvas texture.
+ * Used when the canvas animation loop isn't running (e.g. during fanfare cues).
+ */
+function redrawTextOnce() {
+  if (pulseAnimationId) return; // animation loop will handle it
+  if (!currentTexture || !currentTexture._polarGridCanvas) return;
+  const ctx = currentTexture._polarGridCtx;
+  const params = currentTexture._polarGridParams;
+  if (!params || !params.baseImageWithoutText) return;
+
+  ctx.putImageData(params.baseImageWithoutText, 0, 0);
+  drawRotatingText(ctx, params, textRotationOffset, null, null);
+  currentTexture.needsUpdate = true;
+}
+
+// Debounce one-shot redraws to a single rAF when multiple setTextContent calls happen together
+let _redrawPending = false;
+
+function scheduleRedraw() {
+  if (pulseAnimationId || _redrawPending) return;
+  _redrawPending = true;
+  requestAnimationFrame(() => {
+    _redrawPending = false;
+    redrawTextOnce();
+  });
+}
+
+/**
  * Set text content for a specific line (1-5).
  * The new content will appear on the next animation frame draw.
  */
@@ -1772,6 +1800,7 @@ export function setTextContent(lineIndex, newContent) {
       const ct = currentTexture._polarGridParams.curvedTexts[lineIndex - 1];
       if (ct) ct.text = newContent;
     }
+    scheduleRedraw();
   }
 }
 
@@ -1783,6 +1812,7 @@ export function setTextStartSector(lineIndex, sector) {
       const ct = currentTexture._polarGridParams.curvedTexts[lineIndex - 1];
       if (ct) ct.startSector = sector;
     }
+    scheduleRedraw();
   }
 }
 
