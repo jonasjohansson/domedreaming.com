@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "Dome Dreaming fulldome film festival website",
   "scripts": {
-    "dev": "ELEVENTY_OUTPUT_DIR=docs node scripts/bundle-app.js && ELEVENTY_OUTPUT_DIR=docs eleventy --serve --watch",
+    "dev": "cross-env ELEVENTY_OUTPUT_DIR=docs node scripts/bundle-app.js && cross-env ELEVENTY_OUTPUT_DIR=docs eleventy --serve --watch",
     "build": "npm run build:update-sw && npm run build:eleventy && npm run build:bundle && npm run build:optimize && npm run build:update-sw",
-    "build:bundle": "ELEVENTY_OUTPUT_DIR=docs node scripts/bundle-app.js",
+    "build:bundle": "cross-env ELEVENTY_OUTPUT_DIR=docs node scripts/bundle-app.js",
     "build:update-sw": "node scripts/update-sw-version.js",
-    "build:eleventy": "ELEVENTY_OUTPUT_DIR=docs eleventy",
+    "build:eleventy": "cross-env ELEVENTY_OUTPUT_DIR=docs eleventy",
     "build:optimize": "npm run build:cleanup && npm run build:copy-images && npm run build:minify && npm run build:optimize-used-images && npm run build:fonts",
     "build:cleanup": "node scripts/cleanup-assets.js",
     "build:minify": "npm run build:minify:js && npm run build:minify:css && npm run build:purge-css",
@@ -23,7 +23,7 @@
     "build:analyze-images": "node scripts/analyze-image-usage.js",
     "build:cleanup-fonts": "node scripts/remove-unused-fonts.js",
     "build:analyze": "node scripts/analyze-bundle.js && node scripts/remove-unused-css.js",
-    "build:no-minify": "ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js",
+    "build:no-minify": "cross-env ELEVENTY_OUTPUT_DIR=docs eleventy && node scripts/cleanup-assets.js",
     "serve": "eleventy --serve"
   },
   "keywords": [],
@@ -31,6 +31,7 @@
   "license": "ISC",
   "devDependencies": {
     "@11ty/eleventy": "^3.0.0",
+    "cross-env": "^10.1.0",
     "csso": "^5.0.5",
     "esbuild": "^0.27.2",
     "html-minifier-next": "^1.0.0",
