@@ -158,8 +158,8 @@ export function loadDefaultScreenTexture(imagePath = screenSettings.defaultImage
     });
 
     // Start canvas animation only for features that require canvas redraw
-    // (text rotation, scramble). Text pulse is now handled by the GPU shader.
-    if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled) {
+    // (text rotation, scramble). Pulses and text pulse are handled by the GPU shader.
+    if (polarGridSettings.textRotationEnabled || polarGridSettings.textScrambleEnabled || polarGridSettings.cellAnimationEnabled) {
       startPulseAnimation(texture);
     }
 

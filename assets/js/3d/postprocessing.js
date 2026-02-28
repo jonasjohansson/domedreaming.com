@@ -18,10 +18,10 @@ let outputPass = null;
 export function initPostProcessing() {
   const canvasContainer = document.getElementById("canvas-container");
   const rect = canvasContainer.getBoundingClientRect();
-  const resolution = new THREE.Vector2(rect.width, rect.height);
+  const resolution = new THREE.Vector2(Math.floor(rect.width / 2), Math.floor(rect.height / 2));
 
   // Create render target - reduced quality for performance
-  const renderTarget = new THREE.WebGLRenderTarget(resolution.width, resolution.height, {
+  const renderTarget = new THREE.WebGLRenderTarget(rect.width, rect.height, {
     type: THREE.HalfFloatType,
     samples: 0, // Disable multisampling for better performance
   });
