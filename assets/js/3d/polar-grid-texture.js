@@ -45,7 +45,7 @@ export const polarGridSettings = {
   text5FlipY: true,
   text5FontSize: 100,
   text5StartSector: 24,
-  text5Content: "OPEN CALL",
+  text5Content: "",
   text5CellMode: true,
   // Text 6 settings (duplicate on row 2, smaller font)
   text6Row: 2,
@@ -53,7 +53,7 @@ export const polarGridSettings = {
   text6FlipY: true,
   text6FontSize: 70,
   text6StartSector: 24,
-  text6Content: "OPEN CALL",
+  text6Content: "",
   text6CellMode: true,
   // Text pulse animation (color sweep across all text lines)
   textPulseEnabled: false,
